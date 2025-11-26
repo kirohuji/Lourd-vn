@@ -12,6 +12,8 @@ import useQueryLastSave from "../hooks/useQueryLastSave";
 import useGameSaveScreenStore from "../stores/useGameSaveScreenStore";
 import useInterfaceStore from "../stores/useInterfaceStore";
 import useSettingsScreenStore from "../stores/useSettingsScreenStore";
+import ScriptPackageAnalysisModal from "./modals/ScriptPackageAnalysis";
+import { analyzeScriptPackage, ScriptPackageAnalysis } from "../utils/script-package-importer";
 import { loadSave } from "../utils/save-utility";
 
 export default function MainMenu() {
@@ -23,6 +25,8 @@ export default function MainMenu() {
     const gameProps = useGameProps();
     const { uiTransition: t, navigate, notify } = gameProps;
     const [loading, setLoading] = useState(false);
+    const [analysisOpen, setAnalysisOpen] = useState(false);
+    const [analysis, setAnalysis] = useState<ScriptPackageAnalysis | null>(null);
 
     useEffect(() => {
         editHideInterface(false);
@@ -91,7 +95,35 @@ export default function MainMenu() {
             <MenuButton onClick={editSaveScreen} transitionDelay={0.3} disabled={loading}>
                 {t("load")}
             </MenuButton>
-            <MenuButton onClick={() => setOpenSettings(true)} transitionDelay={0.4}>
+            <MenuButton
+                onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.zip,application/zip';
+                    input.onchange = async (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                            setLoading(true);
+                            try {
+                                const analysisResult = await analyzeScriptPackage(file);
+                                setAnalysis(analysisResult);
+                                setAnalysisOpen(true);
+                            } catch (error) {
+                                notify(`分析失败: ${error}`, { variant: 'error' });
+                                console.error(error);
+                            } finally {
+                                setLoading(false);
+                            }
+                        }
+                    };
+                    input.click();
+                }}
+                transitionDelay={0.4}
+                disabled={loading}
+            >
+                导入剧本包
+            </MenuButton>
+            <MenuButton onClick={() => setOpenSettings(true)} transitionDelay={0.5}>
                 {t("settings")}
             </MenuButton>
             {loading && (
@@ -107,6 +139,7 @@ export default function MainMenu() {
                     <CircularProgress />
                 </Box>
             )}
+            <ScriptPackageAnalysisModal open={analysisOpen} setOpen={setAnalysisOpen} analysis={analysis} />
         </Stack>
     );
 }

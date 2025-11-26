@@ -30,6 +30,166 @@ import {
  */
 
 /**
+ * 分析结果接口
+ */
+export interface ScriptPackageAnalysis {
+    metadata: ScriptPackageMetadata;
+    hasManifest: boolean;
+    characters: number;
+    maps: number;
+    locations: number;
+    rooms: number;
+    labels: number;
+    activities: number;
+    quests: number;
+    commitments: number;
+    inkFiles: number;
+    errors?: string[];
+}
+
+/**
+ * 分析剧本包（不实际导入）
+ */
+export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAnalysis> {
+    const zip = await JSZip.loadAsync(file);
+    const errors: string[] = [];
+    const allFiles = Object.keys(zip.files);
+    console.log('ZIP 文件中的所有路径:', allFiles);
+
+    // 检测顶层文件夹（如果有）
+    const topLevelFolder = allFiles.find(path => path.endsWith('/') && path.split('/').length === 2);
+    const basePath = topLevelFolder ? topLevelFolder : '';
+
+    // 辅助函数：从完整路径查找文件
+    const findFile = (fileName: string, folder?: string): JSZip.JSZipObject | null => {
+        // 构建完整路径
+        let fullPath = fileName;
+        if (folder) {
+            fullPath = `${folder}/${fileName}`;
+        }
+
+        // 尝试直接路径
+        let file = zip.file(fullPath);
+        if (file) return file;
+
+        // 尝试带基础路径
+        if (basePath) {
+            file = zip.file(`${basePath}${fullPath}`);
+            if (file) return file;
+        }
+
+        // 查找所有匹配的文件（排除 node_modules）
+        const foundPath = allFiles.find(path => {
+            const parts = path.split('/');
+            const lastPart = parts[parts.length - 1];
+            return lastPart === fileName && !path.includes('node_modules');
+        });
+
+        return foundPath ? zip.file(foundPath) : null;
+    };
+
+    // 辅助函数：解析 JSON 文件并返回数组长度
+    const parseJsonFile = async (file: JSZip.JSZipObject | null, defaultValue: number = 0): Promise<number> => {
+        if (!file) return defaultValue;
+        try {
+            const content = await file.async('string');
+            const data = JSON.parse(content);
+            return Array.isArray(data) ? data.length : 1;
+        } catch (e) {
+            errors.push(`Failed to parse ${file.name}: ${e}`);
+            return defaultValue;
+        }
+    };
+
+    // 辅助函数：查找文件夹中的文件数量
+    const countFilesInFolder = (folderPath: string, extension: string, exclude?: string): number => {
+        return allFiles.filter(path => {
+            if (!path.startsWith(folderPath)) return false;
+            if (!path.endsWith(extension)) return false;
+            if (exclude && path.includes(exclude)) return false;
+            // 确保是文件而不是文件夹
+            return !path.endsWith('/');
+        }).length;
+    };
+
+    // 1. 读取 package.json
+    const packageJsonFile = findFile('package.json');
+    if (!packageJsonFile) {
+        throw new Error(
+            `package.json not found in script package.\n` +
+                `ZIP 文件中的前10个文件: ${allFiles.slice(0, 10).join(', ')}\n` +
+                `请确保 package.json 在 ZIP 文件的根目录中。`,
+        );
+    }
+
+    const packageJsonContent = await packageJsonFile.async('string');
+    let metadata: ScriptPackageMetadata;
+    try {
+        metadata = JSON.parse(packageJsonContent);
+    } catch (e) {
+        throw new Error(`Failed to parse package.json: ${e}`);
+    }
+
+    // 2. 检查 manifest.json
+    const hasManifest = !!findFile('manifest.json');
+
+    // 3. 分析 values/ 文件夹下的文件
+    const valuesPath = basePath ? `${basePath}values/` : 'values/';
+    let characters = await parseJsonFile(findFile('characters.json', 'values'));
+    let maps = await parseJsonFile(findFile('maps.json', 'values'));
+    let locations = await parseJsonFile(findFile('locations.json', 'values'));
+    let rooms = await parseJsonFile(findFile('rooms.json', 'values'));
+    let activities = await parseJsonFile(findFile('activities.json', 'values'));
+    let commitments = await parseJsonFile(findFile('routine.json', 'values'));
+
+    // 3.7 分析任务（在 values/quests/ 文件夹下）
+    let quests = countFilesInFolder(`${valuesPath}quests/`, '.json');
+
+    // 4. 分析标签
+    const labelsPath = basePath ? `${basePath}labels/` : 'labels/';
+    const labelFiles = allFiles.filter(
+        path =>
+            path.startsWith(labelsPath) &&
+            path.endsWith('.json') &&
+            !path.endsWith('LabelKeys.json') &&
+            !path.endsWith('/'),
+    );
+
+    let labels = 0;
+    for (const labelPath of labelFiles) {
+        const file = zip.file(labelPath);
+        if (file) {
+            try {
+                const content = await file.async('string');
+                const labelData: LabelJSON | LabelJSON[] = JSON.parse(content);
+                labels += Array.isArray(labelData) ? labelData.length : 1;
+            } catch (e) {
+                errors.push(`Failed to parse label file ${labelPath}: ${e}`);
+            }
+        }
+    }
+
+    // 5. 分析 ink 文件
+    const inkPath = basePath ? `${basePath}ink/` : 'ink/';
+    let inkFiles = countFilesInFolder(inkPath, '.ink');
+
+    return {
+        metadata,
+        hasManifest,
+        characters,
+        maps,
+        locations,
+        rooms,
+        labels,
+        activities,
+        quests,
+        commitments,
+        inkFiles,
+        errors: errors.length > 0 ? errors : undefined,
+    };
+}
+
+/**
  * 导入剧本包
  */
 export async function importScriptPackage(file: File): Promise<ScriptPackageMetadata> {
@@ -129,7 +289,9 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
         // 3.7 加载任务（依赖活动和房间）
         const questsFolder = valuesFolder.folder('quests');
         if (questsFolder) {
-            const questFileEntries = Object.entries(questsFolder).filter(([relativePath]) => relativePath.endsWith('.json'));
+            const questFileEntries = Object.entries(questsFolder).filter(([relativePath]) =>
+                relativePath.endsWith('.json'),
+            );
             await Promise.all(
                 questFileEntries.map(async ([_relativePath, file]) => {
                     const content = await file.async('string');
