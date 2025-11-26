@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
+import { motion } from 'motion/react';
 
 export default function AnimatedDots() {
-    const dots = [".", ".", "."]; // I caratteri da animare
+    const dots = ['.', '.', '.']; // I caratteri da animare
 
     return (
         <motion.span
-            style={{ display: "flex", pointerEvents: "none", userSelect: "none" }}
+            style={{ display: 'flex', pointerEvents: 'none', userSelect: 'none' }}
             transition={{
                 staggerChildren: 0.2,
             }}
@@ -22,8 +22,8 @@ export default function AnimatedDots() {
                             transition: {
                                 repeat: Infinity,
                                 duration: 0.5,
-                                ease: "easeInOut",
-                                repeatType: "reverse",
+                                ease: 'easeInOut',
+                                repeatType: 'reverse',
                             },
                         },
                         closed: {
@@ -31,8 +31,8 @@ export default function AnimatedDots() {
                             transition: {
                                 repeat: Infinity,
                                 duration: 0.5,
-                                ease: "easeInOut",
-                                repeatType: "reverse",
+                                ease: 'easeInOut',
+                                repeatType: 'reverse',
                             },
                         },
                     }}

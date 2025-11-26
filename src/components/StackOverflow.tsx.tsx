@@ -1,6 +1,6 @@
 import { Box, Stack, StackProps } from "@mui/joy";
 import { SxProps } from "@mui/joy/styles/types";
-import { ResponsiveStyleValue } from "@mui/system/styleFunctionSx";
+import { ResponsiveStyleValue } from "@mui/system";
 interface StackOverflowProps extends StackProps {
     maxLeght?: string | number;
 }
