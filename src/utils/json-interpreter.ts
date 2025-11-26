@@ -8,10 +8,19 @@ import {
     routine,
     timeTracker,
 } from '@drincs/nqtr';
-import { RegisteredCharacters, narration, newChoiceOption, newCloseChoiceOption, showImage } from '@drincs/pixi-vn';
+import {
+    RegisteredCharacters,
+    canvas,
+    narration,
+    newChoiceOption,
+    newCloseChoiceOption,
+    showImage,
+    storage,
+} from '@drincs/pixi-vn';
 import { NARRATION_ROUTE } from '../constans';
 import { navigateAndJumpToLabel } from '../labels/label-utility';
 import { ActionJSON, ConditionJSON, LabelStepJSON } from '../types/json-schema';
+import { convertMultiTypeSprite } from './image-utility';
 
 /**
  * JSON 运行时解释器
@@ -65,9 +74,13 @@ export function evaluateCondition(condition: ConditionJSON, _props: OnRunProps):
             return false;
 
         case 'flag':
-            // TODO: 实现 flag 检查逻辑
-            // const flagValue = storage.getFlag(condition.flagName || "");
-            // return condition.flagValue !== undefined ? flagValue === condition.flagValue : flagValue;
+            if (condition.flagName) {
+                const flagValue = storage.getFlag(condition.flagName);
+                if (condition.flagValue !== undefined) {
+                    return flagValue === condition.flagValue;
+                }
+                return flagValue;
+            }
             return false;
 
         case 'room':
@@ -216,13 +229,12 @@ export async function executeAction(action: ActionJSON, props: OnRunProps): Prom
         case 'showRoomBackground':
             const currentRoom = navigator.currentRoom;
             if (currentRoom && action.layerId) {
-                // TODO: 实现显示房间背景的逻辑
-                // const bg = convertMultiTypeSprite(currentRoom.background, props);
-                // if (typeof bg === "string") {
-                //     await showImage(action.layerId, bg);
-                // } else {
-                //     canvas.add(action.layerId, bg);
-                // }
+                const bg = convertMultiTypeSprite(currentRoom.background, props);
+                if (typeof bg === 'string') {
+                    await showImage(action.layerId, bg);
+                } else {
+                    canvas.add(action.layerId, bg);
+                }
             }
             break;
 
@@ -255,11 +267,33 @@ export async function executeStep(step: LabelStepJSON, props: OnRunProps): Promi
 
         case 'choice':
             if (step.choices) {
-                // TODO: 实现选择菜单的创建
-                // 需要过滤条件，转换格式等
-                // narration.choiceMenuOptions = step.choices
-                //     .filter(choice => !choice.condition || evaluateCondition(choice.condition, props))
-                //     .map(choice => ...);
+                const choiceOptions = step.choices
+                    .filter(choice => {
+                        // 过滤条件选择
+                        if (choice.condition) {
+                            return evaluateCondition(choice.condition, props);
+                        }
+                        return true;
+                    })
+                    .map(choice => {
+                        // 处理文本翻译，支持 textParams
+                        let text: string = choice.text;
+                        if (choice.textParams) {
+                            text = String(props.uiTransition(choice.text, choice.textParams));
+                        } else if (text.startsWith('{{') && text.endsWith('}}')) {
+                            // 处理翻译键格式 {{key}}
+                            text = String(props.uiTransition(text.slice(2, -2)));
+                        }
+
+                        if (choice.type === 'close') {
+                            return newCloseChoiceOption(text);
+                        }
+                        if (choice.labelKey) {
+                            return newChoiceOption(text, choice.labelKey, choice.params || {});
+                        }
+                        return newCloseChoiceOption(text);
+                    });
+                narration.choiceMenuOptions = choiceOptions;
             }
             break;
 
