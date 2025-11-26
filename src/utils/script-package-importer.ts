@@ -30,6 +30,13 @@ import {
  */
 
 /**
+ * 别名到 URL 的映射
+ */
+export interface AliasToUrlMap {
+    [alias: string]: string;
+}
+
+/**
  * 分析结果接口
  */
 export interface ScriptPackageAnalysis {
@@ -45,6 +52,8 @@ export interface ScriptPackageAnalysis {
     commitments: number;
     inkFiles: number;
     errors?: string[];
+    // 别名到 URL 的映射
+    aliasToUrlMap?: AliasToUrlMap;
     // 详细数据
     charactersData?: CharacterJSON[];
     mapsData?: MapJSON[];
@@ -135,8 +144,30 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         throw new Error(`Failed to parse package.json: ${e}`);
     }
 
-    // 2. 检查 manifest.json
-    const hasManifest = !!findFile('manifest.json');
+    // 2. 解析 manifest.json 并建立别名到 URL 的映射
+    const manifestFile = findFile('manifest.json');
+    const aliasToUrlMap: AliasToUrlMap = {};
+    if (manifestFile) {
+        try {
+            const manifestContent = await manifestFile.async('string');
+            const manifest: any = JSON.parse(manifestContent);
+            // 遍历所有 bundles 中的所有别名到 URL 的映射
+            if (manifest.bundles && Array.isArray(manifest.bundles)) {
+                manifest.bundles.forEach((bundle: any) => {
+                    if (bundle.assets && Array.isArray(bundle.assets)) {
+                        bundle.assets.forEach((asset: any) => {
+                            if (asset.alias && asset.src) {
+                                aliasToUrlMap[asset.alias] = asset.src;
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            errors.push(`Failed to parse manifest.json: ${e}`);
+        }
+    }
+    const hasManifest = !!manifestFile;
 
     // 3. 分析 values/ 文件夹下的文件
     const valuesPath = basePath ? `${basePath}values/` : 'values/';
@@ -225,6 +256,8 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         commitments: commitmentsResult.count,
         inkFiles: inkFilesData.length,
         errors: errors.length > 0 ? errors : undefined,
+        // 别名到 URL 的映射
+        aliasToUrlMap: Object.keys(aliasToUrlMap).length > 0 ? aliasToUrlMap : undefined,
         // 详细数据
         charactersData: charactersResult.data,
         mapsData: mapsResult.data,
