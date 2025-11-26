@@ -1,0 +1,173 @@
+[
+  {
+    "key": "talkAliceQuest",
+    "steps": [
+      {
+        "type": "conditional",
+        "condition": {
+          "type": "questStage",
+          "questId": "aliceQuest",
+          "stageIndex": 0,
+          "operator": "=="
+        },
+        "then": [
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "Hi, can you order me a new book from pc?"
+          },
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "Ok"
+          },
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "Thanks"
+          },
+          {
+            "type": "action",
+            "actions": [
+              {
+                "type": "questNext",
+                "questId": "aliceQuest"
+              },
+              {
+                "type": "goNext"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "conditional",
+        "condition": {
+          "type": "questStage",
+          "questId": "aliceQuest",
+          "stageIndex": 1,
+          "operator": "=="
+        },
+        "then": [
+          {
+            "type": "dialogue",
+            "character": "mc",
+            "text": "What book do you want me to order?"
+          },
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "For me it is the same."
+          }
+        ]
+      },
+      {
+        "type": "conditional",
+        "condition": {
+          "type": "questStage",
+          "questId": "aliceQuest",
+          "stageIndex": 2,
+          "operator": "=="
+        },
+        "then": [
+          {
+            "type": "dialogue",
+            "character": "mc",
+            "text": "I ordered the Book, hope you enjoy it."
+          },
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "Great, when it arrives remember to bring it to me."
+          }
+        ]
+      },
+      {
+        "type": "conditional",
+        "condition": {
+          "type": "questStage",
+          "questId": "aliceQuest",
+          "stageIndex": 3,
+          "operator": "=="
+        },
+        "then": [
+          {
+            "type": "dialogue",
+            "character": "mc",
+            "text": "Here's your book."
+          },
+          {
+            "type": "dialogue",
+            "character": "alice",
+            "text": "Thank you, I can finally read something new."
+          },
+          {
+            "type": "action",
+            "actions": [
+              {
+                "type": "questNext",
+                "questId": "aliceQuest"
+              },
+              {
+                "type": "goNext"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "dialogue",
+        "character": "alice",
+        "text": "Thanks for the book."
+      }
+    ],
+    "onStepStart": {
+      "0": [
+        {
+          "type": "showImage",
+          "layerId": "background",
+          "imageId": "alice_terrace0At"
+        }
+      ]
+    }
+  },
+  {
+    "key": "AliceTalkMenuLabel",
+    "steps": [
+      {
+        "type": "action",
+        "actions": [
+          {
+            "type": "showImage",
+            "layerId": "background",
+            "imageId": "alice_terrace0At"
+          }
+        ]
+      },
+      {
+        "type": "dialogue",
+        "character": "alice",
+        "text": "Hi, what do you want to talk about?"
+      },
+      {
+        "type": "choice",
+        "choices": [
+          {
+            "text": "About the book",
+            "labelKey": "talkAliceQuest",
+            "params": {},
+            "condition": {
+              "type": "questStarted",
+              "questId": "aliceQuest"
+            }
+          },
+          {
+            "text": "Cancel",
+            "type": "close"
+          }
+        ]
+      }
+    ]
+  }
+]
+

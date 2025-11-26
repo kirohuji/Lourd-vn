@@ -1,0 +1,138 @@
+[
+  {
+    "key": "Sleep1HourLabel",
+    "steps": [
+      {
+        "type": "action",
+        "actions": [
+          {
+            "type": "sleep",
+            "hours": "{{hour}}"
+          },
+          {
+            "type": "goNext"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "Nap1HourLabel",
+    "steps": [
+      {
+        "type": "action",
+        "actions": [
+          {
+            "type": "wait",
+            "hours": "{{hour}}"
+          },
+          {
+            "type": "goNext"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "SleepLabel",
+    "steps": [
+      {
+        "type": "action",
+        "actions": [
+          {
+            "type": "showRoomBackground",
+            "layerId": "background"
+          }
+        ]
+      },
+      {
+        "type": "dialogue",
+        "text": "What time do you want to set the alarm?"
+      },
+      {
+        "type": "choice",
+        "choices": [
+          {
+            "text": "{{allarm_menu_item}}",
+            "textParams": {
+              "hour": 8
+            },
+            "labelKey": "Sleep1HourLabel",
+            "params": {
+              "hour": 8
+            }
+          },
+          {
+            "text": "{{allarm_menu_item}}",
+            "textParams": {
+              "hour": 9
+            },
+            "labelKey": "Sleep1HourLabel",
+            "params": {
+              "hour": 9
+            }
+          },
+          {
+            "text": "{{allarm_menu_item}}",
+            "textParams": {
+              "hour": 10
+            },
+            "labelKey": "Sleep1HourLabel",
+            "params": {
+              "hour": 10
+            }
+          },
+          {
+            "text": "Cancel",
+            "type": "close"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "NapLabel",
+    "steps": [
+      {
+        "type": "action",
+        "actions": [
+          {
+            "type": "showRoomBackground",
+            "layerId": "background"
+          }
+        ]
+      },
+      {
+        "type": "dialogue",
+        "text": "You are tired and decide to take a nap."
+      },
+      {
+        "type": "choice",
+        "choices": [
+          {
+            "text": "{{nap_menu_item}}",
+            "textParams": {
+              "hour": 3
+            },
+            "labelKey": "Nap1HourLabel",
+            "params": {
+              "hour": 3
+            }
+          },
+          {
+            "text": "{{sleep}}",
+            "labelKey": "SleepLabel",
+            "params": {
+              "hour": 3
+            }
+          },
+          {
+            "text": "Cancel",
+            "type": "close"
+          }
+        ]
+      }
+    ]
+  }
+]
+

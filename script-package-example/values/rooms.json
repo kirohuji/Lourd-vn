@@ -1,0 +1,83 @@
+[
+  {
+    "id": "mc_room",
+    "name": "MC room",
+    "locationId": "mc_home",
+    "background": {
+      "type": "timeSlots",
+      "morning": "location_myroom-0",
+      "afternoon": "location_myroom-1",
+      "evening": "location_myroom-2",
+      "night": "location_myroom-3"
+    },
+    "activities": ["bed"]
+  },
+  {
+    "id": "alice_room",
+    "name": "Alice room",
+    "locationId": "mc_home",
+    "background": {
+      "type": "timeSlots",
+      "morning": "location_aliceroom-0",
+      "afternoon": "location_aliceroom-1",
+      "evening": "location_aliceroom-2",
+      "night": "location_aliceroom-3"
+    }
+  },
+  {
+    "id": "ann_room",
+    "name": "Ann room",
+    "locationId": "mc_home",
+    "background": {
+      "type": "timeSlots",
+      "morning": "location_annroom-0",
+      "afternoon": "location_annroom-1",
+      "evening": "location_annroom-2",
+      "night": "location_annroom-3"
+    }
+  },
+  {
+    "id": "bathroom",
+    "name": "Bathroom",
+    "locationId": "mc_home",
+    "background": "location_bathroom"
+  },
+  {
+    "id": "lounge",
+    "name": "Lounge",
+    "locationId": "mc_home",
+    "background": {
+      "type": "timeSlots",
+      "morning": "location_lounge-0",
+      "afternoon": "location_lounge-1",
+      "evening": "location_lounge-2",
+      "night": "location_lounge-3"
+    }
+  },
+  {
+    "id": "terrace",
+    "name": "Terrace",
+    "locationId": "mc_home",
+    "isEntrance": true,
+    "background": {
+      "type": "timeSlots",
+      "morning": "location_terrace-0",
+      "afternoon": "location_terrace-1",
+      "evening": "location_terrace-2",
+      "night": "location_terrace-3"
+    }
+  },
+  {
+    "id": "gym_room",
+    "name": "Gym",
+    "locationId": "gym",
+    "background": "location_gym"
+  },
+  {
+    "id": "class_room",
+    "name": "School",
+    "locationId": "school",
+    "background": ""
+  }
+]
+

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "mc_home",
+    "name": "MC Home",
+    "mapId": "main_map",
+    "sprite": {
+      "type": "image",
+      "alias": "icon_location_home",
+      "xAlign": 0.3,
+      "yAlign": 0.2,
+      "height": 120,
+      "width": 120,
+      "eventMode": "static",
+      "cursor": "pointer"
+    }
+  },
+  {
+    "id": "gym",
+    "name": "Gym",
+    "mapId": "main_map",
+    "sprite": {
+      "type": "image",
+      "alias": "icon_location_gym",
+      "xAlign": 0.5,
+      "yAlign": 0.3,
+      "height": 120,
+      "width": 120,
+      "eventMode": "static",
+      "cursor": "pointer"
+    }
+  },
+  {
+    "id": "school",
+    "name": "School",
+    "mapId": "main_map",
+    "sprite": {
+      "type": "empty"
+    }
+  }
+]
+
