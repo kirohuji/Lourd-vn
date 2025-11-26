@@ -36,12 +36,14 @@ import {
     QuestJSON,
     RoomJSON,
 } from '../../types/json-schema';
-import { ScriptPackageAnalysis, TypeScriptLabelFile } from '../../utils/script-package-importer';
+import { importScriptPackage, ScriptPackageAnalysis, TypeScriptLabelFile } from '../../utils/script-package-importer';
+import useGameProps from '../../hooks/useGameProps';
 
 interface ScriptPackageAnalysisProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     analysis: ScriptPackageAnalysis | null;
+    packageFile?: File | null;
 }
 
 // 标签步骤可视化组件
@@ -344,7 +346,7 @@ function compileTypeScriptToJavaScript(tsCode: string): { code: string; errors: 
         jsCode = jsCode.replace(/(\w+):\s*\(([^)]*):\s*[^)]*\)\s*=>/g, '$1: ($2) =>');
         
         // 移除函数参数类型（包括箭头函数和普通函数）
-        jsCode = jsCode.replace(/\(([^)]*):\s*[^)]*\)/g, (match, params) => {
+        jsCode = jsCode.replace(/\(([^)]*):\s*[^)]*\)/g, (_match, params) => {
             // 处理参数列表，移除每个参数的类型注解
             const cleanedParams = params.replace(/(\w+)\s*:\s*[^,)]+/g, '$1');
             return `(${cleanedParams})`;
@@ -397,13 +399,16 @@ function compileTypeScriptToJavaScript(tsCode: string): { code: string; errors: 
     }
 }
 
-export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: ScriptPackageAnalysisProps) {
+export default function ScriptPackageAnalysisModal({ open, setOpen, analysis, packageFile }: ScriptPackageAnalysisProps) {
     const [tabValue, setTabValue] = useState(0);
     const [selectedDataType, setSelectedDataType] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [compiledCode, setCompiledCode] = useState<string | null>(null);
     const [compileErrors, setCompileErrors] = useState<string[]>([]);
     const [showCompiled, setShowCompiled] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const gameProps = useGameProps();
+    const { notify } = gameProps;
 
     if (!analysis) {
         return null;
@@ -449,6 +454,25 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
             setCompiledCode(result.code);
             setCompileErrors(result.errors);
             setShowCompiled(true);
+        }
+    };
+
+    const handleImport = async () => {
+        if (!packageFile) {
+            notify('无法导入：文件不存在', { variant: 'error' });
+            return;
+        }
+
+        setImporting(true);
+        try {
+            const metadata = await importScriptPackage(packageFile);
+            notify(`成功导入剧本包: ${metadata.name} v${metadata.version}`, { variant: 'success' });
+            setOpen(false);
+        } catch (error) {
+            notify(`导入失败: ${error instanceof Error ? error.message : String(error)}`, { variant: 'error' });
+            console.error('导入剧本包失败:', error);
+        } finally {
+            setImporting(false);
         }
     };
 
@@ -590,6 +614,33 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
                 {/* 概览标签页 */}
                 <TabPanel value={0}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {/* 导入按钮 */}
+                        {packageFile && (
+                            <Card variant='outlined' color='primary'>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <Box>
+                                            <Typography level='title-lg' sx={{ mb: 1 }}>
+                                                导入剧本包
+                                            </Typography>
+                                            <Typography level='body-sm' color='neutral'>
+                                                确认导入此剧本包到游戏中？导入后可以在游戏中使用其中的角色、任务、标签等内容。
+                                            </Typography>
+                                        </Box>
+                                        <Button
+                                            variant='solid'
+                                            color='primary'
+                                            size='lg'
+                                            onClick={handleImport}
+                                            disabled={importing}
+                                            loading={importing}
+                                        >
+                                            {importing ? '导入中...' : '导入剧本包'}
+                                        </Button>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        )}
                         {/* 包信息卡片 */}
                         <Card variant='outlined'>
                             <CardContent>
@@ -886,31 +937,31 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
                                                                 }
                                                                 // 处理其他数据类型
                                                                 return (
-                                                                    <tr
-                                                                        key={index}
-                                                                        style={{ cursor: 'pointer' }}
-                                                                        onClick={() => setSelectedIndex(index)}
-                                                                    >
-                                                                        <td>
-                                                                            <Chip size='sm' variant='soft'>
-                                                                                {item.id || item.key || index}
-                                                                            </Chip>
-                                                                        </td>
-                                                                        <td>
+                                                                <tr
+                                                                    key={index}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                    onClick={() => setSelectedIndex(index)}
+                                                                >
+                                                                    <td>
+                                                                        <Chip size='sm' variant='soft'>
+                                                                            {item.id || item.key || index}
+                                                                        </Chip>
+                                                                    </td>
+                                                                    <td>
                                                                             {item.name ||
                                                                                 item.key ||
                                                                                 `项目 ${index + 1}`}
-                                                                        </td>
-                                                                        <td>
-                                                                            <Chip
-                                                                                size='sm'
-                                                                                variant='outlined'
-                                                                                color='primary'
-                                                                            >
-                                                                                查看详情
-                                                                            </Chip>
-                                                                        </td>
-                                                                    </tr>
+                                                                    </td>
+                                                                    <td>
+                                                                        <Chip
+                                                                            size='sm'
+                                                                            variant='outlined'
+                                                                            color='primary'
+                                                                        >
+                                                                            查看详情
+                                                                        </Chip>
+                                                                    </td>
+                                                                </tr>
                                                                 );
                                                             })}
                                                         </tbody>

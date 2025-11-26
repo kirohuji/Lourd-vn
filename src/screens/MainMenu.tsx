@@ -1,25 +1,25 @@
-import { canvas, ImageSprite, narration } from "@drincs/pixi-vn";
-import { Box, CircularProgress } from "@mui/joy";
-import Stack from "@mui/joy/Stack";
-import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-import MenuButton from "../components/MenuButton";
-import { CANVAS_UI_LAYER_NAME } from "../constans";
-import useGameProps from "../hooks/useGameProps";
-import { INTERFACE_DATA_USE_QUEY_KEY } from "../hooks/useQueryInterface";
-import useQueryLastSave from "../hooks/useQueryLastSave";
-import useGameSaveScreenStore from "../stores/useGameSaveScreenStore";
-import useInterfaceStore from "../stores/useInterfaceStore";
-import useSettingsScreenStore from "../stores/useSettingsScreenStore";
-import ScriptPackageAnalysisModal from "./modals/ScriptPackageAnalysis";
-import { analyzeScriptPackage, ScriptPackageAnalysis } from "../utils/script-package-importer";
-import { loadSave } from "../utils/save-utility";
+import { canvas, ImageSprite, narration } from '@drincs/pixi-vn';
+import { Box, CircularProgress } from '@mui/joy';
+import Stack from '@mui/joy/Stack';
+import { useQueryClient } from '@tanstack/react-query';
+import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
+import MenuButton from '../components/MenuButton';
+import { CANVAS_UI_LAYER_NAME } from '../constans';
+import useGameProps from '../hooks/useGameProps';
+import { INTERFACE_DATA_USE_QUEY_KEY } from '../hooks/useQueryInterface';
+import useQueryLastSave from '../hooks/useQueryLastSave';
+import useGameSaveScreenStore from '../stores/useGameSaveScreenStore';
+import useInterfaceStore from '../stores/useInterfaceStore';
+import useSettingsScreenStore from '../stores/useSettingsScreenStore';
+import { loadSave } from '../utils/save-utility';
+import { analyzeScriptPackage, ScriptPackageAnalysis } from '../utils/script-package-importer';
+import ScriptPackageAnalysisModal from './modals/ScriptPackageAnalysis';
 
 export default function MainMenu() {
-    const setOpenSettings = useSettingsScreenStore((state) => state.setOpen);
-    const editHideInterface = useInterfaceStore((state) => state.setHidden);
-    const editSaveScreen = useGameSaveScreenStore((state) => state.editOpen);
+    const setOpenSettings = useSettingsScreenStore(state => state.setOpen);
+    const editHideInterface = useInterfaceStore(state => state.setHidden);
+    const editSaveScreen = useGameSaveScreenStore(state => state.editOpen);
     const queryClient = useQueryClient();
     const { data: lastSave = null, isLoading } = useQueryLastSave();
     const gameProps = useGameProps();
@@ -27,10 +27,11 @@ export default function MainMenu() {
     const [loading, setLoading] = useState(false);
     const [analysisOpen, setAnalysisOpen] = useState(false);
     const [analysis, setAnalysis] = useState<ScriptPackageAnalysis | null>(null);
+    const [packageFile, setPackageFile] = useState<File | null>(null);
 
     useEffect(() => {
         editHideInterface(false);
-        let bg = new ImageSprite({}, "background_main_menu");
+        let bg = new ImageSprite({}, 'background_main_menu');
         bg.load();
         let layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
         if (layer) {
@@ -49,13 +50,13 @@ export default function MainMenu() {
             alignItems='flex-start'
             spacing={{ xs: 1, sm: 2, lg: 3 }}
             sx={{
-                height: "100%",
-                width: "100%",
+                height: '100%',
+                width: '100%',
                 paddingLeft: { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
             }}
             component={motion.div}
             initial='closed'
-            animate={"open"}
+            animate={'open'}
             exit='closed'
         >
             <MenuButton
@@ -66,8 +67,8 @@ export default function MainMenu() {
                     setLoading(true);
                     loadSave(lastSave, navigate)
                         .then(() => queryClient.invalidateQueries({ queryKey: [INTERFACE_DATA_USE_QUEY_KEY] }))
-                        .catch((e) => {
-                            notify(t("fail_load"), { variant: "error" });
+                        .catch(e => {
+                            notify(t('fail_load'), { variant: 'error' });
                             console.error(e);
                         })
                         .finally(() => setLoading(false));
@@ -76,33 +77,34 @@ export default function MainMenu() {
                 loading={isLoading}
                 disabled={(!isLoading && !lastSave) || loading}
             >
-                {t("continue")}
+                {t('continue')}
             </MenuButton>
             <MenuButton
                 onClick={async () => {
                     setLoading(true);
                     canvas.removeAll();
                     narration
-                        .call("start", gameProps)
+                        .call('start', gameProps)
                         .then(() => queryClient.invalidateQueries({ queryKey: [INTERFACE_DATA_USE_QUEY_KEY] }))
                         .finally(() => setLoading(false));
                 }}
                 transitionDelay={0.2}
                 disabled={loading}
             >
-                {t("start")}
+                {t('start')}
             </MenuButton>
             <MenuButton onClick={editSaveScreen} transitionDelay={0.3} disabled={loading}>
-                {t("load")}
+                {t('load')}
             </MenuButton>
             <MenuButton
                 onClick={() => {
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = '.zip,application/zip';
-                    input.onchange = async (e) => {
+                    input.onchange = async e => {
                         const file = (e.target as HTMLInputElement).files?.[0];
                         if (file) {
+                            setPackageFile(file);
                             setLoading(true);
                             try {
                                 const analysisResult = await analyzeScriptPackage(file);
@@ -124,12 +126,12 @@ export default function MainMenu() {
                 导入剧本包
             </MenuButton>
             <MenuButton onClick={() => setOpenSettings(true)} transitionDelay={0.5}>
-                {t("settings")}
+                {t('settings')}
             </MenuButton>
             {loading && (
                 <Box
                     sx={{
-                        position: "absolute",
+                        position: 'absolute',
                         right: 0,
                         bottom: 0,
                         padding: 0.5,
@@ -139,7 +141,12 @@ export default function MainMenu() {
                     <CircularProgress />
                 </Box>
             )}
-            <ScriptPackageAnalysisModal open={analysisOpen} setOpen={setAnalysisOpen} analysis={analysis} />
+            <ScriptPackageAnalysisModal
+                open={analysisOpen}
+                setOpen={setAnalysisOpen}
+                analysis={analysis}
+                packageFile={packageFile}
+            />
         </Stack>
     );
 }
