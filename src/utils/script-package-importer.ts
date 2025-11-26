@@ -23,6 +23,7 @@ import {
     loadQuestsFromJSON,
     loadRoomsFromJSON,
 } from './script-package-loader';
+import { loadLabelsFromJavaScript } from './typescript-label-loader';
 
 /**
  * 剧本包导入器
@@ -39,6 +40,11 @@ export interface AliasToUrlMap {
 /**
  * 分析结果接口
  */
+export interface TypeScriptLabelFile {
+    path: string;
+    content: string;
+}
+
 export interface ScriptPackageAnalysis {
     metadata: ScriptPackageMetadata;
     hasManifest: boolean;
@@ -51,6 +57,7 @@ export interface ScriptPackageAnalysis {
     quests: number;
     commitments: number;
     inkFiles: number;
+    typescriptLabels: number;
     errors?: string[];
     // 别名到 URL 的映射
     aliasToUrlMap?: AliasToUrlMap;
@@ -64,6 +71,7 @@ export interface ScriptPackageAnalysis {
     questsData?: QuestJSON[];
     commitmentsData?: CommitmentJSON[];
     inkFilesData?: string[];
+    typescriptLabelsData?: TypeScriptLabelFile[];
 }
 
 /**
@@ -243,6 +251,26 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         }
     }
 
+    // 6. 分析 TypeScript Label 源文件
+    const typescriptLabelsData: TypeScriptLabelFile[] = [];
+    const tsLabelFilePaths = allFiles.filter(
+        path => path.startsWith(labelsPath) && path.endsWith('.ts') && !path.endsWith('.d.ts') && !path.endsWith('/'),
+    );
+    for (const tsLabelFilePath of tsLabelFilePaths) {
+        const file = zip.file(tsLabelFilePath);
+        if (file) {
+            try {
+                const content = await file.async('string');
+                typescriptLabelsData.push({
+                    path: tsLabelFilePath,
+                    content: content,
+                });
+            } catch (e) {
+                errors.push(`Failed to read TypeScript label file ${tsLabelFilePath}: ${e}`);
+            }
+        }
+    }
+
     return {
         metadata,
         hasManifest,
@@ -255,6 +283,7 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         quests: questsData.length,
         commitments: commitmentsResult.count,
         inkFiles: inkFilesData.length,
+        typescriptLabels: typescriptLabelsData.length,
         errors: errors.length > 0 ? errors : undefined,
         // 别名到 URL 的映射
         aliasToUrlMap: Object.keys(aliasToUrlMap).length > 0 ? aliasToUrlMap : undefined,
@@ -268,6 +297,7 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         questsData: questsData.length > 0 ? questsData : undefined,
         commitmentsData: commitmentsResult.data,
         inkFilesData: inkFilesData.length > 0 ? inkFilesData : undefined,
+        typescriptLabelsData: typescriptLabelsData.length > 0 ? typescriptLabelsData : undefined,
     };
 }
 
@@ -337,8 +367,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
         // 3.5 加载标签（在活动之前，因为活动可能依赖标签）
         const labelsFolder = zip.folder('labels');
         if (labelsFolder) {
+            // 3.5.1 加载 JSON 格式的标签
             const labelFiles: LabelJSON[] = [];
-            // 等待所有文件读取完成
             const labelFileEntries = Object.entries(labelsFolder).filter(
                 ([relativePath]) => relativePath.endsWith('.json') && !relativePath.endsWith('LabelKeys.json'),
             );
@@ -357,6 +387,34 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
             );
             if (labelFiles.length > 0) {
                 loadLabelsFromJSON(labelFiles);
+            }
+
+            // 3.5.2 加载 JavaScript 格式的标签（预编译的 TypeScript）
+            // 从 labels-compiled/ 文件夹加载
+            const labelsCompiledFolder = zip.folder('labels-compiled');
+            if (labelsCompiledFolder) {
+                const jsLabelFileEntries = Object.entries(labelsCompiledFolder).filter(
+                    ([relativePath]) => relativePath.endsWith('.js') && !relativePath.endsWith('.min.js'),
+                );
+                if (jsLabelFileEntries.length > 0) {
+                    await Promise.all(
+                        jsLabelFileEntries.map(async ([relativePath, file]) => {
+                            const content = await file.async('string');
+                            try {
+                                const labels = await loadLabelsFromJavaScript(
+                                    content,
+                                    `labels-compiled/${relativePath}`,
+                                );
+                                console.log(
+                                    `[labels-compiled/${relativePath}] 成功加载 ${labels.length} 个 JavaScript Label`,
+                                );
+                            } catch (e) {
+                                console.error(`[labels-compiled/${relativePath}] 加载 JavaScript Label 失败:`, e);
+                                // 不抛出错误，允许继续加载其他文件
+                            }
+                        }),
+                    );
+                }
             }
         }
 

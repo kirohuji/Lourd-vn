@@ -1,5 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import BuildIcon from '@mui/icons-material/Build';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CodeIcon from '@mui/icons-material/Code';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -34,7 +36,7 @@ import {
     QuestJSON,
     RoomJSON,
 } from '../../types/json-schema';
-import { ScriptPackageAnalysis } from '../../utils/script-package-importer';
+import { ScriptPackageAnalysis, TypeScriptLabelFile } from '../../utils/script-package-importer';
 
 interface ScriptPackageAnalysisProps {
     open: boolean;
@@ -305,10 +307,71 @@ function LargeImagePreview({
     );
 }
 
+// TypeScript 到 JavaScript 的简单转换函数
+function compileTypeScriptToJavaScript(tsCode: string): { code: string; errors: string[] } {
+    const errors: string[] = [];
+    let jsCode = tsCode;
+
+    try {
+        // 1. 移除所有 import 语句（运行时通过 context 注入）
+        jsCode = jsCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+
+        // 2. 移除所有 declare 语句
+        jsCode = jsCode.replace(/^declare\s+.*?;?\s*$/gm, '');
+
+        // 3. 移除类型注解（简单处理）
+        // 移除函数参数类型
+        jsCode = jsCode.replace(/\(([^)]*):\s*[^)]*\)/g, '($1)');
+        // 移除变量类型注解
+        jsCode = jsCode.replace(
+            /:\s*(any|string|number|boolean|object|Array<.*?>|\(.*?\)\s*=>\s*.*?)(\s*[=,;\)\]\}])/g,
+            '$2',
+        );
+        // 移除类型断言
+        jsCode = jsCode.replace(/\s+as\s+(any|string|number|boolean|object)/g, '');
+
+        // 4. 转换 export const/function 为 const/function，然后在文件末尾添加 module.exports
+        const exports: string[] = [];
+
+        // 匹配 export const/function
+        const exportRegex = /export\s+(const|function)\s+(\w+)/g;
+        let match;
+        while ((match = exportRegex.exec(jsCode)) !== null) {
+            const exportName = match[2];
+            exports.push(exportName);
+        }
+
+        // 移除 export 关键字
+        jsCode = jsCode.replace(/export\s+/g, '');
+
+        // 5. 在文件末尾添加 module.exports（如果存在导出）
+        if (exports.length > 0) {
+            // 检查是否已经有 module.exports
+            if (!jsCode.includes('module.exports')) {
+                const moduleExports = `\n\n// 导出所有 Label（CommonJS 格式）\nmodule.exports = {\n    ${exports.join(
+                    ',\n    ',
+                )},\n};`;
+                jsCode = jsCode.trim() + moduleExports;
+            }
+        }
+
+        // 6. 清理多余的空行
+        jsCode = jsCode.replace(/\n{3,}/g, '\n\n');
+
+        return { code: jsCode.trim(), errors };
+    } catch (error) {
+        errors.push(`编译错误: ${error instanceof Error ? error.message : String(error)}`);
+        return { code: jsCode, errors };
+    }
+}
+
 export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: ScriptPackageAnalysisProps) {
     const [tabValue, setTabValue] = useState(0);
     const [selectedDataType, setSelectedDataType] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [compiledCode, setCompiledCode] = useState<string | null>(null);
+    const [compileErrors, setCompileErrors] = useState<string[]>([]);
+    const [showCompiled, setShowCompiled] = useState(false);
 
     if (!analysis) {
         return null;
@@ -325,6 +388,12 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
         { label: '任务', value: analysis.quests, icon: '📋', data: analysis.questsData },
         { label: '日常安排', value: analysis.commitments, icon: '📅', data: analysis.commitmentsData },
         { label: 'Ink 文件', value: analysis.inkFiles, icon: '📝', data: analysis.inkFilesData },
+        {
+            label: 'TypeScript Labels',
+            value: analysis.typescriptLabels,
+            icon: '📄',
+            data: analysis.typescriptLabelsData,
+        },
     ];
 
     const handleRowClick = (dataType: string, index: number | null = null) => {
@@ -337,6 +406,18 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
         setSelectedDataType(null);
         setSelectedIndex(null);
         setTabValue(2); // 返回数据统计
+        setShowCompiled(false);
+        setCompiledCode(null);
+        setCompileErrors([]);
+    };
+
+    const handleCompile = () => {
+        if (isTypeScriptLabelFile(selectedData)) {
+            const result = compileTypeScriptToJavaScript(selectedData.content);
+            setCompiledCode(result.code);
+            setCompileErrors(result.errors);
+            setShowCompiled(true);
+        }
     };
 
     // 获取当前选中的数据
@@ -350,6 +431,7 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
         | QuestJSON
         | CommitmentJSON
         | string
+        | TypeScriptLabelFile
         | null => {
         if (!selectedDataType || selectedIndex === null) return null;
         const stat = stats.find(s => s.label === selectedDataType);
@@ -430,6 +512,16 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
 
     const isLabelJSON = (data: any): data is LabelJSON => {
         return data && typeof data === 'object' && 'key' in data && 'steps' in data && selectedDataType === '标签';
+    };
+
+    const isTypeScriptLabelFile = (data: any): data is TypeScriptLabelFile => {
+        return (
+            data &&
+            typeof data === 'object' &&
+            'path' in data &&
+            'content' in data &&
+            selectedDataType === 'TypeScript Labels'
+        );
     };
 
     return (
@@ -728,31 +820,67 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {stat.data.map((item: any, index: number) => (
-                                                                <tr
-                                                                    key={index}
-                                                                    style={{ cursor: 'pointer' }}
-                                                                    onClick={() => setSelectedIndex(index)}
-                                                                >
-                                                                    <td>
-                                                                        <Chip size='sm' variant='soft'>
-                                                                            {item.id || item.key || index}
-                                                                        </Chip>
-                                                                    </td>
-                                                                    <td>
-                                                                        {item.name || item.key || `项目 ${index + 1}`}
-                                                                    </td>
-                                                                    <td>
-                                                                        <Chip
-                                                                            size='sm'
-                                                                            variant='outlined'
-                                                                            color='primary'
+                                                            {stat.data.map((item: any, index: number) => {
+                                                                // 处理 TypeScript Label 文件
+                                                                if (
+                                                                    selectedDataType === 'TypeScript Labels' &&
+                                                                    item.path
+                                                                ) {
+                                                                    const fileName =
+                                                                        item.path.split('/').pop() || item.path;
+                                                                    return (
+                                                                        <tr
+                                                                            key={index}
+                                                                            style={{ cursor: 'pointer' }}
+                                                                            onClick={() => setSelectedIndex(index)}
                                                                         >
-                                                                            查看详情
-                                                                        </Chip>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                                            <td>
+                                                                                <Chip size='sm' variant='soft'>
+                                                                                    {index + 1}
+                                                                                </Chip>
+                                                                            </td>
+                                                                            <td>{fileName}</td>
+                                                                            <td>
+                                                                                <Chip
+                                                                                    size='sm'
+                                                                                    variant='outlined'
+                                                                                    color='primary'
+                                                                                >
+                                                                                    查看源码
+                                                                                </Chip>
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                }
+                                                                // 处理其他数据类型
+                                                                return (
+                                                                    <tr
+                                                                        key={index}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                        onClick={() => setSelectedIndex(index)}
+                                                                    >
+                                                                        <td>
+                                                                            <Chip size='sm' variant='soft'>
+                                                                                {item.id || item.key || index}
+                                                                            </Chip>
+                                                                        </td>
+                                                                        <td>
+                                                                            {item.name ||
+                                                                                item.key ||
+                                                                                `项目 ${index + 1}`}
+                                                                        </td>
+                                                                        <td>
+                                                                            <Chip
+                                                                                size='sm'
+                                                                                variant='outlined'
+                                                                                color='primary'
+                                                                            >
+                                                                                查看详情
+                                                                            </Chip>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </Table>
                                                 </Box>
@@ -1578,10 +1706,197 @@ export default function ScriptPackageAnalysisModal({ open, setOpen, analysis }: 
                                         </Box>
                                     )}
 
+                                    {/* TypeScript Label 源码详情 */}
+                                    {isTypeScriptLabelFile(selectedData) && (
+                                        <Box>
+                                            <Card variant='outlined' sx={{ mb: 2 }}>
+                                                <CardContent>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            mb: 2,
+                                                        }}
+                                                    >
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                            <CodeIcon />
+                                                            <Typography level='title-lg'>
+                                                                TypeScript Label 源码
+                                                            </Typography>
+                                                        </Box>
+                                                        <Button
+                                                            variant='outlined'
+                                                            color='primary'
+                                                            startDecorator={<BuildIcon />}
+                                                            onClick={handleCompile}
+                                                        >
+                                                            编译为 JavaScript
+                                                        </Button>
+                                                    </Box>
+                                                    <Box sx={{ mb: 2 }}>
+                                                        <Typography level='body-sm' sx={{ mb: 1, fontWeight: 600 }}>
+                                                            文件路径:
+                                                        </Typography>
+                                                        <Chip size='sm' variant='soft' color='primary'>
+                                                            {selectedData.path}
+                                                        </Chip>
+                                                    </Box>
+                                                    {compileErrors.length > 0 && (
+                                                        <Box sx={{ mt: 2 }}>
+                                                            <Card variant='soft' color='danger' size='sm'>
+                                                                <CardContent>
+                                                                    <Box
+                                                                        sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 1,
+                                                                            mb: 1,
+                                                                        }}
+                                                                    >
+                                                                        <ErrorIcon color='error' />
+                                                                        <Typography
+                                                                            level='body-sm'
+                                                                            color='danger'
+                                                                            fontWeight={600}
+                                                                        >
+                                                                            编译错误
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    {compileErrors.map((error, index) => (
+                                                                        <Typography
+                                                                            key={index}
+                                                                            level='body-xs'
+                                                                            color='danger'
+                                                                        >
+                                                                            {error}
+                                                                        </Typography>
+                                                                    ))}
+                                                                </CardContent>
+                                                            </Card>
+                                                        </Box>
+                                                    )}
+                                                    {compiledCode && showCompiled && (
+                                                        <Box sx={{ mt: 2 }}>
+                                                            <Card variant='soft' color='success' size='sm'>
+                                                                <CardContent>
+                                                                    <Box
+                                                                        sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 1,
+                                                                        }}
+                                                                    >
+                                                                        <CheckCircleIcon color='success' />
+                                                                        <Typography
+                                                                            level='body-sm'
+                                                                            color='success'
+                                                                            fontWeight={600}
+                                                                        >
+                                                                            编译成功！
+                                                                        </Typography>
+                                                                    </Box>
+                                                                </CardContent>
+                                                            </Card>
+                                                        </Box>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                            {showCompiled && compiledCode ? (
+                                                <Card variant='outlined' sx={{ mb: 2 }}>
+                                                    <CardContent>
+                                                        <Box
+                                                            sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between',
+                                                                mb: 2,
+                                                            }}
+                                                        >
+                                                            <Typography level='title-md'>
+                                                                编译后的 JavaScript 代码
+                                                            </Typography>
+                                                            <Button
+                                                                variant='plain'
+                                                                size='sm'
+                                                                onClick={() => setShowCompiled(false)}
+                                                            >
+                                                                显示源码
+                                                            </Button>
+                                                        </Box>
+                                                        <Box
+                                                            sx={{
+                                                                maxHeight: '70vh',
+                                                                overflow: 'auto',
+                                                                bgcolor: 'background.level1',
+                                                                p: 2,
+                                                                borderRadius: 'md',
+                                                                border: '1px solid',
+                                                                borderColor: 'divider',
+                                                            }}
+                                                        >
+                                                            <pre
+                                                                style={{
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    wordBreak: 'break-word',
+                                                                    margin: 0,
+                                                                    fontFamily: 'monospace',
+                                                                    fontSize: '0.875rem',
+                                                                    lineHeight: 1.5,
+                                                                }}
+                                                            >
+                                                                {compiledCode}
+                                                            </pre>
+                                                        </Box>
+                                                    </CardContent>
+                                                </Card>
+                                            ) : (
+                                                <Card variant='outlined'>
+                                                    <CardContent>
+                                                        <Typography level='title-md' sx={{ mb: 2 }}>
+                                                            源码内容
+                                                        </Typography>
+                                                        <Box
+                                                            sx={{
+                                                                maxHeight: '70vh',
+                                                                overflow: 'auto',
+                                                                bgcolor: 'background.level1',
+                                                                p: 2,
+                                                                borderRadius: 'md',
+                                                                border: '1px solid',
+                                                                borderColor: 'divider',
+                                                            }}
+                                                        >
+                                                            <pre
+                                                                style={{
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    wordBreak: 'break-word',
+                                                                    margin: 0,
+                                                                    fontFamily: 'monospace',
+                                                                    fontSize: '0.875rem',
+                                                                    lineHeight: 1.5,
+                                                                }}
+                                                            >
+                                                                {selectedData.content}
+                                                            </pre>
+                                                        </Box>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+                                        </Box>
+                                    )}
+
                                     {/* 其他数据类型 */}
-                                    {!['地图', '地点', '房间', '角色', '任务', '日常安排', '标签'].includes(
-                                        selectedDataType,
-                                    ) && (
+                                    {![
+                                        '地图',
+                                        '地点',
+                                        '房间',
+                                        '角色',
+                                        '任务',
+                                        '日常安排',
+                                        '标签',
+                                        'TypeScript Labels',
+                                    ].includes(selectedDataType) && (
                                         <Card variant='outlined'>
                                             <CardContent>
                                                 <Typography level='title-lg' sx={{ mb: 2 }}>

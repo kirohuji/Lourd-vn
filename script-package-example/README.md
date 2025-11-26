@@ -17,10 +17,13 @@ script-package-example/
 │   ├── routine.json      # 日常安排（commitments）
 │   └── quests/           # 任务文件夹
 │       └── aliceQuest.json
-├── labels/               # 标签数据
-│   ├── variousActionsLabels.json
-│   ├── sleepNapLabels.json
+├── labels/               # 标签数据（JSON 格式和 TypeScript 源文件）
+│   ├── variousActionsLabels.json    # JSON 格式的标签
+│   ├── sleepNapLabels.json          # JSON 格式的标签
+│   ├── complexLabels.ts             # TypeScript 源文件（需要编译）
 │   └── variousActionsLabelKeys.json
+├── labels-compiled/      # 编译后的 JavaScript 标签
+│   └── complexLabels.js             # TypeScript 编译后的 JavaScript
 └── ink/                  # Ink 脚本文件
     └── variousActionsLabels.ink
 ```
@@ -107,6 +110,12 @@ script-package-example/
 ### 13. ink/variousActionsLabels.ink
 Ink 脚本文件，使用 Ink 语言编写的对话脚本。
 
+### 14. labels/complexLabels.ts
+TypeScript Label 源文件示例，展示如何编写 TypeScript Label。需要编译为 JavaScript 后才能使用。
+
+### 15. labels-compiled/complexLabels.js
+TypeScript Label 编译后的 JavaScript 文件。支持使用 TypeScript 编写复杂的 Label 逻辑。
+
 ## 关键转换规则
 
 ### 条件判断转换
@@ -160,13 +169,43 @@ JSON:
 }
 ```
 
+## Label 格式说明
+
+### JSON 格式 Label
+适用于简单场景，无需编译，直接使用 JSON 文件。
+
+### TypeScript 格式 Label（推荐）
+适用于复杂场景，需要：
+1. 编写 TypeScript 源文件（`.ts`）
+2. 编译为 JavaScript（`.js`）
+3. 打包到 ZIP 文件中
+
+**编译命令示例：**
+```bash
+# 使用 TypeScript 编译器
+tsc labels/complexLabels.ts --target ES2020 --module CommonJS --outDir labels-compiled
+
+# 或使用 esbuild（推荐，更快）
+esbuild labels/complexLabels.ts --bundle --format=cjs --outfile=labels-compiled/complexLabels.js
+```
+
+**TypeScript Label 的优势：**
+- 可以使用完整的 TypeScript 功能（类型检查、复杂逻辑等）
+- 支持数组操作、循环、条件判断等复杂逻辑
+- 可以使用 Math.random() 等 JavaScript 内置函数
+- 更好的代码组织和复用
+
 ## 使用说明
 
-这个示例包展示了如何将 TypeScript 代码转换为 JSON 配置。在实际使用时，需要：
+这个示例包展示了如何将 TypeScript 代码转换为 JSON 配置，以及如何使用 TypeScript Label。
+
+在实际使用时，需要：
 
 1. 创建一个导入器来读取这些 JSON 文件
 2. 将 JSON 配置转换为游戏对象
 3. 注册到游戏系统中
 
 所有 JSON 文件都已验证格式正确，可以直接使用。
+
+对于 TypeScript Label，需要先编译为 JavaScript，然后打包到 ZIP 文件中。
 
