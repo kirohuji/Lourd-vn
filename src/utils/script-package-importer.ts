@@ -45,6 +45,16 @@ export interface ScriptPackageAnalysis {
     commitments: number;
     inkFiles: number;
     errors?: string[];
+    // 详细数据
+    charactersData?: CharacterJSON[];
+    mapsData?: MapJSON[];
+    locationsData?: LocationJSON[];
+    roomsData?: RoomJSON[];
+    labelsData?: LabelJSON[];
+    activitiesData?: ActivityJSON[];
+    questsData?: QuestJSON[];
+    commitmentsData?: CommitmentJSON[];
+    inkFilesData?: string[];
 }
 
 /**
@@ -88,28 +98,23 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
         return foundPath ? zip.file(foundPath) : null;
     };
 
-    // 辅助函数：解析 JSON 文件并返回数组长度
-    const parseJsonFile = async (file: JSZip.JSZipObject | null, defaultValue: number = 0): Promise<number> => {
-        if (!file) return defaultValue;
+    // 辅助函数：解析 JSON 文件并返回数组长度和数据
+    const parseJsonFile = async <T>(
+        file: JSZip.JSZipObject | null,
+        defaultValue: number = 0,
+    ): Promise<{ count: number; data?: T[] }> => {
+        if (!file) return { count: defaultValue };
         try {
             const content = await file.async('string');
             const data = JSON.parse(content);
-            return Array.isArray(data) ? data.length : 1;
+            if (Array.isArray(data)) {
+                return { count: data.length, data };
+            }
+            return { count: 1, data: [data] as T[] };
         } catch (e) {
             errors.push(`Failed to parse ${file.name}: ${e}`);
-            return defaultValue;
+            return { count: defaultValue };
         }
-    };
-
-    // 辅助函数：查找文件夹中的文件数量
-    const countFilesInFolder = (folderPath: string, extension: string, exclude?: string): number => {
-        return allFiles.filter(path => {
-            if (!path.startsWith(folderPath)) return false;
-            if (!path.endsWith(extension)) return false;
-            if (exclude && path.includes(exclude)) return false;
-            // 确保是文件而不是文件夹
-            return !path.endsWith('/');
-        }).length;
     };
 
     // 1. 读取 package.json
@@ -135,15 +140,31 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
 
     // 3. 分析 values/ 文件夹下的文件
     const valuesPath = basePath ? `${basePath}values/` : 'values/';
-    let characters = await parseJsonFile(findFile('characters.json', 'values'));
-    let maps = await parseJsonFile(findFile('maps.json', 'values'));
-    let locations = await parseJsonFile(findFile('locations.json', 'values'));
-    let rooms = await parseJsonFile(findFile('rooms.json', 'values'));
-    let activities = await parseJsonFile(findFile('activities.json', 'values'));
-    let commitments = await parseJsonFile(findFile('routine.json', 'values'));
+    const charactersResult = await parseJsonFile<CharacterJSON>(findFile('characters.json', 'values'));
+    const mapsResult = await parseJsonFile<MapJSON>(findFile('maps.json', 'values'));
+    const locationsResult = await parseJsonFile<LocationJSON>(findFile('locations.json', 'values'));
+    const roomsResult = await parseJsonFile<RoomJSON>(findFile('rooms.json', 'values'));
+    const activitiesResult = await parseJsonFile<ActivityJSON>(findFile('activities.json', 'values'));
+    const commitmentsResult = await parseJsonFile<CommitmentJSON>(findFile('routine.json', 'values'));
 
     // 3.7 分析任务（在 values/quests/ 文件夹下）
-    let quests = countFilesInFolder(`${valuesPath}quests/`, '.json');
+    const questsFolder = valuesPath + 'quests/';
+    const questFilePaths = allFiles.filter(
+        path => path.startsWith(questsFolder) && path.endsWith('.json') && !path.endsWith('/'),
+    );
+    const questsData: QuestJSON[] = [];
+    for (const questPath of questFilePaths) {
+        const file = zip.file(questPath);
+        if (file) {
+            try {
+                const content = await file.async('string');
+                const questData: QuestJSON = JSON.parse(content);
+                questsData.push(questData);
+            } catch (e) {
+                errors.push(`Failed to parse quest file ${questPath}: ${e}`);
+            }
+        }
+    }
 
     // 4. 分析标签
     const labelsPath = basePath ? `${basePath}labels/` : 'labels/';
@@ -155,14 +176,18 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
             !path.endsWith('/'),
     );
 
-    let labels = 0;
+    const labelsData: LabelJSON[] = [];
     for (const labelPath of labelFiles) {
         const file = zip.file(labelPath);
         if (file) {
             try {
                 const content = await file.async('string');
                 const labelData: LabelJSON | LabelJSON[] = JSON.parse(content);
-                labels += Array.isArray(labelData) ? labelData.length : 1;
+                if (Array.isArray(labelData)) {
+                    labelsData.push(...labelData);
+                } else {
+                    labelsData.push(labelData);
+                }
             } catch (e) {
                 errors.push(`Failed to parse label file ${labelPath}: ${e}`);
             }
@@ -171,21 +196,45 @@ export async function analyzeScriptPackage(file: File): Promise<ScriptPackageAna
 
     // 5. 分析 ink 文件
     const inkPath = basePath ? `${basePath}ink/` : 'ink/';
-    let inkFiles = countFilesInFolder(inkPath, '.ink');
+    const inkFilePaths = allFiles.filter(
+        path => path.startsWith(inkPath) && path.endsWith('.ink') && !path.endsWith('/'),
+    );
+    const inkFilesData: string[] = [];
+    for (const inkFilePath of inkFilePaths) {
+        const file = zip.file(inkFilePath);
+        if (file) {
+            try {
+                await file.async('string'); // 验证文件可读
+                inkFilesData.push(inkFilePath);
+            } catch (e) {
+                errors.push(`Failed to read ink file ${inkFilePath}: ${e}`);
+            }
+        }
+    }
 
     return {
         metadata,
         hasManifest,
-        characters,
-        maps,
-        locations,
-        rooms,
-        labels,
-        activities,
-        quests,
-        commitments,
-        inkFiles,
+        characters: charactersResult.count,
+        maps: mapsResult.count,
+        locations: locationsResult.count,
+        rooms: roomsResult.count,
+        labels: labelsData.length,
+        activities: activitiesResult.count,
+        quests: questsData.length,
+        commitments: commitmentsResult.count,
+        inkFiles: inkFilesData.length,
         errors: errors.length > 0 ? errors : undefined,
+        // 详细数据
+        charactersData: charactersResult.data,
+        mapsData: mapsResult.data,
+        locationsData: locationsResult.data,
+        roomsData: roomsResult.data,
+        labelsData: labelsData.length > 0 ? labelsData : undefined,
+        activitiesData: activitiesResult.data,
+        questsData: questsData.length > 0 ? questsData : undefined,
+        commitmentsData: commitmentsResult.data,
+        inkFilesData: inkFilesData.length > 0 ? inkFilesData : undefined,
     };
 }
 
