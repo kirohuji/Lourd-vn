@@ -313,20 +313,52 @@ function compileTypeScriptToJavaScript(tsCode: string): { code: string; errors: 
     let jsCode = tsCode;
 
     try {
-        // 1. 移除所有 import 语句（运行时通过 context 注入）
+        // 1. 处理 import 语句
+        // 检测本地文件导入（以 ./ 或 ../ 开头）
+        const localImports: string[] = [];
+        const importRegex = /^import\s+.*?from\s+['"](.*?)['"];?\s*$/gm;
+        let importMatch;
+        while ((importMatch = importRegex.exec(tsCode)) !== null) {
+            const importPath = importMatch[1];
+            if (importPath.startsWith('./') || importPath.startsWith('../')) {
+                localImports.push(importPath);
+            }
+        }
+        
+        // 如果有本地导入，添加警告用户
+        if (localImports.length > 0) {
+            errors.push(
+                `警告: 检测到本地文件导入 (${localImports.join(', ')})。在实际编译时，这些文件需要一起编译。`,
+            );
+        }
+        
+        // 移除所有 import 语句（运行时通过 context 注入，本地文件需要在编译时合并）
         jsCode = jsCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
 
         // 2. 移除所有 declare 语句
         jsCode = jsCode.replace(/^declare\s+.*?;?\s*$/gm, '');
 
-        // 3. 移除类型注解（简单处理）
-        // 移除函数参数类型
-        jsCode = jsCode.replace(/\(([^)]*):\s*[^)]*\)/g, '($1)');
-        // 移除变量类型注解
+        // 3. 移除类型注解（改进的处理）
+        // 先处理对象字面量中的函数类型（如 onStepStart: async (stepIndex: number) => {...}）
+        jsCode = jsCode.replace(/(\w+):\s*async\s*\(([^)]*):\s*[^)]*\)\s*=>/g, '$1: async ($2) =>');
+        jsCode = jsCode.replace(/(\w+):\s*\(([^)]*):\s*[^)]*\)\s*=>/g, '$1: ($2) =>');
+        
+        // 移除函数参数类型（包括箭头函数和普通函数）
+        jsCode = jsCode.replace(/\(([^)]*):\s*[^)]*\)/g, (match, params) => {
+            // 处理参数列表，移除每个参数的类型注解
+            const cleanedParams = params.replace(/(\w+)\s*:\s*[^,)]+/g, '$1');
+            return `(${cleanedParams})`;
+        });
+        
+        // 移除变量类型注解（更精确的匹配，包括数组类型）
+        // 先处理复杂类型（如 Array<any>、StoredChoiceInterface[]）
+        jsCode = jsCode.replace(/:\s*Array<[^>]*>/g, '');
+        jsCode = jsCode.replace(/:\s*\w+\[\]/g, '');
         jsCode = jsCode.replace(
-            /:\s*(any|string|number|boolean|object|Array<.*?>|\(.*?\)\s*=>\s*.*?)(\s*[=,;\)\]\}])/g,
+            /:\s*(any|string|number|boolean|object|\(.*?\)\s*=>\s*.*?)(\s*[=,;\)\]\}])/g,
             '$2',
         );
+        
         // 移除类型断言
         jsCode = jsCode.replace(/\s+as\s+(any|string|number|boolean|object)/g, '');
 
