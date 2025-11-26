@@ -313,8 +313,40 @@ export async function importScriptPackage(file: File): Promise<ScriptPackageMeta
  * 从 ZIP 对象加载所有数据
  */
 async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
+    // 检测顶层文件夹（如果有）
+    const allFiles = Object.keys(zip.files);
+    const topLevelFolder = allFiles.find(path => path.endsWith('/') && path.split('/').length === 2);
+    const basePath = topLevelFolder ? topLevelFolder : '';
+
+    // 辅助函数：查找文件（支持根目录）
+    const findFile = (fileName: string, folder?: string): JSZip.JSZipObject | null => {
+        let fullPath = fileName;
+        if (folder) {
+            fullPath = `${folder}/${fileName}`;
+        }
+
+        // 尝试直接路径
+        let file = zip.file(fullPath);
+        if (file) return file;
+
+        // 尝试带基础路径
+        if (basePath) {
+            file = zip.file(`${basePath}${fullPath}`);
+            if (file) return file;
+        }
+
+        // 查找所有匹配的文件（排除 node_modules）
+        const foundPath = allFiles.find(path => {
+            const parts = path.split('/');
+            const lastPart = parts[parts.length - 1];
+            return lastPart === fileName && !path.includes('node_modules');
+        });
+
+        return foundPath ? zip.file(foundPath) : null;
+    };
+
     // 1. 读取 package.json
-    const packageJsonFile = zip.file('package.json');
+    const packageJsonFile = findFile('package.json');
     if (!packageJsonFile) {
         throw new Error('package.json not found in script package');
     }
@@ -322,7 +354,7 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
     const metadata: ScriptPackageMetadata = JSON.parse(packageJsonContent);
 
     // 2. 读取 manifest.json
-    const manifestFile = zip.file('manifest.json');
+    const manifestFile = findFile('manifest.json');
     if (manifestFile) {
         const manifestContent = await manifestFile.async('string');
         const manifest: AssetsManifest = JSON.parse(manifestContent);
@@ -330,7 +362,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
     }
 
     // 3. 读取 values/ 文件夹下的 JSON 文件
-    const valuesFolder = zip.folder('values');
+    const valuesPath = basePath ? `${basePath}values/` : 'values/';
+    const valuesFolder = zip.folder(valuesPath);
     if (valuesFolder) {
         // 3.1 加载角色（最先加载，其他对象可能依赖）
         const charactersFile = valuesFolder.file('characters.json');
@@ -365,7 +398,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
         }
 
         // 3.5 加载标签（在活动之前，因为活动可能依赖标签）
-        const labelsFolder = zip.folder('labels');
+        const labelsPath = basePath ? `${basePath}labels/` : 'labels/';
+        const labelsFolder = zip.folder(labelsPath);
         if (labelsFolder) {
             // 3.5.1 加载 JSON 格式的标签
             const labelFiles: LabelJSON[] = [];
@@ -391,7 +425,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
 
             // 3.5.2 加载 JavaScript 格式的标签（预编译的 TypeScript）
             // 从 labels-compiled/ 文件夹加载
-            const labelsCompiledFolder = zip.folder('labels-compiled');
+            const labelsCompiledPath = basePath ? `${basePath}labels-compiled/` : 'labels-compiled/';
+            const labelsCompiledFolder = zip.folder(labelsCompiledPath);
             if (labelsCompiledFolder) {
                 const jsLabelFileEntries = Object.entries(labelsCompiledFolder).filter(
                     ([relativePath]) => relativePath.endsWith('.js') && !relativePath.endsWith('.min.js'),
@@ -427,7 +462,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
         }
 
         // 3.7 加载任务（依赖活动和房间）
-        const questsFolder = valuesFolder.folder('quests');
+        const questsPath = `${valuesPath}quests/`;
+        const questsFolder = zip.folder(questsPath);
         if (questsFolder) {
             const questFileEntries = Object.entries(questsFolder).filter(([relativePath]) =>
                 relativePath.endsWith('.json'),
@@ -451,7 +487,8 @@ async function loadFromZip(zip: JSZip): Promise<ScriptPackageMetadata> {
     }
 
     // 4. 加载 ink 文件
-    const inkFolder = zip.folder('ink');
+    const inkPath = basePath ? `${basePath}ink/` : 'ink/';
+    const inkFolder = zip.folder(inkPath);
     if (inkFolder) {
         const inkFiles: string[] = [];
         const inkFileEntries = Object.entries(inkFolder).filter(([relativePath]) => relativePath.endsWith('.ink'));
