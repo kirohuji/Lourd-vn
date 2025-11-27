@@ -32,7 +32,7 @@ import {
     RoomJSON,
 } from '../types/json-schema';
 import { createActivityOnRun, createCommitmentOnRun, createIconFromJSON } from './json-action-executor';
-import { executeActions, evaluateCondition } from './json-interpreter';
+import { evaluateCondition, executeActions } from './json-interpreter';
 import { loadLabelsFromJSON as loadLabelsFromJSONUtil } from './json-label-loader';
 
 /**
@@ -362,6 +362,21 @@ export function loadLabelsFromJSON(labelsJSON: LabelJSON[]): void {
  * 加载资源清单
  */
 export function loadManifestFromJSON(manifestJSON: AssetsManifest): void {
-    // 合并到现有的 Assets manifest
-    Assets.init({ manifest: manifestJSON });
+    /**
+     * 注意：
+     * - 游戏启动时已经在 assets-utility.ts 里对 baseManifest 调用过一次 Assets.init
+     * - 再次调用 Assets.init 只会触发 "AssetManager already initialized" 的警告，
+     *   并且很多实现会直接忽略新的 manifest，导致剧情包里的别名（例如 location_myroom-0）没有真正注册
+     *
+     * 正确做法：
+     * - 保持第一次 init 使用基础 manifest（主菜单背景）
+     * - 这里针对剧本包，只把它的 bundles 动态追加到现有的 Assets 中
+     */
+
+    const bundles = manifestJSON.bundles ?? [];
+    for (const bundle of bundles) {
+        // PixiJS Assets 支持按 bundle 名称追加资源
+        // 这样不会重新初始化 AssetManager，也不会丢失之前已注册的别名
+        Assets.addBundle(bundle.name, bundle.assets ?? []);
+    }
 }

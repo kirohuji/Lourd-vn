@@ -1,34 +1,34 @@
-import { RegisteredMaps } from "@drincs/nqtr";
-import { Assets, canvas, ImageSprite } from "@drincs/pixi-vn";
-import CloseIcon from "@mui/icons-material/Close";
-import KeyboardDoubleArrowDownIcon from "@mui/icons-material/KeyboardDoubleArrowDown";
-import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
-import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
-import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
-import { IconButton } from "@mui/joy";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import RoundIconButton from "../../components/RoundIconButton";
-import { CANVAS_UI_LAYER_NAME, NAVIGATION_ROUTE } from "../../constans";
-import useGameProps from "../../hooks/useGameProps";
-import useMyNavigate from "../../hooks/useMyNavigate";
-import { INTERFACE_DATA_USE_QUEY_KEY } from "../../hooks/useQueryInterface";
-import { CURRENT_MAP_USE_QUEY_KEY, useQueryCurrentMap } from "../../hooks/useQueryNQTR";
-import useInterfaceStore from "../../stores/useInterfaceStore";
-import { convertMultiTypeSprite } from "../../utils/image-utility";
+import { RegisteredMaps } from '@drincs/nqtr';
+import { Assets, canvas, ImageSprite } from '@drincs/pixi-vn';
+import CloseIcon from '@mui/icons-material/Close';
+import KeyboardDoubleArrowDownIcon from '@mui/icons-material/KeyboardDoubleArrowDown';
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
+import { IconButton } from '@mui/joy';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import RoundIconButton from '../../components/RoundIconButton';
+import { CANVAS_UI_LAYER_NAME, NAVIGATION_ROUTE } from '../../constans';
+import useGameProps from '../../hooks/useGameProps';
+import useMyNavigate from '../../hooks/useMyNavigate';
+import { INTERFACE_DATA_USE_QUEY_KEY } from '../../hooks/useQueryInterface';
+import { CURRENT_MAP_USE_QUEY_KEY, useQueryCurrentMap } from '../../hooks/useQueryNQTR';
+import useInterfaceStore from '../../stores/useInterfaceStore';
+import { convertMultiTypeSprite } from '../../utils/image-utility';
 
 export default function MapScreen() {
     const { data: map } = useQueryCurrentMap();
     const queryClient = useQueryClient();
     const navigate = useMyNavigate();
     const gameProps = useGameProps();
-    const editHideInterface = useInterfaceStore((state) => state.setHidden);
+    const editHideInterface = useInterfaceStore(state => state.setHidden);
 
     useEffect(() => {
         editHideInterface(false);
         if (map) {
             let background = convertMultiTypeSprite(map.background, gameProps);
-            if (typeof background === "string") {
+            if (typeof background === 'string') {
                 let sprite = new ImageSprite({}, background);
                 sprite.load();
                 background = sprite;
@@ -36,11 +36,11 @@ export default function MapScreen() {
             let layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
             if (layer) {
                 layer.addChild(background);
-                map.locations.forEach((location) => {
+                map.locations.forEach(location => {
                     const entrance = location.entrance;
                     entrance && Assets.backgroundLoadBundle(entrance.id);
                     let sprite = location.sprite;
-                    if (typeof sprite === "function") {
+                    if (typeof sprite === 'function') {
                         sprite = sprite(gameProps);
                     }
                     layer.addChild(sprite);
@@ -60,13 +60,29 @@ export default function MapScreen() {
 
     return (
         <>
+            {!map && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '1.2rem',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    请先导入剧本包以加载地图数据
+                </div>
+            )}
             {map?.neighboringMaps.north && (
                 <RoundIconButton
                     variant='soft'
                     sx={{
-                        position: "absolute",
-                        top: "0.1rem",
-                        left: "50%",
+                        position: 'absolute',
+                        top: '0.1rem',
+                        left: '50%',
                     }}
                     onClick={() => {
                         const newMap = RegisteredMaps.get(map.neighboringMaps.north!);
@@ -81,9 +97,9 @@ export default function MapScreen() {
                 <RoundIconButton
                     variant='soft'
                     sx={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "0.1rem",
+                        position: 'absolute',
+                        top: '50%',
+                        left: '0.1rem',
                     }}
                     onClick={() => {
                         const newMap = RegisteredMaps.get(map.neighboringMaps.west!);
@@ -98,9 +114,9 @@ export default function MapScreen() {
                 <RoundIconButton
                     variant='soft'
                     sx={{
-                        position: "absolute",
-                        bottom: "0.1rem",
-                        left: "50%",
+                        position: 'absolute',
+                        bottom: '0.1rem',
+                        left: '50%',
                     }}
                     onClick={() => {
                         const newMap = RegisteredMaps.get(map.neighboringMaps.south!);
@@ -115,9 +131,9 @@ export default function MapScreen() {
                 <RoundIconButton
                     variant='soft'
                     sx={{
-                        position: "absolute",
-                        top: "50%",
-                        right: "0.1rem",
+                        position: 'absolute',
+                        top: '50%',
+                        right: '0.1rem',
                     }}
                     onClick={() => {
                         const newMap = RegisteredMaps.get(map.neighboringMaps.east!);
@@ -131,9 +147,9 @@ export default function MapScreen() {
             <IconButton
                 color='danger'
                 sx={{
-                    position: "absolute",
-                    top: "0.1rem",
-                    right: "0.1rem",
+                    position: 'absolute',
+                    top: '0.1rem',
+                    right: '0.1rem',
                 }}
                 onClick={() => navigate(NAVIGATION_ROUTE)}
             >
