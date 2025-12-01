@@ -1,24 +1,24 @@
-import { useColorScheme } from "@mui/joy";
-import AspectRatio from "@mui/joy/AspectRatio";
-import Box from "@mui/joy/Box";
-import Card from "@mui/joy/Card";
-import CardContent from "@mui/joy/CardContent";
-import Sheet from "@mui/joy/Sheet";
-import Typography from "@mui/joy/Typography";
-import { RefObject, useCallback, useMemo, useRef } from "react";
-import Markdown from "react-markdown";
-import { MarkdownTypewriterHooks } from "react-markdown-typewriter";
-import rehypeRaw from "rehype-raw";
-import remarkGfm from "remark-gfm";
-import { useShallow } from "zustand/react/shallow";
-import AnimatedDots from "../components/AnimatedDots";
-import SliderResizer from "../components/SliderResizer";
-import useIsMobile from "../hooks/useIsMobile";
-import { useQueryDialogue } from "../hooks/useQueryInterface";
-import useDialogueCardStore from "../stores/useDialogueCardStore";
-import useInterfaceStore from "../stores/useInterfaceStore";
-import useTypewriterStore from "../stores/useTypewriterStore";
-import ChoiceMenu from "./ChoiceMenu";
+import { useColorScheme } from '@mui/joy';
+import AspectRatio from '@mui/joy/AspectRatio';
+import Box from '@mui/joy/Box';
+import Card from '@mui/joy/Card';
+import CardContent from '@mui/joy/CardContent';
+import Sheet from '@mui/joy/Sheet';
+import Typography from '@mui/joy/Typography';
+import { RefObject, useCallback, useMemo, useRef } from 'react';
+import Markdown from 'react-markdown';
+import { MarkdownTypewriterHooks } from 'react-markdown-typewriter';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import { useShallow } from 'zustand/react/shallow';
+import AnimatedDots from '../components/AnimatedDots';
+import SliderResizer from '../components/SliderResizer';
+import useIsMobile from '../hooks/useIsMobile';
+import { useQueryDialogue } from '../hooks/useQueryInterface';
+import useDialogueCardStore from '../stores/useDialogueCardStore';
+import useInterfaceStore from '../stores/useInterfaceStore';
+import useTypewriterStore from '../stores/useTypewriterStore';
+import ChoiceMenu from './ChoiceMenu';
 
 export default function NarrationScreen() {
     const isMobile = useIsMobile();
@@ -27,59 +27,60 @@ export default function NarrationScreen() {
         setHeight: setCardHeight,
         imageWidth: cardImageWidth,
         setImageWidth: setCardImageWidth,
-    } = useDialogueCardStore(useShallow((state) => state));
+    } = useDialogueCardStore(useShallow(state => state));
     const { data: { animatedText, character, text } = {} } = useQueryDialogue();
-    const hidden = useInterfaceStore((state) => state.hidden || (animatedText || text ? false : true));
+    const hidden = useInterfaceStore(state => state.hidden || (animatedText || text ? false : true));
     const cardHeight = animatedText || text ? cardHeightTemp : 0;
     const cardVarians = useMemo(
         () =>
             hidden
                 ? `motion-opacity-out-0 motion-translate-y-out-[50%]`
                 : `motion-opacity-in-0 motion-translate-y-in-[50%]`,
-        [hidden]
+        [hidden],
     );
     const sliderVarians = useMemo(
         () =>
             hidden
                 ? `motion-duration-200/opacity motion-opacity-out-0 motion-translate-y-out-[25%]`
                 : `motion-opacity-in-0 motion-translate-y-in-[25%]`,
-        [hidden]
+        [hidden],
     );
     const cardImageVarians = useMemo(
         () => (!hidden && character?.icon ? `motion-opacity-in-0 motion-translate-x-in-[-5%]` : `motion-opacity-out-0`),
-        [hidden, character?.icon]
+        [hidden, character?.icon],
     );
     const paragraphRef = useRef<HTMLDivElement>(null);
 
     return (
         <Box
             sx={{
-                position: "absolute",
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                width: "100%",
+                position: 'absolute',
+                display: 'flex',
+                bottom: '20px',
+                flexDirection: 'column',
+                height: '100%',
+                width: '100%',
             }}
         >
-            <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <SliderResizer
                     orientation='vertical'
                     max={100}
                     min={0}
                     value={cardHeight}
                     onChange={(_, value) => {
-                        if (typeof value === "number") {
+                        if (typeof value === 'number') {
                             setCardHeight(value);
                         }
                     }}
                     stackProps={{
                         sx: {
                             top: 0,
-                            paddingBottom: { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
+                            paddingBottom: { xs: '0.9rem', sm: '1rem', md: '1.1rem', lg: '1.3rem', xl: '1.4rem' },
                         },
                     }}
                     sx={{
-                        pointerEvents: !hidden ? "auto" : "none",
+                        pointerEvents: !hidden ? 'auto' : 'none',
                     }}
                     className={sliderVarians}
                 />
@@ -88,75 +89,85 @@ export default function NarrationScreen() {
                 </Box>
                 <Box
                     sx={{
-                        flex: "0 0 auto",
+                        flex: '0 0 auto',
                         height: `${cardHeight}%`,
                         minHeight: 0,
-                        pointerEvents: !hidden ? "auto" : "none",
+                        pointerEvents: !hidden ? 'auto' : 'none',
                     }}
                     className={cardVarians}
                 >
                     <Card
-                        key={"dialogue-card"}
+                        key={'dialogue-card'}
                         orientation={isMobile ? 'vertical' : 'horizontal'}
                         sx={{
-                            overflow: "auto",
-                            gap: isMobile ? 0.5 : 1,
+                            overflow: 'hidden',
+                            gap: isMobile ? 1 : 1,
                             padding: 0,
-                            height: "100%",
-                            marginX: isMobile 
-                                ? { xs: "0.5rem", sm: "0.75rem" } 
-                                : { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
+                            height: '100%',
+                            marginX: isMobile
+                                ? { xs: '0.75rem', sm: '1rem' }
+                                : { xs: '0.9rem', sm: '1rem', md: '1.1rem', lg: '1.3rem', xl: '1.4rem' },
+                            display: 'flex',
+                            flexDirection: isMobile ? 'column' : 'row',
                         }}
                     >
-                        {character?.icon && (
+                        {character?.icon && !isMobile && (
                             <AspectRatio
                                 flex
                                 ratio='1'
-                                maxHeight={isMobile ? "15%" : "20%"}
                                 sx={{
-                                    height: isMobile ? "auto" : "100%",
-                                    minWidth: isMobile ? "auto" : `${cardImageWidth}%`,
-                                    width: isMobile ? "100%" : undefined,
-                                    maxWidth: isMobile ? "30%" : undefined,
-                                    marginX: isMobile ? "auto" : undefined,
+                                    flexShrink: 0,
+                                    height: '100%',
+                                    minWidth: `${cardImageWidth}%`,
                                 }}
                                 className={`motion-scale-x-in-0`}
                             >
-                                <img src={character.icon} loading='lazy' alt='' />
+                                <img src={character.icon} loading='lazy' alt='' style={{ objectFit: 'contain' }} />
                             </AspectRatio>
                         )}
-                        <SliderResizer
-                            orientation='horizontal'
-                            max={100}
-                            min={0}
-                            value={cardImageWidth}
-                            onChange={(_, value) => {
-                                if (typeof value === "number") {
-                                    if (value > 75) {
-                                        value = 75;
+                        {!isMobile && (
+                            <SliderResizer
+                                orientation='horizontal'
+                                max={100}
+                                min={0}
+                                value={cardImageWidth}
+                                onChange={(_, value) => {
+                                    if (typeof value === 'number') {
+                                        if (value > 75) {
+                                            value = 75;
+                                        }
+                                        if (value < 5) {
+                                            value = 5;
+                                        }
+                                        setCardImageWidth(value);
                                     }
-                                    if (value < 5) {
-                                        value = 5;
-                                    }
-                                    setCardImageWidth(value);
-                                }
-                            }}
+                                }}
+                                sx={{
+                                    pointerEvents: !hidden && character?.icon ? 'auto' : 'none',
+                                }}
+                                className={cardImageVarians}
+                            />
+                        )}
+                        <CardContent
                             sx={{
-                                pointerEvents: !hidden && character?.icon ? "auto" : "none",
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                                minHeight: 0,
+                                overflow: 'hidden',
+                                padding: isMobile ? 1 : undefined,
+                                paddingX: isMobile ? 1.5 : undefined,
+                                paddingY: isMobile ? 0.5 : undefined,
                             }}
-                            className={cardImageVarians}
-                        />
-                        <CardContent>
+                        >
                             <Typography
-                                fontSize={isMobile ? 'md' : 'xl'}
+                                fontSize={isMobile ? 'sm' : 'xl'}
                                 fontWeight='lg'
                                 sx={{
                                     color: character?.color,
-                                    paddingLeft: isMobile ? 0.5 : 1,
-                                    paddingX: isMobile ? 0.5 : undefined,
-                                    height: { sx: undefined, md: 30 },
-                                    marginLeft: isMobile ? 0 : 2,
                                     textAlign: isMobile ? 'center' : 'left',
+                                    marginBottom: isMobile ? 0.5 : 1,
+                                    flexShrink: 0,
                                 }}
                                 className={
                                     character && character.name
@@ -164,19 +175,18 @@ export default function NarrationScreen() {
                                         : `motion-opacity-out-0`
                                 }
                             >
-                                {`${character?.name || ""} ${character?.surname || ""}`}
+                                {`${character?.name || ''} ${character?.surname || ''}`}
                             </Typography>
                             <Sheet
                                 ref={paragraphRef}
                                 sx={{
-                                    bgcolor: "background.level1",
-                                    borderRadius: "sm",
+                                    bgcolor: 'background.level1',
+                                    borderRadius: 'sm',
                                     p: isMobile ? 1 : 1.5,
-                                    minHeight: 10,
-                                    display: "flex",
+                                    minHeight: 0,
+                                    display: 'flex',
                                     flex: 1,
-                                    overflow: "auto",
-                                    height: "100%",
+                                    overflow: 'auto',
                                     marginX: isMobile ? 0 : { xs: 0, md: 3 },
                                     marginBottom: isMobile ? 0 : { xs: 0, md: 3 },
                                 }}
@@ -189,8 +199,8 @@ export default function NarrationScreen() {
             </Box>
             <Box
                 sx={{
-                    flex: "0 0 auto",
-                    height: { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
+                    flex: '0 0 auto',
+                    height: { xs: '0.9rem', sm: '1rem', md: '1.1rem', lg: '1.3rem', xl: '1.4rem' },
                     minHeight: 0,
                 }}
             />
@@ -198,16 +208,16 @@ export default function NarrationScreen() {
     );
 }
 
-function NarrationScreenText({ 
-    paragraphRef, 
-    isMobile = false 
-}: { 
+function NarrationScreenText({
+    paragraphRef,
+    isMobile = false,
+}: {
     paragraphRef: RefObject<HTMLDivElement | null>;
     isMobile?: boolean;
 }) {
-    const typewriterDelay = useTypewriterStore(useShallow((state) => state.delay));
-    const startTypewriter = useTypewriterStore(useShallow((state) => state.start));
-    const endTypewriter = useTypewriterStore(useShallow((state) => state.end));
+    const typewriterDelay = useTypewriterStore(useShallow(state => state.delay));
+    const startTypewriter = useTypewriterStore(useShallow(state => state.start));
+    const endTypewriter = useTypewriterStore(useShallow(state => state.end));
     const { data: { animatedText, text } = {} } = useQueryDialogue();
     const { mode } = useColorScheme();
 
@@ -216,20 +226,20 @@ function NarrationScreenText({
             let scrollTop = ref.current.offsetTop - paragraphRef.current.clientHeight / 2;
             paragraphRef.current.scrollTo({
                 top: scrollTop,
-                behavior: "auto",
+                behavior: 'auto',
             });
         }
     }, []);
 
     return (
         <p
-            className={`prose ${mode === "dark" ? "dark:prose-invert" : ""} ${isMobile ? "prose-sm" : ""}`}
-            style={{ 
-                margin: 0, 
-                padding: 0, 
-                maxWidth: "100%",
-                fontSize: isMobile ? "0.875rem" : undefined,
-                lineHeight: isMobile ? "1.5" : undefined,
+            className={`prose ${mode === 'dark' ? 'dark:prose-invert' : ''} ${isMobile ? 'prose-sm' : ''}`}
+            style={{
+                margin: 0,
+                padding: 0,
+                maxWidth: '100%',
+                fontSize: isMobile ? '0.875rem' : undefined,
+                lineHeight: isMobile ? '1.5' : undefined,
             }}
         >
             <span>
@@ -237,7 +247,7 @@ function NarrationScreenText({
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
-                        p: (props) => <span {...props} />,
+                        p: props => <span {...props} />,
                     }}
                 >
                     {text}
@@ -251,8 +261,8 @@ function NarrationScreenText({
                     delay={typewriterDelay}
                     motionProps={{
                         onAnimationStart: startTypewriter,
-                        onAnimationComplete: (definition: "visible" | "hidden") => {
-                            if (definition == "visible") {
+                        onAnimationComplete: (definition: 'visible' | 'hidden') => {
+                            if (definition == 'visible') {
                                 endTypewriter();
                             }
                         },
