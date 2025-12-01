@@ -1,22 +1,24 @@
-import { OnRunAsyncFunction } from "@drincs/nqtr";
-import { useMemo } from "react";
-import { NqtrRoundIconButtonConvertor } from "../../components/NqtrRoundIconButton.tsx";
-import StackOverflow from "../../components/StackOverflow.tsx";
-import useGameProps from "../../hooks/useGameProps.ts";
-import { useQueryCurrentRoomId, useQueryRoom } from "../../hooks/useQueryNQTR";
+import { OnRunAsyncFunction } from '@drincs/nqtr';
+import { useMemo } from 'react';
+import { NqtrRoundIconButtonConvertor } from '../../components/NqtrRoundIconButton.tsx';
+import StackOverflow from '../../components/StackOverflow.tsx';
+import useGameProps from '../../hooks/useGameProps.ts';
+import useIsMobile from '../../hooks/useIsMobile';
+import { useQueryCurrentRoomId, useQueryRoom } from '../../hooks/useQueryNQTR';
 
 export default function QuickActivities() {
     const { data: currentRoomId } = useQueryCurrentRoomId();
     const { data: { activities = [], routine = [] } = {} } = useQueryRoom(currentRoomId);
     const gameProps = useGameProps();
     const { uiTransition: t } = gameProps;
+    const isMobile = useIsMobile();
     const onClick = useMemo(
         () => async (run: OnRunAsyncFunction) => {
             run(gameProps).then(() => {
                 gameProps.invalidateInterfaceData();
             });
         },
-        [gameProps]
+        [gameProps],
     );
 
     return (
@@ -24,14 +26,14 @@ export default function QuickActivities() {
             direction='column'
             justifyContent='center'
             alignItems='flex-end'
-            spacing={0.5}
-            maxLeght={"80%"}
+            spacing={isMobile ? 1 : 0.5}
+            maxLeght={'80%'}
             sx={{
-                display: "flex",
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                pointerEvents: "auto",
+                display: 'flex',
+                position: 'absolute',
+                bottom: isMobile ? '84px' : 0,
+                right: isMobile ? '12px' : 0,
+                pointerEvents: 'auto',
             }}
         >
             {activities.map((item, index) => (

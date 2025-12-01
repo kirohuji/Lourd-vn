@@ -3,6 +3,7 @@ import { useTheme } from "@mui/joy";
 import { isValidElement, ReactElement } from "react";
 import { LazyLoadComponent } from "react-lazy-load-image-component";
 import useGameProps from "../hooks/useGameProps";
+import useIsMobile from "../hooks/useIsMobile";
 import TimeSlotsImage from "../models/TimeSlotsImage";
 import useNqtrScreenStore from "../stores/useNqtrScreenStore";
 import { getPixiJSAsset } from "../utils/assets-utility";
@@ -15,11 +16,12 @@ interface NqtrRoundIconButtonProps extends RoundIconButtonProps {
 export default function NqtrRoundIconButton(props: NqtrRoundIconButtonProps) {
     const disabledScreen = useNqtrScreenStore((state) => state.disabled);
     const { selected, sx, disabled = disabledScreen, ...rest } = props;
+    const isMobile = useIsMobile();
 
     return (
         <RoundIconButton
             sx={{
-                "--IconButton-size": { xs: "40px", sm: "60px", md: "80px" },
+                "--IconButton-size": isMobile ? "48px" : { xs: "40px", sm: "60px", md: "80px" },
                 border: 3,
                 borderColor: selected ? useTheme().palette.primary[800] : useTheme().palette.background.body,
                 ...sx,

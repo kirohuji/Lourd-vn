@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import RoundIconButton, { RoundIconButtonProps } from "../../components/RoundIconButton.tsx";
 import StackOverflow from "../../components/StackOverflow.tsx.tsx";
 import { MAP_ROUTE } from "../../constans.ts";
+import useIsMobile from "../../hooks/useIsMobile.ts";
 import useMyNavigate from "../../hooks/useMyNavigate.ts";
 import { INTERFACE_DATA_USE_QUEY_KEY } from "../../hooks/useQueryInterface.ts";
 import { CURRENT_MAP_USE_QUEY_KEY } from "../../hooks/useQueryNQTR.ts";
@@ -18,6 +19,7 @@ export default function NqtrQuickTools() {
     const navigate = useMyNavigate();
     const queryClient = useQueryClient();
     const { t } = useTranslation(["ui"]);
+    const isMobile = useIsMobile();
 
     return (
         <>
@@ -30,8 +32,8 @@ export default function NqtrQuickTools() {
                 sx={{
                     display: "flex",
                     position: "absolute",
-                    left: 0,
-                    top: 0,
+                    left: isMobile ? '16px' : 0,
+                    top: isMobile ? '16px' : 0,
                 }}
             >
                 <QuickToolButton ariaLabel={t("settings")} onClick={editOpenSettings}>
@@ -58,8 +60,8 @@ export default function NqtrQuickTools() {
                 sx={{
                     display: "flex",
                     position: "absolute",
-                    right: 0,
-                    top: 0,
+                    right: isMobile ? '16px' : 0,
+                    top: isMobile ? '16px' : 0,
                 }}
             >
                 <QuickToolButton

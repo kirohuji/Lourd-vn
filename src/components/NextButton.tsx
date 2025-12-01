@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import useNarrationFunctions from "../hooks/useNarrationFunctions";
 import { useQueryCanGoNext } from "../hooks/useQueryInterface";
+import useIsMobile from "../hooks/useIsMobile";
 import useInterfaceStore from "../stores/useInterfaceStore";
 import useSkipStore from "../stores/useSkipStore";
 import useStepStore from "../stores/useStepStore";
@@ -16,6 +17,7 @@ export default function NextButton() {
     const hideNextButton = useInterfaceStore((state) => state.hidden || !canContinue);
     const { goNext } = useNarrationFunctions();
     const { t } = useTranslation(["ui"]);
+    const isMobile = useIsMobile();
     const varians = useMemo(
         () =>
             hideNextButton
@@ -33,11 +35,13 @@ export default function NextButton() {
             loading={nextStepLoading}
             sx={{
                 position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: { xs: 70, sm: 100, md: 150 },
+                bottom: isMobile ? '16px' : 0,
+                right: isMobile ? '16px' : 0,
+                width: isMobile ? '80px' : { xs: 70, sm: 100, md: 150 },
+                minHeight: isMobile ? '44px' : undefined,
                 border: 3,
                 zIndex: 100,
+                fontSize: isMobile ? '0.875rem' : undefined,
             }}
             onClick={() => {
                 if (skipEnabled) {

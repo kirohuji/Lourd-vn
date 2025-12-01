@@ -27,6 +27,10 @@ export default function MenuButton(props: MenuButtonProps) {
             size='sm'
             sx={{
                 fontSize: { xs: "0.75rem", sm: "0.75rem", md: "1rem", lg: "1.25rem", xl: "1.5rem" },
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                    transform: 'translateY(-2px)',
+                },
                 ...sx,
             }}
             component={motion.div}

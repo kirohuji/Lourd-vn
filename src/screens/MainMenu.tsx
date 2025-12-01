@@ -105,13 +105,13 @@ export default function MainMenu() {
             direction='column'
             justifyContent='center'
             alignItems={isMobile ? 'center' : 'flex-start'}
-            spacing={isMobile ? { xs: 1.5, sm: 2 } : { xs: 1, sm: 2, lg: 3 }}
+            spacing={isMobile ? 2.5 : { xs: 1, sm: 2, lg: 3 }}
             sx={{
                 height: '100%',
                 width: '100%',
-                paddingLeft: isMobile ? { xs: 2, sm: 3 } : { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
-                paddingRight: isMobile ? { xs: 2, sm: 3 } : 0,
-                paddingX: isMobile ? { xs: 2, sm: 3 } : undefined,
+                px: isMobile ? 3 : { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
+                py: isMobile ? 3 : 0,
+                boxSizing: 'border-box',
             }}
             component={motion.div}
             initial='closed'
@@ -135,6 +135,17 @@ export default function MainMenu() {
                 transitionDelay={0.1}
                 loading={isLoading}
                 disabled={(!isLoading && !lastSave) || loading}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
             >
                 {t('continue')}
             </MenuButton>
@@ -149,10 +160,36 @@ export default function MainMenu() {
                 }}
                 transitionDelay={0.2}
                 disabled={loading}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
             >
                 {t('start')}
             </MenuButton>
-            <MenuButton onClick={editSaveScreen} transitionDelay={0.3} disabled={loading}>
+            <MenuButton
+                onClick={editSaveScreen}
+                transitionDelay={0.3}
+                disabled={loading}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
+            >
                 {t('load')}
             </MenuButton>
             <MenuButton
@@ -181,10 +218,35 @@ export default function MainMenu() {
                 }}
                 transitionDelay={0.4}
                 disabled={loading}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
             >
                 导入剧本包
             </MenuButton>
-            <MenuButton onClick={() => setOpenSettings(true)} transitionDelay={0.5}>
+            <MenuButton
+                onClick={() => setOpenSettings(true)}
+                transitionDelay={0.5}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
+            >
                 {t('settings')}
             </MenuButton>
             {loading && (

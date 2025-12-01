@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { NqtrRoundIconButtonConvertor } from "../../components/NqtrRoundIconButton.tsx";
 import StackOverflow from "../../components/StackOverflow.tsx";
+import useIsMobile from "../../hooks/useIsMobile";
 import { INTERFACE_DATA_USE_QUEY_KEY } from "../../hooks/useQueryInterface";
 import {
     CURRENT_ROOM_USE_QUEY_KEY,
@@ -14,19 +15,20 @@ import {
 
 export default function QuickRooms() {
     const { data: rooms = [] } = useQueryQuickRooms();
+    const isMobile = useIsMobile();
 
     return (
         <StackOverflow
-            direction='row'
-            justifyContent='center'
-            alignItems='flex-end'
-            spacing={0.5}
+            direction='column'
+            justifyContent='flex-start'
+            alignItems='flex-start'
+            spacing={isMobile ? 1 : 0.5}
             maxLeght={"80%"}
             sx={{
                 display: "flex",
                 position: "absolute",
-                bottom: 0,
-                left: 0,
+                bottom: isMobile ? '16px' : 0,
+                left: isMobile ? '16px' : 0,
                 pointerEvents: "auto",
             }}
         >

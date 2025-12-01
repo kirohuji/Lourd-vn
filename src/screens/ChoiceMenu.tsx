@@ -34,15 +34,17 @@ export default function ChoiceMenu() {
             direction='column'
             justifyContent='center'
             alignItems='center'
-            rowSpacing={isMobile ? 1.5 : 2}
+            rowSpacing={isMobile ? 2 : 2}
             sx={{
                 overflow: 'auto',
                 height: '100%',
-                gap: isMobile ? 0.75 : 1,
+                gap: isMobile ? 1.5 : 1,
                 width: '100%',
                 pointerEvents: hidden ? 'none' : 'auto',
                 margin: 0,
-                paddingY: isMobile ? 1 : 0,
+                px: isMobile ? 3 : 0,
+                py: isMobile ? 3 : 0,
+                boxSizing: 'border-box',
             }}
             role='menu'
         >
@@ -67,9 +69,11 @@ export default function ChoiceMenu() {
                         sx={{
                             left: 0,
                             right: 0,
-                            width: isMobile ? '90%' : undefined,
+                            width: isMobile ? '100%' : undefined,
                             maxWidth: isMobile ? '400px' : undefined,
-                            fontSize: isMobile ? { xs: '0.875rem', sm: '0.9375rem' } : undefined,
+                            minHeight: isMobile ? '48px' : undefined,
+                            fontSize: isMobile ? '1rem' : undefined,
+                            fontWeight: isMobile ? 500 : undefined,
                         }}
                         startDecorator={item.type === 'close' ? <KeyboardReturnIcon /> : undefined}
                     >
