@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import RoundIconButton from "../../components/RoundIconButton";
+import useIsMobile from "../../hooks/useIsMobile";
 import { INTERFACE_DATA_USE_QUEY_KEY } from "../../hooks/useQueryInterface";
 import { useQueryTime } from "../../hooks/useQueryNQTR";
 import useTimeTracker from "../../hooks/useTimeTracker";
@@ -18,15 +19,18 @@ export default function TimeScreen() {
     const queryClient = useQueryClient();
     const disabled = useNqtrScreenStore((state) => state.disabled);
     const hidden = useInterfaceStore(useShallow((state) => state.hidden));
+    const isMobile = useIsMobile();
 
     return (
         <Stack
             direction='column'
             justifyContent='center'
             alignItems='center'
-            spacing={0}
+            spacing={isMobile ? 1 : 0}
             sx={{
-                marginTop: "0.5rem",
+                marginTop: isMobile ? "1rem" : "0.5rem",
+                px: isMobile ? 2 : 0,
+                py: isMobile ? 1 : 0,
                 opacity: 0.5,
                 ":hover": {
                     opacity: 1,
@@ -38,7 +42,7 @@ export default function TimeScreen() {
                 direction='row'
                 justifyContent='center'
                 alignItems='center'
-                spacing={0}
+                spacing={isMobile ? 1 : 0}
                 height={{ xs: "0.7rem", sm: "1rem", md: "1.5rem", lg: "2rem", xl: "3rem" }}
             >
                 <Typography
