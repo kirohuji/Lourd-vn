@@ -35,8 +35,8 @@ export default function NextButton() {
             loading={nextStepLoading}
             sx={{
                 position: 'absolute',
-                bottom: isMobile ? '40px' : 0,
-                right: isMobile ? '30px' : 0,
+                bottom: isMobile ? '36px' : 0,
+                right: isMobile ? '25px' : 0,
                 width: isMobile ? '80px' : { xs: 70, sm: 100, md: 150 },
                 minHeight: isMobile ? '44px' : undefined,
                 border: 3,
