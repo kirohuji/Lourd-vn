@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { CANVAS_UI_LAYER_NAME, NAVIGATION_ROUTE } from './constans';
 import './index.css';
+import { getCanvasDimensions } from './utils/device-utility';
 
 // Canvas setup with PIXI
 const body = document.body;
@@ -12,9 +13,12 @@ if (!body) {
     throw new Error('body element not found');
 }
 
+// 获取适合当前设备的画布尺寸
+const canvasDimensions = getCanvasDimensions();
+
 Game.init(body, {
-    height: 1080,
-    width: 1920,
+    height: canvasDimensions.height,
+    width: canvasDimensions.width,
     backgroundColor: '#303030',
 }).then(() => {
     // Pixi.JS UI Layer

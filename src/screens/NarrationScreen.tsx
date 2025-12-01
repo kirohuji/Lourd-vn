@@ -13,6 +13,7 @@ import remarkGfm from "remark-gfm";
 import { useShallow } from "zustand/react/shallow";
 import AnimatedDots from "../components/AnimatedDots";
 import SliderResizer from "../components/SliderResizer";
+import useIsMobile from "../hooks/useIsMobile";
 import { useQueryDialogue } from "../hooks/useQueryInterface";
 import useDialogueCardStore from "../stores/useDialogueCardStore";
 import useInterfaceStore from "../stores/useInterfaceStore";
@@ -20,6 +21,7 @@ import useTypewriterStore from "../stores/useTypewriterStore";
 import ChoiceMenu from "./ChoiceMenu";
 
 export default function NarrationScreen() {
+    const isMobile = useIsMobile();
     const {
         height: cardHeightTemp,
         setHeight: setCardHeight,
@@ -95,23 +97,28 @@ export default function NarrationScreen() {
                 >
                     <Card
                         key={"dialogue-card"}
-                        orientation='horizontal'
+                        orientation={isMobile ? 'vertical' : 'horizontal'}
                         sx={{
                             overflow: "auto",
-                            gap: 1,
+                            gap: isMobile ? 0.5 : 1,
                             padding: 0,
                             height: "100%",
-                            marginX: { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
+                            marginX: isMobile 
+                                ? { xs: "0.5rem", sm: "0.75rem" } 
+                                : { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
                         }}
                     >
                         {character?.icon && (
                             <AspectRatio
                                 flex
                                 ratio='1'
-                                maxHeight={"20%"}
+                                maxHeight={isMobile ? "15%" : "20%"}
                                 sx={{
-                                    height: "100%",
-                                    minWidth: `${cardImageWidth}%`,
+                                    height: isMobile ? "auto" : "100%",
+                                    minWidth: isMobile ? "auto" : `${cardImageWidth}%`,
+                                    width: isMobile ? "100%" : undefined,
+                                    maxWidth: isMobile ? "30%" : undefined,
+                                    marginX: isMobile ? "auto" : undefined,
                                 }}
                                 className={`motion-scale-x-in-0`}
                             >
@@ -141,13 +148,15 @@ export default function NarrationScreen() {
                         />
                         <CardContent>
                             <Typography
-                                fontSize='xl'
+                                fontSize={isMobile ? 'md' : 'xl'}
                                 fontWeight='lg'
                                 sx={{
                                     color: character?.color,
-                                    paddingLeft: 1,
+                                    paddingLeft: isMobile ? 0.5 : 1,
+                                    paddingX: isMobile ? 0.5 : undefined,
                                     height: { sx: undefined, md: 30 },
-                                    marginLeft: 2,
+                                    marginLeft: isMobile ? 0 : 2,
+                                    textAlign: isMobile ? 'center' : 'left',
                                 }}
                                 className={
                                     character && character.name
@@ -162,17 +171,17 @@ export default function NarrationScreen() {
                                 sx={{
                                     bgcolor: "background.level1",
                                     borderRadius: "sm",
-                                    p: 1.5,
+                                    p: isMobile ? 1 : 1.5,
                                     minHeight: 10,
                                     display: "flex",
                                     flex: 1,
                                     overflow: "auto",
                                     height: "100%",
-                                    marginX: { xs: 0, md: 3 },
-                                    marginBottom: { xs: 0, md: 3 },
+                                    marginX: isMobile ? 0 : { xs: 0, md: 3 },
+                                    marginBottom: isMobile ? 0 : { xs: 0, md: 3 },
                                 }}
                             >
-                                <NarrationScreenText paragraphRef={paragraphRef} />
+                                <NarrationScreenText paragraphRef={paragraphRef} isMobile={isMobile} />
                             </Sheet>
                         </CardContent>
                     </Card>
@@ -189,7 +198,13 @@ export default function NarrationScreen() {
     );
 }
 
-function NarrationScreenText({ paragraphRef }: { paragraphRef: RefObject<HTMLDivElement | null> }) {
+function NarrationScreenText({ 
+    paragraphRef, 
+    isMobile = false 
+}: { 
+    paragraphRef: RefObject<HTMLDivElement | null>;
+    isMobile?: boolean;
+}) {
     const typewriterDelay = useTypewriterStore(useShallow((state) => state.delay));
     const startTypewriter = useTypewriterStore(useShallow((state) => state.start));
     const endTypewriter = useTypewriterStore(useShallow((state) => state.end));
@@ -208,8 +223,14 @@ function NarrationScreenText({ paragraphRef }: { paragraphRef: RefObject<HTMLDiv
 
     return (
         <p
-            className={`prose ${mode === "dark" ? "dark:prose-invert" : ""}`}
-            style={{ margin: 0, padding: 0, maxWidth: "100%" }}
+            className={`prose ${mode === "dark" ? "dark:prose-invert" : ""} ${isMobile ? "prose-sm" : ""}`}
+            style={{ 
+                margin: 0, 
+                padding: 0, 
+                maxWidth: "100%",
+                fontSize: isMobile ? "0.875rem" : undefined,
+                lineHeight: isMobile ? "1.5" : undefined,
+            }}
         >
             <span>
                 <Markdown

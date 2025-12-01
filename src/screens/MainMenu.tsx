@@ -7,11 +7,13 @@ import { useEffect, useState } from 'react';
 import MenuButton from '../components/MenuButton';
 import { CANVAS_UI_LAYER_NAME } from '../constans';
 import useGameProps from '../hooks/useGameProps';
+import useIsMobile from '../hooks/useIsMobile';
 import { INTERFACE_DATA_USE_QUEY_KEY } from '../hooks/useQueryInterface';
 import useQueryLastSave from '../hooks/useQueryLastSave';
 import useGameSaveScreenStore from '../stores/useGameSaveScreenStore';
 import useInterfaceStore from '../stores/useInterfaceStore';
 import useSettingsScreenStore from '../stores/useSettingsScreenStore';
+import { getCanvasDimensions } from '../utils/device-utility';
 import { loadSave } from '../utils/save-utility';
 import { analyzeScriptPackage, ScriptPackageAnalysis } from '../utils/script-package-importer';
 import ScriptPackageAnalysisModal from './modals/ScriptPackageAnalysis';
@@ -24,6 +26,7 @@ export default function MainMenu() {
     const { data: lastSave = null, isLoading } = useQueryLastSave();
     const gameProps = useGameProps();
     const { uiTransition: t, navigate, notify } = gameProps;
+    const isMobile = useIsMobile();
     const [loading, setLoading] = useState(false);
     const [analysisOpen, setAnalysisOpen] = useState(false);
     const [analysis, setAnalysis] = useState<ScriptPackageAnalysis | null>(null);
@@ -31,28 +34,84 @@ export default function MainMenu() {
 
     useEffect(() => {
         editHideInterface(false);
-        let bg = new ImageSprite({}, 'background_main_menu');
-        bg.load();
+
+        // 获取画布尺寸
+        const canvasDimensions = getCanvasDimensions();
+
+        // 创建背景图 - 尝试方法一：直接在配置中设置 width 和 height
+        let bg = new ImageSprite(
+            {
+                width: canvasDimensions.width,
+                height: canvasDimensions.height,
+            },
+            'background_main_menu',
+        );
+
+        // 先添加到图层
         let layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
         if (layer) {
             layer.addChild(bg);
         }
 
+        // 等待图片加载完成后，如果方法一不行，使用方法二：手动缩放
+        bg.load()
+            .then(() => {
+                // 检查图片是否已经正确显示（通过检查实际尺寸）
+                const texture = (bg as any).texture;
+                if (texture) {
+                    const imageWidth = texture.width;
+                    const imageHeight = texture.height;
+
+                    // 如果图片尺寸和配置的尺寸不一致，说明需要手动缩放
+                    if (
+                        Math.abs(bg.width - canvasDimensions.width) > 1 ||
+                        Math.abs(bg.height - canvasDimensions.height) > 1
+                    ) {
+                        // 使用方法二：计算缩放比例（cover 模式）
+                        const scaleX = canvasDimensions.width / imageWidth;
+                        const scaleY = canvasDimensions.height / imageHeight;
+                        const scale = Math.max(scaleX, scaleY);
+
+                        // 设置缩放
+                        bg.scale.set(scale);
+
+                        // 设置位置为 (0, 0)，从左上角开始
+                        bg.x = 0;
+                        bg.y = 0;
+
+                        // 如果缩放后超出画布，调整位置居中显示
+                        const scaledWidth = imageWidth * scale;
+                        const scaledHeight = imageHeight * scale;
+                        if (scaledWidth > canvasDimensions.width) {
+                            bg.x = (canvasDimensions.width - scaledWidth) / 2;
+                        }
+                        if (scaledHeight > canvasDimensions.height) {
+                            bg.y = (canvasDimensions.height - scaledHeight) / 2;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('背景图加载失败:', error);
+            });
+
         return () => {
             canvas.getLayer(CANVAS_UI_LAYER_NAME)?.removeChildren();
         };
-    });
+    }, [isMobile]);
 
     return (
         <Stack
             direction='column'
             justifyContent='center'
-            alignItems='flex-start'
-            spacing={{ xs: 1, sm: 2, lg: 3 }}
+            alignItems={isMobile ? 'center' : 'flex-start'}
+            spacing={isMobile ? { xs: 1.5, sm: 2 } : { xs: 1, sm: 2, lg: 3 }}
             sx={{
                 height: '100%',
                 width: '100%',
-                paddingLeft: { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
+                paddingLeft: isMobile ? { xs: 2, sm: 3 } : { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
+                paddingRight: isMobile ? { xs: 2, sm: 3 } : 0,
+                paddingX: isMobile ? { xs: 2, sm: 3 } : undefined,
             }}
             component={motion.div}
             initial='closed'
