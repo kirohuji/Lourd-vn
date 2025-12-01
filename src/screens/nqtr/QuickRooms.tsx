@@ -1,17 +1,17 @@
-import { navigator } from "@drincs/nqtr";
-import { Avatar, AvatarGroup, Box, Grid } from "@mui/joy";
-import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { NqtrRoundIconButtonConvertor } from "../../components/NqtrRoundIconButton.tsx";
-import StackOverflow from "../../components/StackOverflow.tsx";
-import useIsMobile from "../../hooks/useIsMobile";
-import { INTERFACE_DATA_USE_QUEY_KEY } from "../../hooks/useQueryInterface";
+import { navigator } from '@drincs/nqtr';
+import { Avatar, AvatarGroup, Box, Grid } from '@mui/joy';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { NqtrRoundIconButtonConvertor } from '../../components/NqtrRoundIconButton.tsx';
+import StackOverflow from '../../components/StackOverflow.tsx';
+import useIsMobile from '../../hooks/useIsMobile';
+import { INTERFACE_DATA_USE_QUEY_KEY } from '../../hooks/useQueryInterface';
 import {
     CURRENT_ROOM_USE_QUEY_KEY,
     useQueryCurrentRoomId,
     useQueryQuickRooms,
     useQueryRoom,
-} from "../../hooks/useQueryNQTR.ts";
+} from '../../hooks/useQueryNQTR.ts';
 
 export default function QuickRooms() {
     const { data: rooms = [] } = useQueryQuickRooms();
@@ -23,14 +23,14 @@ export default function QuickRooms() {
         return (
             <Box
                 sx={{
-                    position: "absolute",
+                    position: 'absolute',
                     bottom: '16px',
                     left: '16px',
                     maxHeight: '60%',
                     maxWidth: '200px',
                     overflowY: 'auto',
                     overflowX: 'hidden',
-                    pointerEvents: "auto",
+                    pointerEvents: 'auto',
                     '&::-webkit-scrollbar': {
                         width: '4px',
                     },
@@ -42,14 +42,14 @@ export default function QuickRooms() {
             >
                 <Grid
                     container
-                    spacing={1}
+                    spacing={0.5}
                     sx={{
                         display: 'flex',
                         flexDirection: 'column',
                     }}
                 >
-                    {rooms.map((room) => (
-                        <Grid key={"room-" + room.id} xs={12}>
+                    {rooms.map(room => (
+                        <Grid key={'room-' + room.id} xs={12}>
                             <QuickRoom roomId={room.id} {...room} />
                         </Grid>
                     ))}
@@ -65,19 +65,19 @@ export default function QuickRooms() {
                 direction='column'
                 justifyContent='flex-start'
                 alignItems='flex-start'
-                spacing={1}
-                maxLeght={"60%"}
+                spacing={0.5}
+                maxLeght={'60%'}
                 sx={{
-                    display: "flex",
-                    position: "absolute",
+                    display: 'flex',
+                    position: 'absolute',
                     bottom: '16px',
                     left: '16px',
-                    pointerEvents: "auto",
+                    pointerEvents: 'auto',
                     maxWidth: '200px',
                 }}
             >
-                {rooms.map((room) => (
-                    <QuickRoom key={"room-" + room.id} roomId={room.id} {...room} />
+                {rooms.map(room => (
+                    <QuickRoom key={'room-' + room.id} roomId={room.id} {...room} />
                 ))}
             </StackOverflow>
         );
@@ -89,18 +89,18 @@ export default function QuickRooms() {
             direction='row'
             justifyContent='flex-start'
             alignItems='flex-end'
-            spacing={0.5}
-            maxLeght={"80%"}
+            spacing={0.25}
+            maxLeght={'80%'}
             sx={{
-                display: "flex",
-                position: "absolute",
+                display: 'flex',
+                position: 'absolute',
                 bottom: 0,
                 left: 0,
-                pointerEvents: "auto",
+                pointerEvents: 'auto',
             }}
         >
-            {rooms.map((room) => (
-                <QuickRoom key={"room-" + room.id} roomId={room.id} {...room} />
+            {rooms.map(room => (
+                <QuickRoom key={'room-' + room.id} roomId={room.id} {...room} />
             ))}
         </StackOverflow>
     );
@@ -123,34 +123,34 @@ function QuickRoom({ roomId }: { roomId: string }) {
                     queryClient.setQueryData([INTERFACE_DATA_USE_QUEY_KEY, CURRENT_ROOM_USE_QUEY_KEY], roomId);
                 }
             }}
-            ariaLabel={name || ""}
+            ariaLabel={name || ''}
             image={icon}
         >
             {characters && (
                 <AvatarGroup
                     sx={{
-                        position: "absolute",
+                        position: 'absolute',
                         bottom: 0,
                         right: 0,
-                        "--Avatar-size": { xs: "15px", sm: "22px", md: "28px" },
+                        '--Avatar-size': { xs: '15px', sm: '22px', md: '28px' },
                     }}
                 >
                     {characters.length <= 3 && (
                         <>
-                            {characters.map((character) => (
+                            {characters.map(character => (
                                 <Avatar key={character.id} alt={character.name} src={character.icon} size='sm' />
                             ))}
                         </>
                     )}
                     {characters.length > 3 && (
                         <>
-                            {characters.slice(0, 2).map((character) => (
+                            {characters.slice(0, 2).map(character => (
                                 <Avatar key={character.id} alt={character.name} src={character.icon} size='sm' />
                             ))}
                             <Avatar
                                 sx={{
-                                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                    color: "white",
+                                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                    color: 'white',
                                 }}
                                 size='sm'
                             >

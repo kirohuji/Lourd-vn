@@ -21,7 +21,8 @@ export default function NqtrRoundIconButton(props: NqtrRoundIconButtonProps) {
     return (
         <RoundIconButton
             sx={{
-                "--IconButton-size": isMobile ? "48px" : { xs: "40px", sm: "60px", md: "80px" },
+                // 比原来整体稍微小一点的按钮尺寸
+                "--IconButton-size": isMobile ? "40px" : { xs: "36px", sm: "54px", md: "72px" },
                 border: 3,
                 borderColor: selected ? useTheme().palette.primary[800] : useTheme().palette.background.body,
                 ...sx,
