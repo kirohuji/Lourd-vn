@@ -1,120 +1,120 @@
-# Pixi’VN template (React + Vite + MUI joy)
+# Pixi'VN 模板 (React + Vite + MUI Joy)
 
 ![pixi-vn-cover](https://github.com/user-attachments/assets/c67ea9f4-c91c-46ea-bfbe-6bc0d18b5de7)
 
-This is a template for creating visual novels in React. It uses the Pixi’VN library and Vite as a build tool.
-This Template contains basic functionality inspired by the widespread Visual Noval engine Ren'Py.
+这是一个用于在 React 中创建视觉小说的模板。它使用 Pixi'VN 库和 Vite 作为构建工具。
+此模板包含受广泛使用的视觉小说引擎 Ren'Py 启发的基本功能。
 
-## Overview
+## 概述
 
-For testing purposes we will recreate the visual novel [Breakdown](https://joshpowlison.itch.io/breakdown) with Pixi’VN in this guide. Breakdown is a short story that has all the features that a visual novel should have. Josh Powlison, the creator of Breakdown, has given us permission to use his narration for educational purposes❤️.
+为了测试目的，我们将在本指南中使用 Pixi'VN 重新创建视觉小说 [Breakdown](https://joshpowlison.itch.io/breakdown)。Breakdown 是一个短篇故事，包含了视觉小说应该具备的所有功能。Breakdown 的创作者 Josh Powlison 已授权我们将其叙述用于教育目的❤️。
 
-The first page that appears is the main menu. From there, you can start the game, load a saved game, or go to the settings.
+首先出现的页面是主菜单。从那里，你可以开始游戏、加载已保存的游戏或进入设置。
 
-The game page is in `/narration` route. It contains the text box, character avatar, and canvas for the background image. The text box displays the text of the current dialogue. The character avatar displays the character speaking the dialogue. The background image is the background of the scene.
-When a choice has to be made, the choices are displayed at the top of the screen.
+游戏页面位于 `/narration` 路由。它包含文本框、角色头像和背景图像的画布。文本框显示当前对话的文本。角色头像显示正在说话的角色。背景图像是场景的背景。
+当需要做出选择时，选择项会显示在屏幕顶部。
 
-When you are in the game page, you can access with many features through a list of buttons located at the bottom. In this list you can save the game, load a saved game, skip the dialogue, auto play the dialogue, access to the history modal, and access to the settings modal.
+当你在游戏页面时，可以通过位于底部的一系列按钮访问许多功能。在此列表中，你可以保存游戏、加载已保存的游戏、跳过对话、自动播放对话、访问历史记录模态框和访问设置模态框。
 
-The history modal is a list of all the dialogues and choices that have been displayed.
+历史记录模态框是所有已显示的对话和选择的列表。
 
-The settings modal allows you to change the text speed, go to full screen, edit theme colors, and change go to main menu. The settings for the audio have not been added nor the libraries to manage it, but I recommend adding them.
+设置模态框允许你更改文本速度、进入全屏、编辑主题颜色以及返回主菜单。音频设置尚未添加，也没有管理音频的库，但我建议添加它们。
 
-### Keyboard shortcuts (hotkeys)
+### 键盘快捷键
 
-* `Space` or `Enter`: Continue the dialogue.
-* `Keep Space` or `Keep Enter`: Skip the dialogue.
-* `Alt` + `S`: Quick save the game.
-* `Alt` + `L`: Quick load the game.
-* `Alt` + `H`: Open the history modal.
-* `Esc`: Open the settings modal.
-* `Alt` + `V`: Hide the UI (Show only the canvas).
+* `Space` 或 `Enter`: 继续对话。
+* `长按 Space` 或 `长按 Enter`: 跳过对话。
+* `Alt` + `S`: 快速保存游戏。
+* `Alt` + `L`: 快速加载游戏。
+* `Alt` + `H`: 打开历史记录模态框。
+* `Esc`: 打开设置模态框。
+* `Alt` + `V`: 隐藏 UI（仅显示画布）。
 
-### Used libraries
+### 使用的库
 
-This template uses the following libraries:
+此模板使用以下库：
 
-Core libraries:
+核心库：
 
-* [Pixi’VN](https://www.npmjs.com/package/@drincs/pixi-vn): A visual novel library.
-* [Pixi’VN - *ink* Integration](https://www.npmjs.com/package/@drincs/pixi-vn-ink): A library that provides integration with the *ink* language.
-* [Vite](https://vitejs.dev/): A build tool that aims to provide a faster and leaner development experience for modern web projects.
-* [Vite Checker](https://www.npmjs.com/package/vite-plugin-checker): A Vite plugin that checks TypeScript types and ESLint on each build.
-* [PWA Vite Plugin](https://vite-pwa-org.netlify.app): A Vite plugin that provides PWA support. This allows the possibility of installing the game as a Progressive Web App.
-* [Zustand](https://zustand-demo.pmnd.rs/): A small, fast, and scalable state management library.
-* [React Router](https://reactrouter.com/): A library that provides routing for React applications.
-* [Tanstack Query](https://tanstack.com/tanstack-query/): A library that provides a set of tools for getting, caching, and updating game data.
+* [Pixi'VN](https://www.npmjs.com/package/@drincs/pixi-vn): 一个视觉小说库。
+* [Pixi'VN - *ink* 集成](https://www.npmjs.com/package/@drincs/pixi-vn-ink): 提供与 *ink* 语言集成的库。
+* [Vite](https://vitejs.dev/): 一个构建工具，旨在为现代 Web 项目提供更快、更精简的开发体验。
+* [Vite Checker](https://www.npmjs.com/package/vite-plugin-checker): 一个 Vite 插件，在每次构建时检查 TypeScript 类型和 ESLint。
+* [PWA Vite Plugin](https://vite-pwa-org.netlify.app): 一个提供 PWA 支持的 Vite 插件。这允许将游戏安装为渐进式 Web 应用。
+* [Zustand](https://zustand-demo.pmnd.rs/): 一个小型、快速且可扩展的状态管理库。
+* [React Router](https://reactrouter.com/): 为 React 应用程序提供路由的库。
+* [Tanstack Query](https://tanstack.com/tanstack-query/): 一个提供用于获取、缓存和更新游戏数据的工具集的库。
   <img width="44" alt="image" src="https://github.com/user-attachments/assets/bf70dddc-68c0-48f4-9c41-74c22f54e3d1">
-  You can use the following button to show Tanstack Query interactions with the game. (the button will be automatically hidden when released)
-* [Tailwind CSS](https://tailwindcss.com/): A utility-first CSS framework for rapidly building custom designs.
-  * [Tailwind CSS Motion](https://rombo.co/tailwind/): A library that provides a set of utilities for creating animations with Tailwind CSS.
-  * [Tailwind CSS Typography](https://tailwindcss.com/docs/typography-plugin): A plugin that provides a set of utilities for styling text.
+  你可以使用以下按钮显示 Tanstack Query 与游戏的交互。（该按钮在发布时会自动隐藏）
+* [Tailwind CSS](https://tailwindcss.com/): 一个实用优先的 CSS 框架，用于快速构建自定义设计。
+  * [Tailwind CSS Motion](https://rombo.co/tailwind/): 一个提供用于使用 Tailwind CSS 创建动画的实用工具集的库。
+  * [Tailwind CSS Typography](https://tailwindcss.com/docs/typography-plugin): 一个提供用于样式化文本的实用工具集的插件。
 
-UI libraries:
+UI 库：
 
-* [Mui Joy](https://mui.com/joy-ui/getting-started/): A React UI framework that provides a set of components and styles for building a website.
-* [Motion](https://motion.dev/): A simple yet powerful motion library for React.
-* [Notistack](https://iamhosseindhv.com/notistack): A library that provides snackbar notifications for React.
-* [React Color Palette](https://www.npmjs.com/package/react-color-palette): A library that provides a color picker for React.
+* [Mui Joy](https://mui.com/joy-ui/getting-started/): 一个 React UI 框架，提供用于构建网站的一组组件和样式。
+* [Motion](https://motion.dev/): 一个简单而强大的 React 动画库。
+* [Notistack](https://iamhosseindhv.com/notistack): 一个为 React 提供 snackbar 通知的库。
+* [React Color Palette](https://www.npmjs.com/package/react-color-palette): 一个为 React 提供颜色选择器的库。
 
-Text libraries:
+文本库：
 
-* [i18next](https://www.i18next.com/): A library that gives the possibility to manage multiple translations in the application.
-* [React Markdown](https://www.npmjs.com/package/react-markdown): A library that allows you to render markdown in React components.
-  * [React Markdown Typewriter](hhttps://www.npmjs.com/package/react-markdown-typewriter): This library provides a new component, MarkdownTypewriter, that combines the Markdown component of react-markdown with the animation of typewriter. The animation was created entirely with motion.
+* [i18next](https://www.i18next.com/): 一个允许在应用程序中管理多种翻译的库。
+* [React Markdown](https://www.npmjs.com/package/react-markdown): 一个允许你在 React 组件中渲染 markdown 的库。
+  * [React Markdown Typewriter](https://www.npmjs.com/package/react-markdown-typewriter): 此库提供了一个新组件 MarkdownTypewriter，它结合了 react-markdown 的 Markdown 组件和打字机动画。动画完全使用 motion 创建。
 
-## How to use
+## 如何使用
 
-Before starting, you need to have Node.js installed on your computer. If you don't have it, you can download it [here](https://nodejs.org/).
+在开始之前，你需要在计算机上安装 Node.js。如果你还没有安装，可以[在此处下载](https://nodejs.org/)。
 
-### Recommended Visual Studio Code extensions
+### 推荐的 Visual Studio Code 扩展
 
-* [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode): Provides Tauri commands and debugging support.
-* [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer): Provides Rust language support.
-* [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb): Provides LLDB debugging support.
-* [JavaScript and TypeScript Nightly](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-next): Provides JavaScript and TypeScript nightlies.
-* [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint): Integrates ESLint into VS Code.
-* [vscode-color-picker](https://marketplace.visualstudio.com/items?itemName=antiantisepticeye.vscode-color-picker): A color picker for Visual Studio Code.
-* [Version Lens](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens): Shows the latest version for each package using code lens.
-* [ink - Pixi'VN](https://marketplace.visualstudio.com/items?itemName=drincs-productions.pixi-vn-ink-vscode): Syntax highlighting for the Ink language.
+* [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode): 提供 Tauri 命令和调试支持。
+* [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer): 提供 Rust 语言支持。
+* [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb): 提供 LLDB 调试支持。
+* [JavaScript and TypeScript Nightly](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-next): 提供 JavaScript 和 TypeScript 夜间版本。
+* [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint): 将 ESLint 集成到 VS Code。
+* [vscode-color-picker](https://marketplace.visualstudio.com/items?itemName=antiantisepticeye.vscode-color-picker): Visual Studio Code 的颜色选择器。
+* [Version Lens](https://marketplace.visualstudio.com/items?itemName=pflannery.vscode-versionlens): 使用代码镜头显示每个包的最新版本。
+* [ink - Pixi'VN](https://marketplace.visualstudio.com/items?itemName=drincs-productions.pixi-vn-ink-vscode): Ink 语言的语法高亮。
 
-### Change the icon
+### 更改图标
 
-You can change the icon of the game by replacing the images in the `public` folder.
+你可以通过替换 `public` 文件夹中的图像来更改游戏的图标。
 
-After that, you need to run the following command to change tauri icons.
+之后，你需要运行以下命令来更改 tauri 图标。
   
 ```bash
 npm run tauri icon public/pwa-512x512.png
 ```
 
-## *ink* - Custom hashtag scripts
+## *ink* - 自定义标签脚本
 
-By using the [onInkHashtagScript](https://pixi-vn.web.app/ink/ink-hashtag.html) function, in this template the following features have been added.
+通过使用 [onInkHashtagScript](https://pixi-vn.web.app/ink/ink-hashtag.html) 函数，在此模板中添加了以下功能。
 
-**Moving between screens**: This feature allows you to navigate between different screens. The syntax is as follows:
+**在屏幕之间移动**：此功能允许你在不同屏幕之间导航。语法如下：
 
 `#` + `navigate` + `[route]`
 
-`route`: The route/path to navigate to. Read more about routes in the [Router documentation](https://pixi-vn.web.app/start/interface-navigate.html).
+`route`: 要导航到的路由/路径。在 [Router 文档](https://pixi-vn.web.app/start/interface-navigate.html)中阅读有关路由的更多信息。
 
 ```ink
 #navigate /narration
 ```
 
-**Rename the character**: This feature allows you to change the name of the character speaking. The syntax is as follows:
+**重命名角色**：此功能允许你更改正在说话的角色名称。语法如下：
 
-`#` + `rename` + `[character id]` + `[new name]`
+`#` + `rename` + `[角色 id]` + `[新名称]`
 
-### *ink* - ink files in the project
+### *ink* - 项目中的 ink 文件
 
-The `ink` folder contains the *ink* files that will be used in the game. In this project, all files `.ink`, that are in the `ink` folder, will be included automatically in the project. You can change this behavior by modifying the `src/utils/ink-utility.ts` file.
+`ink` 文件夹包含将在游戏中使用的 *ink* 文件。在此项目中，`ink` 文件夹中的所有 `.ink` 文件将自动包含在项目中。你可以通过修改 `src/utils/ink-utility.ts` 文件来更改此行为。
 
-### *ink* - Writing/testing the narrative with Inky
+### *ink* - 使用 Inky 编写/测试叙述
 
-To write and test the narrative, you can use the **Inky editor**. Inky is a tool for writing interactive fiction using the Ink language. Of course, the special features introduced by pixi-vn will not be ignored by Inky. You can download it [here](https://www.inklestudios.com/ink/).
+要编写和测试叙述，你可以使用 **Inky 编辑器**。Inky 是一个使用 Ink 语言编写交互式小说的工具。当然，pixi-vn 引入的特殊功能不会被 Inky 忽略。你可以[在此处下载](https://www.inklestudios.com/ink/)。
 
-To use Inky with this template, you can open the `src/main.ink` file in Inky.
+要在此模板中使用 Inky，你可以在 Inky 中打开 `src/main.ink` 文件。
 
 ```ink
 // main.ink
@@ -123,82 +123,82 @@ INCLUDE ink/second.ink
 -> start
 ```
 
-## Installation
+## 安装
 
-First, is necessary install the dependencies. To do this, open a terminal in the root folder of the project and run the following command:
+首先，需要安装依赖项。为此，在项目根文件夹中打开终端并运行以下命令：
 
 ```bash
 npm install
 ```
 
-## Start the web application
+## 启动 Web 应用程序
 
-To start the web application, run the following command:
+要启动 Web 应用程序，请运行以下命令：
 
 ```bash
 npm start
 ```
 
-This command will start the development server. Open [http://localhost:1420](http://localhost:1420) to view it in the browser.
+此命令将启动开发服务器。在浏览器中打开 [http://localhost:1420](http://localhost:1420) 查看。
 
-### Debugging the web application
+### 调试 Web 应用程序
 
-If you are using Visual Studio Code, you can use the debug configuration provided with the template. To do this, after launching `npm start`, go to the debug section and select the `Launch Chrome` configuration.
+如果你使用 Visual Studio Code，可以使用模板提供的调试配置。为此，在启动 `npm start` 后，转到调试部分并选择 `Launch Chrome` 配置。
 
-## Start the Desktop Program (Tauri)
+## 启动桌面程序 (Tauri)
 
-**Prerequisites**: Before starting the Tauri application, you need read the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites) and install [rust](https://v2.tauri.app/start/prerequisites/#rust). Restart your pc.
+**先决条件**：在启动 Tauri 应用程序之前，你需要阅读 [Tauri 先决条件](https://v2.tauri.app/start/prerequisites)并安装 [rust](https://v2.tauri.app/start/prerequisites/#rust)。重启你的电脑。
 
-To start the Tauri application, run the following command:
+要启动 Tauri 应用程序，请运行以下命令：
 
 ```bash
 npm run tauri dev
 ```
 
-This command will start the Tauri application. The application will open in a window on your computer.
+此命令将启动 Tauri 应用程序。应用程序将在你计算机上的窗口中打开。
 
-### Debugging the Desktop Program
+### 调试桌面程序
 
-If you use Visual Studio Code, you can use the debug configuration that comes with the template. To do this, go to the debug section and select the `Tauri Development Debug` or `Tauri Production Debug` configuration.
+如果你使用 Visual Studio Code，可以使用模板附带的调试配置。为此，转到调试部分并选择 `Tauri Development Debug` 或 `Tauri Production Debug` 配置。
 
-Read more about the possibilities of debugging in the [Tauri documentation](https://v2.tauri.app/develop/debug/vscode/).
+在 [Tauri 文档](https://v2.tauri.app/develop/debug/vscode/)中阅读有关调试可能性的更多信息。
 
-## Start the Android application (Tauri)
+## 启动 Android 应用程序 (Tauri)
 
-**Prerequisites**: Before starting the Tauri application, you need read the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites) and install [rust](https://v2.tauri.app/start/prerequisites/#rust). And you need to have the [Android SDK installed on your computer](https://v2.tauri.app/start/prerequisites/#android).
+**先决条件**：在启动 Tauri 应用程序之前，你需要阅读 [Tauri 先决条件](https://v2.tauri.app/start/prerequisites)并安装 [rust](https://v2.tauri.app/start/prerequisites/#rust)。并且你需要在计算机上安装 [Android SDK](https://v2.tauri.app/start/prerequisites/#android)。
 
-To start the Tauri application, run the following command:
+要启动 Tauri 应用程序，请运行以下命令：
 
 ```bash
 npm run tauri android dev
 ```
 
-This command will start the Tauri application. The application will open in an emulator or on your Android device.
+此命令将启动 Tauri 应用程序。应用程序将在模拟器或你的 Android 设备上打开。
 
-## Start the iOS application (Tauri)
+## 启动 iOS 应用程序 (Tauri)
 
-**Prerequisites**: Before starting the Tauri application, you need read the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites) and install [rust](https://v2.tauri.app/start/prerequisites/#rust). And you need to have the [Xcode installed on your computer](https://v2.tauri.app/start/prerequisites/#ios).
+**先决条件**：在启动 Tauri 应用程序之前，你需要阅读 [Tauri 先决条件](https://v2.tauri.app/start/prerequisites)并安装 [rust](https://v2.tauri.app/start/prerequisites/#rust)。并且你需要在计算机上安装 [Xcode](https://v2.tauri.app/start/prerequisites/#ios)。
 
-To start the Tauri application, run the following command:
+要启动 Tauri 应用程序，请运行以下命令：
 
 ```bash
 npm run tauri ios dev
 ```
 
-## Distribution
+## 分发
 
-### Web application
+### Web 应用程序
 
-To build the project, run the following command:
+要构建项目，请运行以下命令：
 
 ```bash
 npm run build
 ```
 
-This command will create a `dist` folder with the files necessary to run the application. You can deploy this folder to a web server.
+此命令将创建一个 `dist` 文件夹，其中包含运行应用程序所需的文件。你可以将此文件夹部署到 Web 服务器。
 
-You can read more about the possibilities of hosting in the [Pixi’VN documentation](https://pixi-vn.web.app/advanced/distribution.html#hosting).
+你可以在 [Pixi'VN 文档](https://pixi-vn.web.app/advanced/distribution.html#hosting)中阅读有关托管可能性的更多信息。
 
-### Desktop application
+### 桌面应用程序
 
-You can read more about the possibilities of distribution in the [Pixi’VN documentation](https://pixi-vn.web.app/advanced/distribution-desktop-mobile.html).
+你可以在 [Pixi'VN 文档](https://pixi-vn.web.app/advanced/distribution-desktop-mobile.html)中阅读有关分发可能性的更多信息。
