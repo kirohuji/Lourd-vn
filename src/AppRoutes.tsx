@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import MoveButton from "./components/MoveButton";
 import NextButton from "./components/NextButton";
 import VisibilityButton from "./components/VisibilityButton";
 import { LOADING_ROUTE, MAIN_MENU_ROUTE, MAP_ROUTE, NARRATION_ROUTE, NAVIGATION_ROUTE } from "./constans";
@@ -54,6 +55,7 @@ function NavigationElement() {
             <QuickRooms />
             <TimeScreen />
             <NqtrQuickTools />
+            <MoveButton />
             <VisibilityButton />
         </>
     );

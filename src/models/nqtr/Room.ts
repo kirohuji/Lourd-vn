@@ -6,6 +6,8 @@ export interface RoomHotspot {
     targetRoomId: string;
     /** 热点图片（可选，如果不提供则使用透明点击区域） */
     sprite?: MultiTypeSpriteProp<Room>;
+    /** 图标类型：'arrow' 使用箭头图标，'hand' 使用手套图标，如果不指定则使用箭头 */
+    iconType?: 'arrow' | 'hand';
     /** X 位置（0-1 相对位置，或像素值） */
     x: number | { align: number };
     /** Y 位置（0-1 相对位置，或像素值） */

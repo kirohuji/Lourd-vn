@@ -1,7 +1,7 @@
-import { Assets } from "@drincs/pixi-vn";
-import manifest from "../assets/manifest";
-import { MAIN_MENU_ROUTE } from "../constans";
-import { mainMap } from "../values/maps";
+import { Assets } from '@drincs/pixi-vn';
+import manifest from '../assets/manifest';
+import { MAIN_MENU_ROUTE } from '../constans';
+import { mainMap } from '../values/maps';
 
 /**
  * Define all the assets that will be used in the game.
@@ -16,6 +16,8 @@ export async function defineAssets() {
 
     // The game will start immediately, but these asserts will be loaded in the background.
     Assets.backgroundLoadBundle(mainMap.id);
+    // 预加载导航图标
+    Assets.backgroundLoadBundle('navigation_icons');
 }
 
 /**

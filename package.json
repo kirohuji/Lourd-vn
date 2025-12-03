@@ -26,6 +26,7 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@types/jszip": "^3.4.1",
+    "cos-js-sdk-v5": "^1.10.1",
     "i18next": "^25.5.2",
     "i18next-chained-backend": "^4.6.2",
     "i18next-resources-to-backend": "^1.2.1",

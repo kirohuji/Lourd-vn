@@ -66,4 +66,9 @@
     "workbench.editorAssociations": {
         "*.md": "vscode.markdown.preview.editor"
     },
+    "cSpell.words": [
+        "hotspot",
+        "Hotspots",
+        "Nqtr"
+    ],
 }

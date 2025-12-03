@@ -16,7 +16,7 @@ export const mcRoom = new Room('mc_room', mcHome, {
     hotspots: [
         {
             targetRoomId: 'lounge',
-            x: { align: 0.8 }, // 门在右侧
+            x: { align: 0.95 }, // 门在右侧边缘，箭头指向左
             y: { align: 0.5 },
             width: 80,
             height: 120,
@@ -35,7 +35,7 @@ export const aliceRoom = new Room('alice_room', mcHome, {
     hotspots: [
         {
             targetRoomId: 'lounge',
-            x: { align: 0.8 }, // 门在右侧
+            x: { align: 0.95 }, // 门在右侧边缘，箭头指向左
             y: { align: 0.5 },
             width: 80,
             height: 120,
@@ -54,7 +54,7 @@ export const annRoom = new Room('ann_room', mcHome, {
     hotspots: [
         {
             targetRoomId: 'lounge',
-            x: { align: 0.8 }, // 门在右侧
+            x: { align: 0.95 }, // 门在右侧边缘，箭头指向左
             y: { align: 0.5 },
             width: 80,
             height: 120,
@@ -68,7 +68,7 @@ export const bathroom = new Room('bathroom', mcHome, {
     hotspots: [
         {
             targetRoomId: 'lounge',
-            x: { align: 0.2 }, // 门在左侧
+            x: { align: 0.05 }, // 门在左侧边缘，箭头指向右
             y: { align: 0.5 },
             width: 80,
             height: 120,
@@ -87,35 +87,40 @@ export const lounge = new Room('lounge', mcHome, {
     hotspots: [
         {
             targetRoomId: 'mc_room',
-            x: { align: 0.2 }, // MC房间门在左侧
+            iconType: 'hand', // 使用手套图标
+            x: { align: 0.05 }, // MC房间门在左侧边缘
             y: { align: 0.5 },
             width: 80,
             height: 120,
         },
         {
             targetRoomId: 'alice_room',
-            x: { align: 0.3 }, // Alice房间门
+            iconType: 'arrow', // 使用箭头图标
+            x: { align: 0.05 }, // Alice房间门在左侧边缘
             y: { align: 0.3 },
             width: 80,
             height: 120,
         },
         {
             targetRoomId: 'ann_room',
-            x: { align: 0.3 }, // Ann房间门
+            iconType: 'hand', // 使用手套图标
+            x: { align: 0.05 }, // Ann房间门在左侧边缘
             y: { align: 0.7 },
             width: 80,
             height: 120,
         },
         {
             targetRoomId: 'bathroom',
-            x: { align: 0.7 }, // 卫生间门在右侧
+            iconType: 'arrow', // 使用箭头图标
+            x: { align: 0.95 }, // 卫生间门在右侧边缘
             y: { align: 0.5 },
             width: 80,
             height: 120,
         },
         {
             targetRoomId: 'terrace',
-            x: { align: 0.9 }, // 阳台门在最右侧
+            iconType: 'hand', // 使用手套图标（示例：可以配置为 'arrow' 或 'hand'）
+            x: { align: 0.95 }, // 阳台门在右侧边缘，箭头指向左
             y: { align: 0.5 },
             width: 100,
             height: 150,
@@ -135,7 +140,7 @@ export const terrace = new Room('terrace', mcHome, {
     hotspots: [
         {
             targetRoomId: 'lounge',
-            x: { align: 0.1 }, // 返回客厅的门在左侧
+            x: { align: 0.05 }, // 返回客厅的门在左侧边缘，箭头指向右
             y: { align: 0.5 },
             width: 100,
             height: 150,

@@ -50,6 +50,9 @@ importers:
       '@types/jszip':
         specifier: ^3.4.1
         version: 3.4.1
+      cos-js-sdk-v5:
+        specifier: ^1.10.1
+        version: 1.10.1
       i18next:
         specifier: ^25.5.2
         version: 25.6.3(typescript@5.9.3)
@@ -2137,6 +2140,9 @@ packages:
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
 
+  cos-js-sdk-v5@1.10.1:
+    resolution: {integrity: sha512-a4SRfCY5g6Z35C7OWe9te/S1zk77rVQzfpvZ33gmTdJQzKxbNbEG7Aw/v453XwVMsQB352FIf7KRMm5Ya/wlZQ==}
+
   cosmiconfig@7.1.0:
     resolution: {integrity: sha512-AdmX6xUzdNASswsFtmwSt7Vj8po9IuqXm0UXz7QKPuEUmPB4XyjGfaAr2PSuELMwkRMVH1EpIkX5bTZGRB3eCA==}
     engines: {node: '>=10'}
@@ -2384,6 +2390,10 @@ packages:
 
   fast-uri@3.1.0:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
+
+  fast-xml-parser@4.5.0:
+    resolution: {integrity: sha512-/PlTQCI96+fZMAOLMZK4CWG1ItCbfZ/0jx7UIJFChPNrx7tcEgerUgWbeieCM9MfHInUDyK8DWYZ+YrywDJuTg==}
+    hasBin: true
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -3644,6 +3654,9 @@ packages:
 
   strip-literal@3.1.0:
     resolution: {integrity: sha512-8r3mkIM/2+PpjHoOtiAW8Rg3jJLHaV7xPwG+YRGrv6FP0wwk/toTpATxWYOW0BKdWwl82VT2tFYi5DlROa0Mxg==}
+
+  strnum@1.1.2:
+    resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==}
 
   style-to-js@1.1.21:
     resolution: {integrity: sha512-RjQetxJrrUJLQPHbLku6U/ocGtzyjbJMP9lCNK7Ag0CNh690nSH8woqWH9u16nMjYBAok+i7JO1NP2pOy8IsPQ==}
@@ -6077,6 +6090,10 @@ snapshots:
 
   core-util-is@1.0.3: {}
 
+  cos-js-sdk-v5@1.10.1:
+    dependencies:
+      fast-xml-parser: 4.5.0
+
   cosmiconfig@7.1.0:
     dependencies:
       '@types/parse-json': 4.0.2
@@ -6428,6 +6445,10 @@ snapshots:
   fast-levenshtein@2.0.6: {}
 
   fast-uri@3.1.0: {}
+
+  fast-xml-parser@4.5.0:
+    dependencies:
+      strnum: 1.1.2
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
@@ -7984,6 +8005,8 @@ snapshots:
   strip-literal@3.1.0:
     dependencies:
       js-tokens: 9.0.1
+
+  strnum@1.1.2: {}
 
   style-to-js@1.1.21:
     dependencies:
