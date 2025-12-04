@@ -33,7 +33,7 @@ export default function UsersManagement() {
     const [users, setUsers] = useState<UserResponseDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
+    const [roleFilter, setRoleFilter] = useState<UserRole | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
@@ -50,7 +50,7 @@ export default function UsersManagement() {
             const response = await apiClient.getUsers({
                 page,
                 limit: 20,
-                role: roleFilter || undefined,
+                role: roleFilter ?? undefined,
                 search: searchQuery || undefined,
             });
             setUsers(response.data);
@@ -140,9 +140,9 @@ export default function UsersManagement() {
                                 sx={{ width: 200 }}
                             />
                             <Select
-                                value={roleFilter}
+                                value={roleFilter || ''}
                                 onChange={(_, value) => {
-                                    setRoleFilter((value as UserRole | '') || '');
+                                    setRoleFilter((value as UserRole) || null);
                                     setPage(1);
                                 }}
                                 sx={{ minWidth: 150 }}

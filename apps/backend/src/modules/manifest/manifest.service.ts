@@ -1,24 +1,30 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CosService } from '../common/cos/cos.service';
+import { AssetsManifest } from '@drincs/pixi-vn';
 import {
   CreateResourceDto,
-  ResourceResponseDto,
-  ResourceQueryDto,
-  PaginatedResponse,
   ManifestResponse,
+  PaginatedResponse,
+  ResourceQueryDto,
+  ResourceResponseDto,
   UserRole,
 } from '@lourd-game/shared';
-import { AssetsManifest } from '@drincs/pixi-vn';
-import { calculateFileMD5, generateCosKey, validateFile, ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '../common/utils/file-hash.util';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CosService } from '../../common/cos/cos.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import {
+  ALLOWED_FILE_TYPES,
+  calculateFileMD5,
+  generateCosKey,
+  MAX_FILE_SIZE,
+  validateFile,
+} from '../../common/utils/file-hash.util';
 
 @Injectable()
-export class ResourcesService {
+export class ManifestService {
   constructor(
     private prisma: PrismaService,
     private cosService: CosService,
@@ -40,7 +46,7 @@ export class ResourcesService {
     }
 
     // 计算文件哈希
-    const hash = await calculateFileMD5(file.buffer);
+    const hash = calculateFileMD5(file.buffer);
 
     // 检查是否已存在相同哈希的文件
     const existingResource = await this.prisma.resource.findUnique({
@@ -76,7 +82,8 @@ export class ResourcesService {
         bundle: dto.bundle,
         hash,
         fileSize: file.size,
-        fileType: file.mimetype || file.originalname.split('.').pop()?.toLowerCase(),
+        fileType:
+          file.mimetype || file.originalname.split('.').pop()?.toLowerCase(),
         cosKey,
         originalName: file.originalname,
         uploaderId: userId,
@@ -107,7 +114,9 @@ export class ResourcesService {
     };
   }
 
-  async findAll(query: ResourceQueryDto): Promise<PaginatedResponse<ResourceResponseDto>> {
+  async findAll(
+    query: ResourceQueryDto,
+  ): Promise<PaginatedResponse<ResourceResponseDto>> {
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
@@ -226,17 +235,18 @@ export class ResourcesService {
     });
 
     // 生成 bundles 数组
-    const bundles = Array.from(bundleMap.entries()).map(([name, resources]) => ({
-      name,
-      assets: resources.map((resource) => ({
-        alias: resource.alias,
-        src: resource.src,
-      })),
-    }));
+    const bundles = Array.from(bundleMap.entries()).map(
+      ([name, resources]) => ({
+        name,
+        assets: resources.map((resource) => ({
+          alias: resource.alias,
+          src: resource.src,
+        })),
+      }),
+    );
 
     const manifest: AssetsManifest = { bundles };
 
     return { manifest };
   }
 }
-

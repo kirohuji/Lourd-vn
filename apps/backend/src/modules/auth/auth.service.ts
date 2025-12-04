@@ -1,8 +1,12 @@
+import {
+  JwtPayload,
+  LoginResponseDto,
+  UserRole,
+  WechatLoginDto,
+} from '@lourd-game/shared';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import { UserRole, LoginResponseDto, WechatLoginDto, JwtPayload } from '@lourd-game/shared';
-import * as crypto from 'crypto-js';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -126,7 +130,9 @@ export class AuthService {
     const secret = process.env.WECHAT_MINI_PROGRAM_SECRET;
 
     if (!appId || !secret) {
-      throw new UnauthorizedException('WeChat MiniProgram configuration is missing');
+      throw new UnauthorizedException(
+        'WeChat MiniProgram configuration is missing',
+      );
     }
 
     // 小程序登录：通过 code 获取 openid 和 session_key
@@ -135,7 +141,9 @@ export class AuthService {
     );
 
     if (!response.ok) {
-      throw new UnauthorizedException('Failed to get WeChat MiniProgram session');
+      throw new UnauthorizedException(
+        'Failed to get WeChat MiniProgram session',
+      );
     }
 
     const data = await response.json();
@@ -163,4 +171,3 @@ export class AuthService {
     return user;
   }
 }
-

@@ -1,23 +1,25 @@
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import {
-  UpdateUserDto,
-  UserResponseDto,
-  UserQueryDto,
   PaginatedResponse,
+  UpdateUserDto,
+  UserQueryDto,
+  UserResponseDto,
   UserRole,
 } from '@lourd-game/shared';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: UserQueryDto): Promise<PaginatedResponse<UserResponseDto>> {
+  async findAll(
+    query: UserQueryDto,
+  ): Promise<PaginatedResponse<UserResponseDto>> {
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
@@ -29,9 +31,7 @@ export class UsersService {
     }
 
     if (query.search) {
-      where.OR = [
-        { email: { contains: query.search, mode: 'insensitive' } },
-      ];
+      where.OR = [{ email: { contains: query.search, mode: 'insensitive' } }];
     }
 
     const [data, total] = await Promise.all([
@@ -145,7 +145,11 @@ export class UsersService {
     };
   }
 
-  async remove(id: number, currentUserId: number, currentUserRole: UserRole): Promise<void> {
+  async remove(
+    id: number,
+    currentUserId: number,
+    currentUserRole: UserRole,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -169,4 +173,3 @@ export class UsersService {
     });
   }
 }
-

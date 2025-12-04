@@ -1,10 +1,33 @@
 import * as crypto from 'crypto-js';
-import * as fs from 'fs';
+
+/**
+ * 允许的文件类型
+ */
+export const ALLOWED_FILE_TYPES = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.json',
+  '.txt',
+  '.mp3',
+  '.ogg',
+  '.wav',
+  '.mp4',
+  '.webm',
+];
+
+/**
+ * 最大文件大小（100MB）
+ */
+export const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 /**
  * 计算文件的 MD5 哈希值
  */
-export async function calculateFileMD5(file: Buffer): Promise<string> {
+export function calculateFileMD5(file: Buffer): string {
   const hash = crypto.MD5(crypto.lib.WordArray.create(file));
   return hash.toString(crypto.enc.Hex);
 }
@@ -57,4 +80,3 @@ export function validateFile(
 
   return { valid: true };
 }
-

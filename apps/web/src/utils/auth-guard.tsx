@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth-store';
-import { UserRole } from '@lourd-game/shared';
 
 interface AuthGuardProps {
     children: React.ReactNode;

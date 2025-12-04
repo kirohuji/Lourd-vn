@@ -1,45 +1,45 @@
+import type {
+  CreateResourceDto,
+  ManifestResponse,
+  PaginatedResponse,
+  ResourceQueryDto,
+  ResourceResponseDto,
+} from '@lourd-game/shared';
+import { UserRole } from '@lourd-game/shared';
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  Query,
-  UseInterceptors,
-  UploadedFile,
   ParseIntPipe,
+  Post,
+  Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiBody,
+  ApiTags,
 } from '@nestjs/swagger';
-import { ResourcesService } from './resources.service';
-import {
-  CreateResourceDto,
-  ResourceResponseDto,
-  ResourceQueryDto,
-  PaginatedResponse,
-  ManifestResponse,
-} from '@lourd-game/shared';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '@lourd-game/shared';
+import { ManifestService } from './manifest.service';
 
-@ApiTags('resources')
-@Controller('resources')
+@ApiTags('manifest')
+@Controller('manifest')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
-export class ResourcesController {
-  constructor(private readonly resourcesService: ResourcesService) {}
+export class ManifestController {
+  constructor(private readonly manifestService: ManifestService) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -60,13 +60,13 @@ export class ResourcesController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: '资源创建成功', type: ResourceResponseDto })
+  @ApiResponse({ status: 201, description: '资源创建成功' })
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreateResourceDto,
     @CurrentUser() user: any,
   ): Promise<ResourceResponseDto> {
-    return this.resourcesService.create(file, dto, user.id);
+    return this.manifestService.create(file, dto, user.id);
   }
 
   @Get()
@@ -74,24 +74,27 @@ export class ResourcesController {
   @ApiResponse({
     status: 200,
     description: '资源列表',
-    type: PaginatedResponse<ResourceResponseDto>,
   })
-  async findAll(@Query() query: ResourceQueryDto): Promise<PaginatedResponse<ResourceResponseDto>> {
-    return this.resourcesService.findAll(query);
+  async findAll(
+    @Query() query: ResourceQueryDto,
+  ): Promise<PaginatedResponse<ResourceResponseDto>> {
+    return this.manifestService.findAll(query);
   }
 
   @Get('manifest')
   @ApiOperation({ summary: '生成 Manifest' })
-  @ApiResponse({ status: 200, description: 'Manifest', type: ManifestResponse })
+  @ApiResponse({ status: 200, description: 'Manifest' })
   async generateManifest(): Promise<ManifestResponse> {
-    return this.resourcesService.generateManifest();
+    return this.manifestService.generateManifest();
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取资源详情' })
-  @ApiResponse({ status: 200, description: '资源详情', type: ResourceResponseDto })
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<ResourceResponseDto> {
-    return this.resourcesService.findOne(id);
+  @ApiResponse({ status: 200, description: '资源详情' })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResourceResponseDto> {
+    return this.manifestService.findOne(id);
   }
 
   @Delete(':id')
@@ -103,7 +106,6 @@ export class ResourcesController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<void> {
-    return this.resourcesService.remove(id, user.id, user.role);
+    return this.manifestService.remove(id, user.id, user.role);
   }
 }
-

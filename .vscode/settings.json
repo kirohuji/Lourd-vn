@@ -67,8 +67,14 @@
         "*.md": "vscode.markdown.preview.editor"
     },
     "cSpell.words": [
+        "errcode",
+        "errmsg",
         "hotspot",
         "Hotspots",
-        "Nqtr"
+        "lourd",
+        "miniprogram",
+        "Nqtr",
+        "unionid",
+        "wechat"
     ],
 }

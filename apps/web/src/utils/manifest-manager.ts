@@ -53,14 +53,15 @@ export class ManifestManager {
             if (apiManifest.bundles) {
                 apiManifest.bundles.forEach(bundle => {
                     const existingAssets = bundleMap.get(bundle.name) || [];
-                    const newAssets = (bundle.assets || []).map(asset => ({
+                    const assetsArray = Array.isArray(bundle.assets) ? bundle.assets : [];
+                    const newAssets = assetsArray.map((asset: any) => ({
                         alias: typeof asset.alias === 'string' ? asset.alias : '',
                         src: typeof asset.src === 'string' ? asset.src : String(asset.src || ''),
                     }));
 
                     // 避免重复的 alias
                     const existingAliases = new Set(existingAssets.map(asset => asset.alias));
-                    newAssets.forEach(asset => {
+                    newAssets.forEach((asset: { alias: string; src: string }) => {
                         if (asset.alias && asset.src && !existingAliases.has(asset.alias)) {
                             existingAssets.push(asset);
                         }
