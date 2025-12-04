@@ -1,0 +1,49 @@
+.resources-management {
+  padding: 20px;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+    }
+  }
+
+  .resource-list {
+    .resource-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: #f5f5f5;
+      border-radius: 8px;
+
+      .resource-info {
+        flex: 1;
+
+        .alias {
+          font-weight: bold;
+          display: block;
+          margin-bottom: 5px;
+        }
+
+        .bundle {
+          color: #666;
+          font-size: 12px;
+          margin-right: 10px;
+        }
+
+        .size {
+          color: #999;
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+

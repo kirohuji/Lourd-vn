@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String?   @unique
+  wechatOpenId String?   @unique
+  wechatUnionId String?  @unique
+  role         UserRole  @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  resources Resource[]
+
+  @@map("users")
+}
+
+model Resource {
+  id           Int      @id @default(autoincrement())
+  alias        String
+  src          String
+  bundle       String
+  hash         String   @unique
+  fileSize     Int
+  fileType     String?
+  cosKey       String?
+  originalName String?
+  uploaderId   Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([bundle])
+  @@index([alias])
+  @@index([hash])
+  @@map("resources")
+}
+
+model ManifestBundle {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("manifest_bundles")
+}

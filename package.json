@@ -4,12 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "vite",
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "dev:web": "pnpm --filter web dev",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:desktop": "pnpm --filter desktop dev",
+    "build:web": "pnpm --filter web build",
+    "build:backend": "pnpm --filter backend build",
+    "build:desktop": "pnpm --filter desktop build",
+    "build": "pnpm build:backend && pnpm build:web && pnpm build:desktop",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check"
   },
   "dependencies": {
     "@drincs/nqtr": "^0.5.7",
