@@ -4,6 +4,7 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth-store';
+import { MAIN_MENU_ROUTE } from '../../constans';
 import {
     getWeChatMiniProgramCode,
     getWeChatWebCode,
@@ -15,28 +16,26 @@ import {
 declare const Taro: any;
 declare const wx: any;
 
-export default function AdminLogin() {
+export default function UserLogin() {
     const navigate = useNavigate();
-    const { login, isAuthenticated, isAdmin, checkAuth } = useAuthStore();
+    const { login, isAuthenticated, checkAuth } = useAuthStore();
     const { enqueueSnackbar } = useSnackbar();
     const [code, setCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [isMiniProgram, setIsMiniProgram] = useState(false);
 
-    // 检查是否已登录且是管理员，如果是则跳转到管理后台
+    // 检查是否已登录，如果已登录则跳转到主菜单
     useEffect(() => {
         checkAuth();
-        // 只有在确实已登录且是管理员时才跳转，避免在登录页面时误跳转
-        if (isAuthenticated && isAdmin()) {
-            navigate('/admin/resources', { replace: true });
+        if (isAuthenticated) {
+            navigate(MAIN_MENU_ROUTE);
         }
     }, [isAuthenticated, navigate, checkAuth]);
 
     // 检测环境并自动登录
     useEffect(() => {
-        // 如果已登录且是管理员，不执行自动登录
-        if (isAuthenticated && isAdmin()) {
-            return;
+        if (isAuthenticated) {
+            return; // 如果已登录，不执行自动登录
         }
 
         const autoLogin = async () => {
@@ -55,7 +54,7 @@ export default function AdminLogin() {
 
                     await login(dto);
                     enqueueSnackbar('登录成功', { variant: 'success' });
-                    navigate('/admin/resources');
+                    navigate(MAIN_MENU_ROUTE);
                     return;
                 }
 
@@ -71,7 +70,7 @@ export default function AdminLogin() {
 
                         await login(dto);
                         enqueueSnackbar('登录成功', { variant: 'success' });
-                        navigate('/admin/resources');
+                        navigate(MAIN_MENU_ROUTE);
                         return;
                     }
                 }
@@ -83,7 +82,7 @@ export default function AdminLogin() {
         };
 
         autoLogin();
-    }, [login, navigate, enqueueSnackbar, isAuthenticated, isAdmin]);
+    }, [login, navigate, enqueueSnackbar, isAuthenticated]);
 
     const handleLogin = async () => {
         if (!code.trim()) {
@@ -99,7 +98,7 @@ export default function AdminLogin() {
             };
             await login(dto);
             enqueueSnackbar('登录成功', { variant: 'success' });
-            navigate('/admin/resources');
+            navigate(MAIN_MENU_ROUTE);
         } catch (error: any) {
             console.error('登录失败:', error);
             enqueueSnackbar(`登录失败: ${error.message}`, { variant: 'error' });
@@ -141,7 +140,7 @@ export default function AdminLogin() {
         >
             <Card sx={{ width: 400, p: 3 }}>
                 <Typography level='h3' sx={{ mb: 2, textAlign: 'center' }}>
-                    管理后台登录
+                    用户登录
                 </Typography>
                 <Sheet variant='outlined' sx={{ p: 2, borderRadius: 'sm', mb: 2 }}>
                     <Typography level='body-sm' color='neutral'>
@@ -182,3 +181,4 @@ export default function AdminLogin() {
         </Box>
     );
 }
+

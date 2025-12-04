@@ -69,8 +69,19 @@ class ApiClient {
                 // Unauthorized - clear token and redirect to login
                 this.removeToken();
                 // 只在非登录页面时跳转，避免循环跳转
-                if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
-                    window.location.href = '/admin/login';
+                if (typeof window !== 'undefined') {
+                    const currentPath = window.location.pathname;
+                    const isLoginPage = currentPath === '/login' || currentPath === '/admin/login';
+                    if (!isLoginPage) {
+                        // 根据当前路径判断跳转到哪个登录页面
+                        // 如果是管理后台相关路径，跳转到管理员登录
+                        if (currentPath.startsWith('/admin')) {
+                            window.location.href = '/admin/login';
+                        } else {
+                            // 否则跳转到普通用户登录
+                            window.location.href = '/login';
+                        }
+                    }
                 }
                 throw new Error('Unauthorized');
             }
