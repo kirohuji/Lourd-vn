@@ -9,6 +9,14 @@ export interface WechatLoginDto {
 }
 
 /**
+ * 邮箱登录请求 DTO
+ */
+export interface EmailLoginDto {
+  email: string;
+  password: string;
+}
+
+/**
  * 登录响应 DTO
  */
 export interface LoginResponseDto {

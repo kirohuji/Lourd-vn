@@ -20,9 +20,17 @@ export class UsersService {
   async findAll(
     query: UserQueryDto,
   ): Promise<PaginatedResponse<UserResponseDto>> {
-    const page = query.page || 1;
-    const limit = query.limit || 20;
-    const skip = (page - 1) * limit;
+    // 确保分页参数为数字，避免 Prisma 收到字符串导致验证错误
+    const page =
+      query.page !== undefined && query.page !== null ? Number(query.page) : 1;
+    const limit =
+      query.limit !== undefined && query.limit !== null
+        ? Number(query.limit)
+        : 20;
+
+    const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
+    const safeLimit = Number.isNaN(limit) || limit < 1 ? 20 : limit;
+    const skip = (safePage - 1) * safeLimit;
 
     const where: any = {};
 
@@ -38,7 +46,7 @@ export class UsersService {
       this.prisma.user.findMany({
         where,
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -60,9 +68,9 @@ export class UsersService {
         updatedAt: user.updatedAt,
       })),
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 

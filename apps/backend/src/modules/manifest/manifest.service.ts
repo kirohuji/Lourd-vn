@@ -5,6 +5,7 @@ import {
   PaginatedResponse,
   ResourceQueryDto,
   ResourceResponseDto,
+  UpdateResourceDto,
   UserRole,
 } from '@lourd-game/shared';
 import {
@@ -22,6 +23,8 @@ import {
   MAX_FILE_SIZE,
   validateFile,
 } from '../../common/utils/file-hash.util';
+
+declare const fetch: any;
 
 @Injectable()
 export class ManifestService {
@@ -117,9 +120,17 @@ export class ManifestService {
   async findAll(
     query: ResourceQueryDto,
   ): Promise<PaginatedResponse<ResourceResponseDto>> {
-    const page = query.page || 1;
-    const limit = query.limit || 20;
-    const skip = (page - 1) * limit;
+    // 确保分页参数为数字，避免 Prisma 收到字符串导致验证错误
+    const page =
+      query.page !== undefined && query.page !== null ? Number(query.page) : 1;
+    const limit =
+      query.limit !== undefined && query.limit !== null
+        ? Number(query.limit)
+        : 20;
+
+    const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
+    const safeLimit = Number.isNaN(limit) || limit < 1 ? 20 : limit;
+    const skip = (safePage - 1) * safeLimit;
 
     const where: any = {};
 
@@ -139,7 +150,7 @@ export class ManifestService {
       this.prisma.resource.findMany({
         where,
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.resource.count({ where }),
@@ -160,9 +171,9 @@ export class ManifestService {
         updatedAt: resource.updatedAt,
       })),
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 
@@ -187,6 +198,140 @@ export class ManifestService {
       uploaderId: resource.uploaderId,
       createdAt: resource.createdAt,
       updatedAt: resource.updatedAt,
+    };
+  }
+
+  /**
+   * 更新资源元数据（不修改文件本身）
+   */
+  async update(
+    id: number,
+    dto: UpdateResourceDto,
+  ): Promise<ResourceResponseDto> {
+    const resource = await this.prisma.resource.findUnique({
+      where: { id },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Resource with ID ${id} not found`);
+    }
+
+    const updated = await this.prisma.resource.update({
+      where: { id },
+      data: {
+        ...(dto.alias !== undefined && { alias: dto.alias }),
+        ...(dto.bundle !== undefined && { bundle: dto.bundle }),
+        ...(dto.fileType !== undefined && { fileType: dto.fileType }),
+        ...(dto.originalName !== undefined && {
+          originalName: dto.originalName,
+        }),
+      },
+    });
+
+    return {
+      id: updated.id,
+      alias: updated.alias,
+      src: updated.src,
+      bundle: updated.bundle,
+      hash: updated.hash,
+      fileSize: updated.fileSize,
+      fileType: updated.fileType || undefined,
+      originalName: updated.originalName || undefined,
+      uploaderId: updated.uploaderId,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  }
+
+  /**
+   * 将资源从当前地址迁移到腾讯云 COS，并更新资源地址
+   */
+  async migrateToCos(id: number): Promise<ResourceResponseDto> {
+    const resource = await this.prisma.resource.findUnique({
+      where: { id },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Resource with ID ${id} not found`);
+    }
+
+    const src = resource.src;
+    if (!src) {
+      throw new BadRequestException('Resource has no src to migrate');
+    }
+
+    let buffer: Buffer;
+    let mimeType: string | undefined;
+
+    if (src.startsWith('data:')) {
+      // data URL: data:[mime];base64,xxxx
+      const match = src.match(/^data:(.*?);base64,(.*)$/);
+      if (!match) {
+        throw new BadRequestException('Unsupported data URL format');
+      }
+      mimeType = match[1] || undefined;
+      buffer = Buffer.from(match[2], 'base64');
+    } else {
+      // 远程 URL：通过 fetch 下载
+      const response = await fetch(src);
+      if (!response || !response.ok) {
+        throw new BadRequestException(
+          `Failed to download resource from ${src}`,
+        );
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      const ct = response.headers?.get
+        ? response.headers.get('content-type')
+        : undefined;
+      mimeType = ct || undefined;
+    }
+
+    // 推断文件扩展名
+    let ext: string | undefined;
+    if (mimeType && mimeType.startsWith('image/')) {
+      ext = mimeType.split('/')[1];
+    } else if (resource.fileType) {
+      ext = resource.fileType.toLowerCase();
+    } else {
+      const urlWithoutQuery = src.split('?')[0];
+      const guessedExt = urlWithoutQuery.split('.').pop();
+      if (guessedExt && guessedExt.length <= 10) {
+        ext = guessedExt.toLowerCase();
+      }
+    }
+
+    const baseName =
+      resource.originalName ||
+      (ext ? `${resource.alias}.${ext}` : resource.alias);
+
+    const hash = resource.hash || calculateFileMD5(buffer);
+    const cosKey = generateCosKey(hash, baseName);
+
+    const fileUrl = await this.cosService.uploadFile(buffer, cosKey);
+
+    const updated = await this.prisma.resource.update({
+      where: { id: resource.id },
+      data: {
+        src: fileUrl,
+        cosKey,
+        fileSize: buffer.length,
+        fileType: ext || resource.fileType || mimeType || undefined,
+      },
+    });
+
+    return {
+      id: updated.id,
+      alias: updated.alias,
+      src: updated.src,
+      bundle: updated.bundle,
+      hash: updated.hash,
+      fileSize: updated.fileSize,
+      fileType: updated.fileType || undefined,
+      originalName: updated.originalName || undefined,
+      uploaderId: updated.uploaderId,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     };
   }
 

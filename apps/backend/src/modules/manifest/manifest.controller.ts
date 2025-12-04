@@ -4,6 +4,7 @@ import type {
   PaginatedResponse,
   ResourceQueryDto,
   ResourceResponseDto,
+  UpdateResourceDto,
 } from '@lourd-game/shared';
 import { UserRole } from '@lourd-game/shared';
 import {
@@ -14,6 +15,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseGuards,
@@ -109,5 +111,28 @@ export class ManifestController {
     @CurrentUser() user: any,
   ): Promise<void> {
     return this.manifestService.remove(id, user.id, user.role);
+  }
+
+  @Put(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '更新资源元数据（仅管理员）' })
+  @ApiResponse({ status: 200, description: '资源更新成功' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateResourceDto,
+  ): Promise<ResourceResponseDto> {
+    return this.manifestService.update(id, dto);
+  }
+
+  @Post(':id/migrate-to-cos')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '将资源迁移到腾讯云 COS（仅管理员）' })
+  @ApiResponse({ status: 200, description: '迁移成功，返回更新后的资源' })
+  async migrateToCos(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResourceResponseDto> {
+    return this.manifestService.migrateToCos(id);
   }
 }

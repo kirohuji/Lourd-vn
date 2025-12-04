@@ -1,6 +1,8 @@
 import { setupPixivnViteData } from '@drincs/pixi-vn/vite-listener';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useLocation } from 'react-router-dom';
+import AdminApp from './AdminApp';
 import { useI18n } from './i18n';
 import LoadingScreen from './screens/LoadingScreen';
 import { defineAssets } from './utils/assets-utility';
@@ -50,6 +52,15 @@ function ErrorFallback({ error }: { error: Error }) {
 }
 
 export default function App() {
+    const location = useLocation();
+    const isAdminRoute = location.pathname.startsWith('/admin');
+
+    // 如果是 admin 路由，加载 AdminApp（不包含游戏相关代码）
+    if (isAdminRoute) {
+        return <AdminApp />;
+    }
+
+    // 游戏路由：加载 Home（包含所有游戏初始化逻辑）
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <Suspense fallback={<LoadingScreen />}>

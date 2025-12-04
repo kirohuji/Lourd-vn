@@ -42,6 +42,8 @@ export class CosService {
           Bucket: this.config.bucket,
           Region: this.config.region,
           Key: key,
+          // 确保资源可被前端直接访问：对象设置为公共读
+          ACL: 'public-read',
           Body: file,
           onProgress: (progressData) => {
             if (onProgress) {

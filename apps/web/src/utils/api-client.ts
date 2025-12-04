@@ -1,9 +1,11 @@
 import {
+    EmailLoginDto,
     LoginResponseDto,
     ManifestResponse,
     PaginatedResponse,
     ResourceQueryDto,
     ResourceResponseDto,
+    UpdateResourceDto,
     UpdateUserDto,
     UserQueryDto,
     UserResponseDto,
@@ -115,11 +117,26 @@ class ApiClient {
         return response;
     }
 
+    async emailLogin(dto: EmailLoginDto): Promise<LoginResponseDto> {
+        const response = await this.request<LoginResponseDto>('/auth/email/login', {
+            method: 'POST',
+            body: dto,
+            needAuth: false,
+        });
+
+        // 保存 token
+        if (response.accessToken) {
+            this.setToken(response.accessToken);
+        }
+
+        return response;
+    }
+
     logout(): void {
         this.removeToken();
     }
 
-    // Resource APIs
+    // Resource APIs (后台资源管理，对应后端 ManifestController，基础路径为 /manifest)
     async getResources(query?: ResourceQueryDto): Promise<PaginatedResponse<ResourceResponseDto>> {
         const queryString = query
             ? '?' +
@@ -132,13 +149,15 @@ class ApiClient {
                   }, {} as Record<string, string>),
               ).toString()
             : '';
-        return this.request<PaginatedResponse<ResourceResponseDto>>(`/resources${queryString}`, {
+        // 后端路由为 GET /manifest
+        return this.request<PaginatedResponse<ResourceResponseDto>>(`/manifest${queryString}`, {
             method: 'GET',
         });
     }
 
     async getResource(id: number): Promise<ResourceResponseDto> {
-        return this.request<ResourceResponseDto>(`/resources/${id}`, {
+        // 后端路由为 GET /manifest/:id
+        return this.request<ResourceResponseDto>(`/manifest/${id}`, {
             method: 'GET',
         });
     }
@@ -149,7 +168,8 @@ class ApiClient {
         formData.append('alias', alias);
         formData.append('bundle', bundle);
 
-        return this.request<ResourceResponseDto>('/resources', {
+        // 后端路由为 POST /manifest
+        return this.request<ResourceResponseDto>('/manifest', {
             method: 'POST',
             body: formData,
             headers: {}, // Let browser set Content-Type for FormData
@@ -157,8 +177,22 @@ class ApiClient {
     }
 
     async deleteResource(id: number): Promise<void> {
-        return this.request<void>(`/resources/${id}`, {
+        // 后端路由为 DELETE /manifest/:id
+        return this.request<void>(`/manifest/${id}`, {
             method: 'DELETE',
+        });
+    }
+
+    async updateResource(id: number, dto: UpdateResourceDto): Promise<ResourceResponseDto> {
+        return this.request<ResourceResponseDto>(`/manifest/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async migrateResourceToCos(id: number): Promise<ResourceResponseDto> {
+        return this.request<ResourceResponseDto>(`/manifest/${id}/migrate-to-cos`, {
+            method: 'POST',
         });
     }
 

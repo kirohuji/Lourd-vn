@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserRole, LoginResponseDto, WechatLoginDto } from '@lourd-game/shared';
+import { UserRole, LoginResponseDto, WechatLoginDto, EmailLoginDto } from '@lourd-game/shared';
 import { apiClient } from '../utils/api-client';
 
 interface User {
@@ -13,6 +13,7 @@ interface AuthState {
     accessToken: string | null;
     isAuthenticated: boolean;
     login: (dto: WechatLoginDto) => Promise<LoginResponseDto>;
+    emailLogin: (dto: EmailLoginDto) => Promise<LoginResponseDto>;
     logout: () => void;
     checkAuth: () => void;
     isAdmin: () => boolean;
@@ -38,6 +39,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return response;
         } catch (error) {
             console.error('Login failed:', error);
+            throw error;
+        }
+    },
+
+    emailLogin: async (dto: EmailLoginDto) => {
+        try {
+            const response = await apiClient.emailLogin(dto);
+            // 保存用户信息到 localStorage
+            if (response.user) {
+                localStorage.setItem('user', JSON.stringify(response.user));
+            }
+            set({
+                user: response.user,
+                accessToken: response.accessToken,
+                isAuthenticated: true,
+            });
+            return response;
+        } catch (error) {
+            console.error('Email login failed:', error);
             throw error;
         }
     },

@@ -1,4 +1,5 @@
 import {
+  EmailLoginDto,
   JwtPayload,
   LoginResponseDto,
   UserRole,
@@ -6,6 +7,7 @@ import {
 } from '@lourd-game/shared';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
@@ -156,6 +158,51 @@ export class AuthService {
       openid: data.openid,
       unionid: data.unionid,
       sessionKey: data.session_key,
+    };
+  }
+
+  async emailLogin(dto: EmailLoginDto): Promise<LoginResponseDto> {
+    // 查找用户
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('邮箱或密码错误');
+    }
+
+    // 检查是否有密码
+    if (!user.password) {
+      throw new UnauthorizedException('该用户未设置密码，请使用其他登录方式');
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('邮箱或密码错误');
+    }
+
+    // 检查是否是管理员
+    if (user.role !== UserRole.ADMIN) {
+      throw new UnauthorizedException('该账户不是管理员账户');
+    }
+
+    // 生成 JWT token
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email || undefined,
+      role: user.role as UserRole,
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email || undefined,
+        role: user.role as UserRole,
+      },
     };
   }
 
