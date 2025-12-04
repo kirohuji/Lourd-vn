@@ -1,13 +1,13 @@
 {
-  "name": "my-app-package-name",
-  "description": "my-app-description",
+  "name": "@lourd-game/root",
+  "description": "Lourd Game - Visual Novel Game Template",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev:web": "pnpm --filter web dev",
+    "dev:web": "cd apps/web && pnpm dev",
     "dev:backend": "pnpm --filter backend start:dev",
     "dev:desktop": "pnpm --filter desktop dev",
-    "build:web": "pnpm --filter web build",
+    "build:web": "cd apps/web && pnpm build",
     "build:backend": "pnpm --filter backend build",
     "build:desktop": "pnpm --filter desktop build",
     "build": "pnpm build:backend && pnpm build:web && pnpm build:desktop",

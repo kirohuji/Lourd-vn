@@ -1,7 +1,7 @@
 {
-  "name": "desktop",
+  "name": "@lourd-game/desktop",
   "version": "0.1.0",
-  "description": "Tauri desktop app for NQTR game",
+  "description": "Tauri desktop app for Lourd Game",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter web build:h5 && tauri dev",

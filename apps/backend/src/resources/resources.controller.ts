@@ -27,12 +27,12 @@ import {
   ResourceQueryDto,
   PaginatedResponse,
   ManifestResponse,
-} from '@nqtr-game/shared';
+} from '@lourd-game/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '@nqtr-game/shared';
+import { UserRole } from '@lourd-game/shared';
 
 @ApiTags('resources')
 @Controller('resources')

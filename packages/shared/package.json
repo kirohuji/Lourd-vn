@@ -1,7 +1,7 @@
 {
-  "name": "@nqtr-game/shared",
+  "name": "@lourd-game/shared",
   "version": "0.1.0",
-  "description": "Shared types and utilities for NQTR game",
+  "description": "Shared types and utilities for Lourd Game",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -15,4 +15,3 @@
     "@drincs/pixi-vn": "^1.3.32"
   }
 }
-

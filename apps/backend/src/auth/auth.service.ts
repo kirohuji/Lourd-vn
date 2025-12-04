@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole, LoginResponseDto, WechatLoginDto, JwtPayload } from '@nqtr-game/shared';
+import { UserRole, LoginResponseDto, WechatLoginDto, JwtPayload } from '@lourd-game/shared';
 import * as crypto from 'crypto-js';
 
 @Injectable()

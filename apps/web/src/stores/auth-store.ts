@@ -1,64 +1,72 @@
 import { create } from 'zustand';
-import Taro from '@tarojs/taro';
-import { UserRole, LoginResponseDto } from '@nqtr-game/shared';
+import { UserRole, LoginResponseDto, WechatLoginDto } from '@lourd-game/shared';
 import { apiClient } from '../utils/api-client';
 
-interface AuthState {
-  user: {
+interface User {
     id: number;
     email?: string;
     role: UserRole;
-  } | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  login: (code: string, type: 'web' | 'miniprogram') => Promise<void>;
-  logout: () => void;
-  checkAuth: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
+interface AuthState {
+    user: User | null;
+    accessToken: string | null;
+    isAuthenticated: boolean;
+    login: (dto: WechatLoginDto) => Promise<LoginResponseDto>;
+    logout: () => void;
+    checkAuth: () => void;
+    isAdmin: () => boolean;
+}
 
-  login: async (code: string, type: 'web' | 'miniprogram') => {
-    try {
-      const response = await apiClient.wechatLogin({ code, type });
-      set({
-        user: response.user,
-        token: response.accessToken,
-        isAuthenticated: true,
-      });
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  },
+export const useAuthStore = create<AuthState>((set, get) => ({
+    user: null,
+    accessToken: null,
+    isAuthenticated: false,
 
-  logout: () => {
-    Taro.removeStorageSync('accessToken');
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-    });
-  },
+    login: async (dto: WechatLoginDto) => {
+        try {
+            const response = await apiClient.wechatLogin(dto);
+            set({
+                user: response.user,
+                accessToken: response.accessToken,
+                isAuthenticated: true,
+            });
+            return response;
+        } catch (error) {
+            console.error('Login failed:', error);
+            throw error;
+        }
+    },
 
-  checkAuth: () => {
-    const token = Taro.getStorageSync('accessToken');
-    if (token) {
-      // TODO: 验证 token 有效性，获取用户信息
-      set({
-        token,
-        isAuthenticated: true,
-      });
-    } else {
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-      });
-    }
-  },
+    logout: () => {
+        apiClient.logout();
+        set({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+        });
+    },
+
+    checkAuth: () => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            // 这里可以添加 token 验证逻辑
+            // 暂时只检查 token 是否存在
+            set({
+                accessToken: token,
+                isAuthenticated: true,
+            });
+        } else {
+            set({
+                user: null,
+                accessToken: null,
+                isAuthenticated: false,
+            });
+        }
+    },
+
+    isAdmin: () => {
+        const { user } = get();
+        return user?.role === UserRole.ADMIN;
+    },
 }));
-

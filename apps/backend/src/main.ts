@@ -23,8 +23,8 @@ async function bootstrap() {
 
   // Swagger 配置
   const config = new DocumentBuilder()
-    .setTitle('NQTR Game API')
-    .setDescription('NQTR Game Backend API')
+    .setTitle('Lourd Game API')
+    .setDescription('Lourd Game Backend API')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

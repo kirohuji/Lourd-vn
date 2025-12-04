@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { WechatLoginDto, LoginResponseDto } from '@nqtr-game/shared';
+import { WechatLoginDto, LoginResponseDto } from '@lourd-game/shared';
 
 @ApiTags('auth')
 @Controller('auth')

@@ -13,7 +13,7 @@ import {
   PaginatedResponse,
   ManifestResponse,
   UserRole,
-} from '@nqtr-game/shared';
+} from '@lourd-game/shared';
 import { AssetsManifest } from '@drincs/pixi-vn';
 import { calculateFileMD5, generateCosKey, validateFile, ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '../common/utils/file-hash.util';
 

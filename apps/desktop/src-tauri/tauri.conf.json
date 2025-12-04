@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "my-app-package-name",
+  "productName": "Lourd Game",
   "version": "0.1.0",
-  "identifier": "com.my-app-identifier.app",
+  "identifier": "com.lourd.game",
   "build": {
     "beforeDevCommand": "cd ../../web && pnpm dev:h5",
     "devUrl": "http://localhost:10086",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "fullscreen": true,
-        "title": "my-app-project-name",
+        "title": "Lourd Game",
         "width": 800,
         "height": 600
       }

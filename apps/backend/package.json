@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@lourd-game/backend",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -27,7 +27,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.3",
-    "@nqtr-game/shared": "workspace:*",
+    "@lourd-game/shared": "workspace:*",
     "@prisma/client": "^7.1.0",
     "@types/crypto-js": "^4.2.2",
     "@types/multer": "^2.0.0",

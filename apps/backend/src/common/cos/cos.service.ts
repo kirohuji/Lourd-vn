@@ -144,4 +144,3 @@ export class CosService {
     return `https://${this.config.domain}/${key}`;
   }
 }
-

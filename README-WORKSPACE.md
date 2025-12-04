@@ -1,10 +1,10 @@
-# NQTR Game - 前后端分离项目
+# Lourd Game - 前后端分离项目
 
 这是一个使用 pnpm workspace 组织的前后端分离项目，包含：
 
-- `apps/web` - Taro.js 前端项目（支持 Web 和微信小程序）
+- `apps/web` - Vite + React 前端项目（游戏客户端 + 管理后台）
 - `apps/backend` - NestJS 后端项目
-- `apps/desktop` - Tauri 桌面应用（使用 Taro 编译的 Web 版本）
+- `apps/desktop` - Tauri 桌面应用
 - `packages/shared` - 共享类型定义和工具函数
 
 ## 项目结构

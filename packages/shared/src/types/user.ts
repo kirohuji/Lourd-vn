@@ -48,3 +48,13 @@ export interface UserResponseDto {
   updatedAt: Date;
 }
 
+/**
+ * 用户查询参数
+ */
+export interface UserQueryDto {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: UserRole;
+}
+
