@@ -1,4 +1,5 @@
 import { canvas, ImageSprite, narration } from '@drincs/pixi-vn';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, CircularProgress } from '@mui/joy';
 import Stack from '@mui/joy/Stack';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,6 +17,7 @@ import useSettingsScreenStore from '../stores/useSettingsScreenStore';
 import { getCanvasDimensions } from '../utils/device-utility';
 import { loadSave } from '../utils/save-utility';
 import { analyzeScriptPackage, ScriptPackageAnalysis } from '../utils/script-package-importer';
+import ResourceManagementModal from './modals/ResourceManagementModal';
 import ScriptPackageAnalysisModal from './modals/ScriptPackageAnalysis';
 
 export default function MainMenu() {
@@ -31,6 +33,7 @@ export default function MainMenu() {
     const [analysisOpen, setAnalysisOpen] = useState(false);
     const [analysis, setAnalysis] = useState<ScriptPackageAnalysis | null>(null);
     const [packageFile, setPackageFile] = useState<File | null>(null);
+    const [resourceModalOpen, setResourceModalOpen] = useState(false);
 
     useEffect(() => {
         editHideInterface(false);
@@ -38,7 +41,7 @@ export default function MainMenu() {
         // 获取画布尺寸
         const canvasDimensions = getCanvasDimensions();
 
-        // 创建背景图 - 尝试方法一：直接在配置中设置 width 和 height
+        // 创建背景图
         let bg = new ImageSprite(
             {
                 width: canvasDimensions.width,
@@ -47,56 +50,23 @@ export default function MainMenu() {
             'background_main_menu',
         );
 
-        // 先添加到图层
-        let layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
+        // 添加到图层 - 使用正确的 API
+        const layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
         if (layer) {
             layer.addChild(bg);
         }
 
-        // 等待图片加载完成后，如果方法一不行，使用方法二：手动缩放
-        bg.load()
-            .then(() => {
-                // 检查图片是否已经正确显示（通过检查实际尺寸）
-                const texture = (bg as any).texture;
-                if (texture) {
-                    const imageWidth = texture.width;
-                    const imageHeight = texture.height;
-
-                    // 如果图片尺寸和配置的尺寸不一致，说明需要手动缩放
-                    if (
-                        Math.abs(bg.width - canvasDimensions.width) > 1 ||
-                        Math.abs(bg.height - canvasDimensions.height) > 1
-                    ) {
-                        // 使用方法二：计算缩放比例（cover 模式）
-                        const scaleX = canvasDimensions.width / imageWidth;
-                        const scaleY = canvasDimensions.height / imageHeight;
-                        const scale = Math.max(scaleX, scaleY);
-
-                        // 设置缩放
-                        bg.scale.set(scale);
-
-                        // 设置位置为 (0, 0)，从左上角开始
-                        bg.x = 0;
-                        bg.y = 0;
-
-                        // 如果缩放后超出画布，调整位置居中显示
-                        const scaledWidth = imageWidth * scale;
-                        const scaledHeight = imageHeight * scale;
-                        if (scaledWidth > canvasDimensions.width) {
-                            bg.x = (canvasDimensions.width - scaledWidth) / 2;
-                        }
-                        if (scaledHeight > canvasDimensions.height) {
-                            bg.y = (canvasDimensions.height - scaledHeight) / 2;
-                        }
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('背景图加载失败:', error);
-            });
+        // 尝试加载图片
+        bg.load().catch(e => {
+            console.error('Failed to load background image', e);
+        });
 
         return () => {
-            canvas.getLayer(CANVAS_UI_LAYER_NAME)?.removeChildren();
+            // 清理时移除所有子元素
+            const layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
+            if (layer) {
+                layer.removeChildren();
+            }
         };
     }, [isMobile]);
 
@@ -152,7 +122,11 @@ export default function MainMenu() {
             <MenuButton
                 onClick={async () => {
                     setLoading(true);
-                    canvas.removeAll();
+                    // 清理画布
+                    const layer = canvas.getLayer(CANVAS_UI_LAYER_NAME);
+                    if (layer) {
+                        layer.removeChildren();
+                    }
                     narration
                         .call('start', gameProps)
                         .then(() => queryClient.invalidateQueries({ queryKey: [INTERFACE_DATA_USE_QUEY_KEY] }))
@@ -232,9 +206,29 @@ export default function MainMenu() {
             >
                 导入剧本包
             </MenuButton>
+            {/* 资源管理按钮 */}
+            <MenuButton
+                onClick={() => setResourceModalOpen(true)}
+                transitionDelay={0.5}
+                disabled={loading}
+                startDecorator={<CloudUploadIcon />}
+                sx={
+                    isMobile
+                        ? {
+                              width: '100%',
+                              maxWidth: '400px',
+                              minHeight: '48px',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                          }
+                        : undefined
+                }
+            >
+                {t('resource_management')}
+            </MenuButton>
             <MenuButton
                 onClick={() => setOpenSettings(true)}
-                transitionDelay={0.5}
+                transitionDelay={0.6}
                 sx={
                     isMobile
                         ? {
@@ -268,6 +262,7 @@ export default function MainMenu() {
                 analysis={analysis}
                 packageFile={packageFile}
             />
+            <ResourceManagementModal open={resourceModalOpen} onClose={() => setResourceModalOpen(false)} />
         </Stack>
     );
 }
