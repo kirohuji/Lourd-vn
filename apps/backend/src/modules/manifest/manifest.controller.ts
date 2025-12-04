@@ -29,6 +29,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -81,8 +82,9 @@ export class ManifestController {
     return this.manifestService.findAll(query);
   }
 
-  @Get('manifest')
-  @ApiOperation({ summary: '生成 Manifest' })
+  @Get('generate')
+  @Public()
+  @ApiOperation({ summary: '生成 Manifest（公开接口）' })
   @ApiResponse({ status: 200, description: 'Manifest' })
   async generateManifest(): Promise<ManifestResponse> {
     return this.manifestService.generateManifest();

@@ -45,6 +45,9 @@ export default defineConfig({
         vitePluginPixivn(),
         vitePluginInk(),
     ],
+    optimizeDeps: {
+        include: ['@lourd-game/shared'],
+    },
     assetsInclude: ["**/ink/*.ink"],
     define: {
         __APP_VERSION__: JSON.stringify(process.env.npm_package_version),

@@ -1,13 +1,13 @@
 import {
     LoginResponseDto,
-    WechatLoginDto,
-    ResourceResponseDto,
+    ManifestResponse,
     PaginatedResponse,
     ResourceQueryDto,
-    ManifestResponse,
-    UserResponseDto,
-    UserQueryDto,
+    ResourceResponseDto,
     UpdateUserDto,
+    UserQueryDto,
+    UserResponseDto,
+    WechatLoginDto,
 } from '@lourd-game/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -68,6 +68,10 @@ class ApiClient {
             if (response.status === 401) {
                 // Unauthorized - clear token and redirect to login
                 this.removeToken();
+                // 只在非登录页面时跳转，避免循环跳转
+                if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
+                    window.location.href = '/admin/login';
+                }
                 throw new Error('Unauthorized');
             }
 
@@ -110,12 +114,12 @@ class ApiClient {
             ? '?' +
               new URLSearchParams(
                   Object.entries(query).reduce((acc, [key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        acc[key] = String(value);
-                    }
-                    return acc;
-                }, {} as Record<string, string>),
-            ).toString()
+                      if (value !== undefined && value !== null) {
+                          acc[key] = String(value);
+                      }
+                      return acc;
+                  }, {} as Record<string, string>),
+              ).toString()
             : '';
         return this.request<PaginatedResponse<ResourceResponseDto>>(`/resources${queryString}`, {
             method: 'GET',
@@ -128,11 +132,7 @@ class ApiClient {
         });
     }
 
-    async uploadResource(
-        file: File,
-        alias: string,
-        bundle: string,
-    ): Promise<ResourceResponseDto> {
+    async uploadResource(file: File, alias: string, bundle: string): Promise<ResourceResponseDto> {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('alias', alias);
@@ -152,8 +152,9 @@ class ApiClient {
     }
 
     async getManifest(): Promise<ManifestResponse> {
-        return this.request<ManifestResponse>('/resources/manifest', {
+        return this.request<ManifestResponse>('/manifest/generate', {
             method: 'GET',
+            needAuth: false,
         });
     }
 
@@ -163,12 +164,12 @@ class ApiClient {
             ? '?' +
               new URLSearchParams(
                   Object.entries(query).reduce((acc, [key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        acc[key] = String(value);
-                    }
-                    return acc;
-                }, {} as Record<string, string>),
-            ).toString()
+                      if (value !== undefined && value !== null) {
+                          acc[key] = String(value);
+                      }
+                      return acc;
+                  }, {} as Record<string, string>),
+              ).toString()
             : '';
         return this.request<PaginatedResponse<UserResponseDto>>(`/users${queryString}`, {
             method: 'GET',
