@@ -79,11 +79,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (token && userStr) {
             try {
                 const user = JSON.parse(userStr) as User;
-                set({
+            set({
                     user,
-                    accessToken: token,
-                    isAuthenticated: true,
-                });
+                accessToken: token,
+                isAuthenticated: true,
+            });
             } catch (error) {
                 console.error('Failed to parse user from localStorage:', error);
                 // 如果解析失败，清除无效数据

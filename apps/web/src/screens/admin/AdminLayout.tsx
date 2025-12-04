@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
     Box,
     Sheet,
@@ -7,12 +7,17 @@ import {
     ListItem,
     ListItemButton,
     ListItemContent,
+    Button,
 } from '@mui/joy';
+import StorageIcon from '@mui/icons-material/Storage';
+import PeopleIcon from '@mui/icons-material/People';
+import MapIcon from '@mui/icons-material/Map';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import { useAuthStore } from '../../stores/auth-store';
-import { Button } from '@mui/joy';
 
 export default function AdminLayout() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { logout, user } = useAuthStore();
 
     const handleLogout = () => {
@@ -37,12 +42,38 @@ export default function AdminLayout() {
                 </Typography>
                 <List>
                     <ListItem>
-                        <ListItemButton onClick={() => navigate('/admin/resources')}>
+                        <ListItemButton
+                            selected={location.pathname.startsWith('/admin/resources')}
+                            onClick={() => navigate('/admin/resources')}
+                        >
+                            <StorageIcon fontSize="small" />
                             <ListItemContent>资源管理</ListItemContent>
                         </ListItemButton>
                     </ListItem>
                     <ListItem>
-                        <ListItemButton onClick={() => navigate('/admin/users')}>
+                        <ListItemButton
+                            selected={location.pathname.startsWith('/admin/maps')}
+                            onClick={() => navigate('/admin/maps')}
+                        >
+                            <MapIcon fontSize="small" />
+                            <ListItemContent>地图编辑</ListItemContent>
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem>
+                        <ListItemButton
+                            selected={location.pathname.startsWith('/admin/characters')}
+                            onClick={() => navigate('/admin/characters')}
+                        >
+                            <PersonOutlineIcon fontSize="small" />
+                            <ListItemContent>角色编辑</ListItemContent>
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem>
+                        <ListItemButton
+                            selected={location.pathname.startsWith('/admin/users')}
+                            onClick={() => navigate('/admin/users')}
+                        >
+                            <PeopleIcon fontSize="small" />
                             <ListItemContent>用户管理</ListItemContent>
                         </ListItemButton>
                     </ListItem>

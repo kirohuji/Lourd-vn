@@ -1,0 +1,264 @@
+{
+  "maps": [
+    {
+      "id": "main_map",
+      "name": "Main Map",
+      "bundle": null,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "map-0",
+        "afternoon": "map-1",
+        "evening": "map-2",
+        "night": "map-3"
+      }
+    },
+    {
+      "id": "nightcity_map",
+      "name": "Nightcity",
+      "bundle": null,
+      "backgroundType": "single",
+      "backgroundJson": {
+        "src": "map-nightcity"
+      }
+    }
+  ],
+  "locations": [
+    {
+      "id": "mc_home",
+      "mapId": "main_map",
+      "name": "MC Home",
+      "iconAlias": "icon_location_home",
+      "order": 0
+    },
+    {
+      "id": "gym",
+      "mapId": "main_map",
+      "name": "Gym",
+      "iconAlias": "icon_location_gym",
+      "order": 1
+    },
+    {
+      "id": "school",
+      "mapId": "main_map",
+      "name": "School",
+      "iconAlias": null,
+      "order": 2
+    }
+  ],
+  "rooms": [
+    {
+      "id": "mc_room",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "MC room",
+      "isEntrance": false,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "location_myroom-0",
+        "afternoon": "location_myroom-1",
+        "evening": "location_myroom-2",
+        "night": "location_myroom-3"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "lounge",
+          "x": { "align": 0.95 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        }
+      ]
+    },
+    {
+      "id": "alice_room",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "Alice room",
+      "isEntrance": false,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "location_aliceroom-0",
+        "afternoon": "location_aliceroom-1",
+        "evening": "location_aliceroom-2",
+        "night": "location_aliceroom-3"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "lounge",
+          "x": { "align": 0.95 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        }
+      ]
+    },
+    {
+      "id": "ann_room",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "Ann room",
+      "isEntrance": false,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "location_annroom-0",
+        "afternoon": "location_annroom-1",
+        "evening": "location_annroom-2",
+        "night": "location_annroom-3"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "lounge",
+          "x": { "align": 0.95 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        }
+      ]
+    },
+    {
+      "id": "bathroom",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "Bathroom",
+      "isEntrance": false,
+      "backgroundType": "single",
+      "backgroundJson": {
+        "src": "location_bathroom"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "lounge",
+          "x": { "align": 0.05 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        }
+      ]
+    },
+    {
+      "id": "lounge",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "Lounge",
+      "isEntrance": false,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "location_lounge-0",
+        "afternoon": "location_lounge-1",
+        "evening": "location_lounge-2",
+        "night": "location_lounge-3"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "mc_room",
+          "iconType": "hand",
+          "x": { "align": 0.05 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        },
+        {
+          "targetRoomId": "alice_room",
+          "iconType": "arrow",
+          "x": { "align": 0.05 },
+          "y": { "align": 0.3 },
+          "width": 80,
+          "height": 120
+        },
+        {
+          "targetRoomId": "ann_room",
+          "iconType": "hand",
+          "x": { "align": 0.05 },
+          "y": { "align": 0.7 },
+          "width": 80,
+          "height": 120
+        },
+        {
+          "targetRoomId": "bathroom",
+          "iconType": "arrow",
+          "x": { "align": 0.95 },
+          "y": { "align": 0.5 },
+          "width": 80,
+          "height": 120
+        },
+        {
+          "targetRoomId": "terrace",
+          "iconType": "hand",
+          "x": { "align": 0.95 },
+          "y": { "align": 0.5 },
+          "width": 100,
+          "height": 150
+        }
+      ]
+    },
+    {
+      "id": "terrace",
+      "mapId": "main_map",
+      "locationId": "mc_home",
+      "name": "Terrace",
+      "isEntrance": true,
+      "backgroundType": "timeSlots",
+      "backgroundJson": {
+        "morning": "location_terrace-0",
+        "afternoon": "location_terrace-1",
+        "evening": "location_terrace-2",
+        "night": "location_terrace-3"
+      },
+      "hotspotsJson": [
+        {
+          "targetRoomId": "lounge",
+          "x": { "align": 0.05 },
+          "y": { "align": 0.5 },
+          "width": 100,
+          "height": 150
+        }
+      ]
+    },
+    {
+      "id": "gym_room",
+      "mapId": "main_map",
+      "locationId": "gym",
+      "name": "Gym",
+      "isEntrance": false,
+      "backgroundType": "single",
+      "backgroundJson": {
+        "src": "location_gym"
+      },
+      "hotspotsJson": []
+    },
+    {
+      "id": "class_room",
+      "mapId": "main_map",
+      "locationId": "school",
+      "name": "School",
+      "isEntrance": false,
+      "backgroundType": "single",
+      "backgroundJson": {
+        "src": ""
+      },
+      "hotspotsJson": []
+    }
+  ],
+  "characters": [
+    {
+      "id": "mc",
+      "name": "Liam",
+      "age": null,
+      "icon": null,
+      "color": null,
+      "enabled": true,
+      "order": 0
+    },
+    {
+      "id": "alice",
+      "name": "Alice",
+      "age": 25,
+      "icon": "https://raw.githubusercontent.com/DRincs-Productions/NQTR-System/refs/heads/main/game/images/icon/Alice.webp",
+      "color": "#5a129e",
+      "enabled": true,
+      "order": 1
+    }
+  ]
+}
+
+

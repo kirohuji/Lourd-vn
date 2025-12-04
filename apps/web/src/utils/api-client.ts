@@ -10,6 +10,18 @@ import {
     UserQueryDto,
     UserResponseDto,
     WechatLoginDto,
+    MapConfig,
+    LocationConfig,
+    RoomConfig,
+    CharacterConfig,
+    CreateMapDto,
+    UpdateMapDto,
+    CreateLocationDto,
+    UpdateLocationDto,
+    CreateRoomDto,
+    UpdateRoomDto,
+    CreateCharacterDto,
+    UpdateCharacterDto,
 } from '@lourd-game/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -78,7 +90,7 @@ class ApiClient {
                         // 根据当前路径判断跳转到哪个登录页面
                         // 如果是管理后台相关路径，跳转到管理员登录
                         if (currentPath.startsWith('/admin')) {
-                            window.location.href = '/admin/login';
+                    window.location.href = '/admin/login';
                         } else {
                             // 否则跳转到普通用户登录
                             window.location.href = '/login';
@@ -193,6 +205,83 @@ class ApiClient {
     async migrateResourceToCos(id: number): Promise<ResourceResponseDto> {
         return this.request<ResourceResponseDto>(`/manifest/${id}/migrate-to-cos`, {
             method: 'POST',
+        });
+    }
+
+    // 游戏配置：地图 / 地点 / 房间 / 角色
+    async getMaps(): Promise<MapConfig[]> {
+        return this.request<MapConfig[]>('/game-config/maps', {
+            method: 'GET',
+        });
+    }
+
+    async upsertMap(id: string, dto: CreateMapDto | UpdateMapDto): Promise<MapConfig> {
+        return this.request<MapConfig>(`/game-config/maps/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteMap(id: string): Promise<void> {
+        return this.request<void>(`/game-config/maps/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getLocations(): Promise<LocationConfig[]> {
+        return this.request<LocationConfig[]>('/game-config/locations', {
+            method: 'GET',
+        });
+    }
+
+    async upsertLocation(id: string, dto: CreateLocationDto | UpdateLocationDto): Promise<LocationConfig> {
+        return this.request<LocationConfig>(`/game-config/locations/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteLocation(id: string): Promise<void> {
+        return this.request<void>(`/game-config/locations/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getRooms(): Promise<RoomConfig[]> {
+        return this.request<RoomConfig[]>('/game-config/rooms', {
+            method: 'GET',
+        });
+    }
+
+    async upsertRoom(id: string, dto: CreateRoomDto | UpdateRoomDto): Promise<RoomConfig> {
+        return this.request<RoomConfig>(`/game-config/rooms/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteRoom(id: string): Promise<void> {
+        return this.request<void>(`/game-config/rooms/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getCharacters(): Promise<PaginatedResponse<CharacterConfig>> {
+        return this.request<PaginatedResponse<CharacterConfig>>('/game-config/characters', {
+            method: 'GET',
+        });
+    }
+
+    async upsertCharacter(id: string, dto: CreateCharacterDto | UpdateCharacterDto): Promise<CharacterConfig> {
+        return this.request<CharacterConfig>(`/game-config/characters/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteCharacter(id: string): Promise<void> {
+        return this.request<void>(`/game-config/characters/${id}`, {
+            method: 'DELETE',
         });
     }
 

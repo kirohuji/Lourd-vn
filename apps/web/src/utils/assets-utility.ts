@@ -1,7 +1,6 @@
 import { Assets } from '@drincs/pixi-vn';
 import manifest from '../assets/manifest';
 import { MAIN_MENU_ROUTE } from '../constans';
-import { mainMap } from '../values/maps';
 import { manifestManager } from './manifest-manager';
 
 /**
@@ -21,7 +20,6 @@ export async function defineAssets() {
         await Assets.loadBundle(MAIN_MENU_ROUTE);
 
         // The game will start immediately, but these asserts will be loaded in the background.
-        Assets.backgroundLoadBundle(mainMap.id);
         // 预加载导航图标
         Assets.backgroundLoadBundle('navigation_icons');
 
@@ -34,7 +32,6 @@ export async function defineAssets() {
         Assets.init({ manifest });
 
         await Assets.loadBundle(MAIN_MENU_ROUTE);
-        Assets.backgroundLoadBundle(mainMap.id);
         Assets.backgroundLoadBundle('navigation_icons');
     }
 }

@@ -44,8 +44,8 @@ export function AuthGuard({
             const adminStatus = isAdmin();
             if (!isAuthenticated || !adminStatus) {
                 navigate(redirectTo, { replace: true });
-                return;
-            }
+            return;
+        }
         }
     }, [isAuthenticated, user, requireAuth, requireAdmin, navigate, redirectTo, location.pathname]);
 
@@ -65,7 +65,7 @@ export function AuthGuard({
     if (requireAdmin) {
         const adminStatus = isAdmin();
         if (!isAuthenticated || !adminStatus) {
-            return null;
+        return null;
         }
     }
 

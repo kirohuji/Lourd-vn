@@ -61,3 +61,61 @@ model ManifestBundle {
 
   @@map("manifest_bundles")
 }
+
+model Map {
+  id             String   @id
+  name           String
+  bundle         String?
+  backgroundType String   @default("timeSlots")
+  backgroundJson Json?
+
+  locations      Location[]
+  rooms          Room[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Location {
+  id        String  @id
+  map       Map     @relation(fields: [mapId], references: [id])
+  mapId     String
+  name      String
+  iconAlias String?
+  order     Int     @default(0)
+
+  rooms     Room[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Room {
+  id             String   @id
+  map            Map?     @relation(fields: [mapId], references: [id])
+  mapId          String?
+  location       Location @relation(fields: [locationId], references: [id])
+  locationId     String
+  name           String
+  isEntrance     Boolean  @default(false)
+  backgroundType String   @default("timeSlots")
+  backgroundJson Json?
+  hotspotsJson   Json?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Character {
+  id        String  @id
+  name      String
+  age       Int?
+  icon      String?
+  color     String?
+  enabled   Boolean @default(true)
+  order     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

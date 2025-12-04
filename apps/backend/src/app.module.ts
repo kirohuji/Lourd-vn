@@ -6,6 +6,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ManifestModule } from './modules/manifest/manifest.module';
 import { UsersModule } from './modules/users/users.module';
+import { GameConfigModule } from './modules/game-config/game-config.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     ManifestModule,
     UsersModule,
+    GameConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,6 +15,46 @@ const manifest = JSON.parse(
   }>;
 };
 
+// 从本地 JSON 读取游戏配置（maps / locations / rooms / characters）
+const gameConfigJsonPath = path.join(__dirname, 'game-config-seed.json');
+const gameConfig = JSON.parse(
+  fs.readFileSync(gameConfigJsonPath, { encoding: 'utf-8' }),
+) as {
+  maps: Array<{
+    id: string;
+    name: string;
+    bundle: string | null;
+    backgroundType: string;
+    backgroundJson?: any;
+  }>;
+  locations: Array<{
+    id: string;
+    mapId: string;
+    name: string;
+    iconAlias?: string | null;
+    order?: number;
+  }>;
+  rooms: Array<{
+    id: string;
+    mapId?: string | null;
+    locationId: string;
+    name: string;
+    isEntrance?: boolean;
+    backgroundType: string;
+    backgroundJson?: any;
+    hotspotsJson?: any;
+  }>;
+  characters: Array<{
+    id: string;
+    name: string;
+    age?: number | null;
+    icon?: string | null;
+    color?: string | null;
+    enabled?: boolean;
+    order?: number;
+  }>;
+};
+
 const prisma = new PrismaClient();
 
 async function seedAdminUser() {
@@ -115,6 +155,91 @@ async function seedManifestResources(adminId: number) {
   console.log('✅ Manifest resources seeded successfully!');
 }
 
+async function seedGameConfig() {
+  console.log(
+    '🌱 Seeding game config (maps / locations / rooms / characters)...',
+  );
+
+  // Maps
+  for (const map of gameConfig.maps || []) {
+    const existing = await prisma.map.findUnique({
+      where: { id: map.id },
+    });
+    if (existing) continue;
+
+    await prisma.map.create({
+      data: {
+        id: map.id,
+        name: map.name,
+        bundle: map.bundle,
+        backgroundType: map.backgroundType,
+        backgroundJson: map.backgroundJson ?? null,
+      },
+    });
+  }
+
+  // Locations
+  for (const loc of gameConfig.locations || []) {
+    const existing = await prisma.location.findUnique({
+      where: { id: loc.id },
+    });
+    if (existing) continue;
+
+    await prisma.location.create({
+      data: {
+        id: loc.id,
+        mapId: loc.mapId,
+        name: loc.name,
+        iconAlias: loc.iconAlias ?? null,
+        order: loc.order ?? 0,
+      },
+    });
+  }
+
+  // Rooms
+  for (const room of gameConfig.rooms || []) {
+    const existing = await prisma.room.findUnique({
+      where: { id: room.id },
+    });
+    if (existing) continue;
+
+    await prisma.room.create({
+      data: {
+        id: room.id,
+        mapId: room.mapId ?? null,
+        locationId: room.locationId,
+        name: room.name,
+        isEntrance: room.isEntrance ?? false,
+        backgroundType: room.backgroundType,
+        backgroundJson: room.backgroundJson ?? null,
+        hotspotsJson: room.hotspotsJson ?? null,
+      },
+    });
+  }
+
+  // Characters
+  for (const ch of gameConfig.characters || []) {
+    const existing = await prisma.character.findUnique({
+      where: { id: ch.id },
+    });
+    if (existing) continue;
+
+    await prisma.character.create({
+      data: {
+        id: ch.id,
+        name: ch.name,
+        age: ch.age ?? null,
+        icon: ch.icon ?? null,
+        color: ch.color ?? null,
+        enabled: ch.enabled ?? true,
+        order: ch.order ?? 0,
+      },
+    });
+  }
+
+  console.log('✅ Game config seeded successfully!');
+}
+
 async function main() {
   console.log('🌱 Starting seed...');
 
@@ -123,6 +248,9 @@ async function main() {
 
   // 2. 将前端 manifest 中的资源写入数据库
   await seedManifestResources(admin.id);
+
+  // 3. 写入基础游戏配置（地图 / 地点 / 房间 / 角色）
+  await seedGameConfig();
 }
 
 main()

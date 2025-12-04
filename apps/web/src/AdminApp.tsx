@@ -3,6 +3,8 @@ import AdminLayout from './screens/admin/AdminLayout';
 import AdminLogin from './screens/admin/Login';
 import ResourcesManagement from './screens/admin/ResourcesManagement';
 import UsersManagement from './screens/admin/UsersManagement';
+import MapsEditor from './screens/admin/MapsEditor';
+import CharactersEditor from './screens/admin/CharactersEditor';
 import { AdminAuthGuard } from './utils/admin-auth-guard';
 
 /**
@@ -29,17 +31,25 @@ export default function AdminApp() {
                 <Route
                     path="resources"
                     element={
-                        <AdminAuthGuard>
-                            <ResourcesManagement />
-                        </AdminAuthGuard>
+                        <ResourcesManagement />
                     }
                 />
                 <Route
                     path="users"
                     element={
-                        <AdminAuthGuard>
-                            <UsersManagement />
-                        </AdminAuthGuard>
+                        <UsersManagement />
+                    }
+                />
+                <Route
+                    path="maps"
+                    element={
+                        <MapsEditor />
+                    }
+                />
+                <Route
+                    path="characters"
+                    element={
+                        <CharactersEditor />
                     }
                 />
             </Route>
