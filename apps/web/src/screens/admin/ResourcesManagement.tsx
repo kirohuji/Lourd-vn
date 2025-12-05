@@ -293,11 +293,6 @@ export default function ResourcesManagement() {
     };
 
     const handleMigrateToCos = async (resource: ResourceResponseDto) => {
-        const confirmed = window.confirm(
-            `确定要将资源「${resource.alias}」迁移到腾讯云存储吗？\n这会下载当前地址的文件并重新上传到腾讯云，然后更新资源地址。`,
-        );
-        if (!confirmed) return;
-
         setMigratingId(resource.id);
         try {
             await apiClient.migrateResourceToCos(resource.id);

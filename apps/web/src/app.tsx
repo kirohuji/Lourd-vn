@@ -5,13 +5,16 @@ import { useLocation } from 'react-router-dom';
 import AdminApp from './AdminApp';
 import { useI18n } from './i18n';
 import LoadingScreen from './screens/LoadingScreen';
+import { initGameConfigFromBackend } from './services/gameConfigFactory';
 import { defineAssets } from './utils/assets-utility';
 import { initializeIndexedDB } from './utils/indexedDB-utility';
 import { importAllInkLabels } from './utils/ink-utility';
 import { initializeNQTR } from './utils/nqtr-utility';
 
 const Home = lazy(async () => {
+    await initGameConfigFromBackend(); // 从后端加载地图/地点/房间/角色配置
     await import('./labels');
+    await import('./values');
     // 初始化 IndexedDB 仅用于游戏存档
     await Promise.all([initializeIndexedDB(), defineAssets(), useI18n(), importAllInkLabels(), initializeNQTR()]);
     setupPixivnViteData();

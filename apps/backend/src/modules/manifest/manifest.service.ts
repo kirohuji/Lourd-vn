@@ -87,10 +87,11 @@ export class ManifestService {
         fileSize: file.size,
         fileType:
           file.mimetype || file.originalname.split('.').pop()?.toLowerCase(),
+        mimeType: file.mimetype || undefined,
         cosKey,
         originalName: file.originalname,
         uploaderId: userId,
-      },
+      } as any, // 临时使用 any，直到运行 prisma generate
       include: {
         uploader: {
           select: {
@@ -310,6 +311,7 @@ export class ManifestService {
 
     const fileUrl = await this.cosService.uploadFile(buffer, cosKey);
 
+    const resourceWithMimeType = resource as any;
     const updated = await this.prisma.resource.update({
       where: { id: resource.id },
       data: {
@@ -317,7 +319,8 @@ export class ManifestService {
         cosKey,
         fileSize: buffer.length,
         fileType: ext || resource.fileType || mimeType || undefined,
-      },
+        mimeType: mimeType || resourceWithMimeType.mimeType || undefined,
+      } as any, // 临时使用 any，直到运行 prisma generate
     });
 
     return {
@@ -393,5 +396,58 @@ export class ManifestService {
     const manifest: AssetsManifest = { bundles };
 
     return { manifest };
+  }
+
+  async downloadByFileUrl(
+    fileUrl: string,
+  ): Promise<{ buffer: Buffer; mimeType: string }> {
+    // 首先尝试从数据库查找资源
+    const resource = await this.prisma.resource.findFirst({
+      where: { src: fileUrl },
+    });
+
+    let mimeType: string | undefined;
+
+    if (resource) {
+      // 如果数据库中有记录，使用数据库中的信息
+      mimeType = (resource as any).mimeType;
+    }
+
+    // 从 COS 获取文件（支持直接通过 URL 获取，不一定要在数据库中）
+    const key = this.cosService.extractKeyFromUrl(fileUrl);
+    if (!key) {
+      throw new BadRequestException(`无法从 URL 中提取 COS Key: ${fileUrl}`);
+    }
+    const buffer = await this.cosService.getFile(key);
+
+    // 如果没有从数据库获取到 mimeType，根据文件扩展名推断
+    if (!mimeType) {
+      const urlWithoutQuery = fileUrl.split('?')[0];
+      const ext = urlWithoutQuery.split('.').pop()?.toLowerCase();
+
+      // 根据扩展名推断 MIME 类型
+      const mimeTypeMap: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        svg: 'image/svg+xml',
+        mp3: 'audio/mpeg',
+        wav: 'audio/wav',
+        ogg: 'audio/ogg',
+        mp4: 'video/mp4',
+        webm: 'video/webm',
+        json: 'application/json',
+        txt: 'text/plain',
+      };
+
+      mimeType = ext ? mimeTypeMap[ext] : undefined;
+    }
+
+    // 最后使用默认值
+    mimeType = mimeType || 'application/octet-stream';
+
+    return { buffer, mimeType };
   }
 }

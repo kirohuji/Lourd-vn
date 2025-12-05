@@ -1,10 +1,10 @@
-import { WechatLoginDto } from '@lourd-game/shared';
+import { EmailLoginDto, WechatLoginDto } from '@lourd-game/shared';
 import { Box, Button, Card, FormControl, FormLabel, Input, Sheet, Typography } from '@mui/joy';
 import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LOADING_ROUTE, MAIN_MENU_ROUTE } from '../../constans';
 import { useAuthStore } from '../../stores/auth-store';
-import { MAIN_MENU_ROUTE } from '../../constans';
 import {
     getWeChatMiniProgramCode,
     getWeChatWebCode,
@@ -18,9 +18,11 @@ declare const wx: any;
 
 export default function UserLogin() {
     const navigate = useNavigate();
-    const { login, isAuthenticated, checkAuth } = useAuthStore();
+    const { emailLogin, login, isAuthenticated, checkAuth } = useAuthStore();
     const { enqueueSnackbar } = useSnackbar();
-    const [code, setCode] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    // const [code, setCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [isMiniProgram, setIsMiniProgram] = useState(false);
 
@@ -28,7 +30,7 @@ export default function UserLogin() {
     useEffect(() => {
         checkAuth();
         if (isAuthenticated) {
-            navigate(MAIN_MENU_ROUTE);
+            navigate(LOADING_ROUTE);
         }
     }, [isAuthenticated, navigate, checkAuth]);
 
@@ -84,21 +86,27 @@ export default function UserLogin() {
         autoLogin();
     }, [login, navigate, enqueueSnackbar, isAuthenticated]);
 
+    // 目前优先使用邮箱 + 密码登录
     const handleLogin = async () => {
-        if (!code.trim()) {
-            enqueueSnackbar('请输入微信授权码', { variant: 'warning' });
+        if (!email.trim()) {
+            enqueueSnackbar('请输入邮箱', { variant: 'warning' });
+            return;
+        }
+        if (!password.trim()) {
+            enqueueSnackbar('请输入密码', { variant: 'warning' });
             return;
         }
 
         setLoading(true);
         try {
-            const dto: WechatLoginDto = {
-                code: code.trim(),
-                type: 'web',
+            const dto: EmailLoginDto = {
+                email: email.trim(),
+                password: password.trim(),
             };
-            await login(dto);
+            await emailLogin(dto);
             enqueueSnackbar('登录成功', { variant: 'success' });
-            navigate(MAIN_MENU_ROUTE);
+            // 登录成功后先进入 Loading 场景，在那里完成游戏数据初始化
+            navigate(LOADING_ROUTE);
         } catch (error: any) {
             console.error('登录失败:', error);
             enqueueSnackbar(`登录失败: ${error.message}`, { variant: 'error' });
@@ -144,21 +152,17 @@ export default function UserLogin() {
                 </Typography>
                 <Sheet variant='outlined' sx={{ p: 2, borderRadius: 'sm', mb: 2 }}>
                     <Typography level='body-sm' color='neutral'>
-                        {isWeChatMiniProgram()
-                            ? '正在使用微信小程序自动登录...'
-                            : isWeChatWeb()
-                            ? '请使用微信扫码登录，获取授权码后输入下方'
-                            : '请使用微信扫码登录，获取授权码后输入下方'}
+                        目前使用邮箱 + 密码登录（微信登录逻辑保留在后台，后续可再启用）
                     </Typography>
                 </Sheet>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <FormControl>
-                        <FormLabel>微信授权码</FormLabel>
+                        <FormLabel>邮箱</FormLabel>
                         <Input
-                            placeholder='请输入微信授权码'
-                            value={code}
-                            onChange={e => setCode(e.target.value)}
-                            disabled={isWeChatMiniProgram()}
+                            placeholder='请输入邮箱'
+                            type='email'
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
                             onKeyPress={e => {
                                 if (e.key === 'Enter') {
                                     handleLogin();
@@ -166,19 +170,25 @@ export default function UserLogin() {
                             }}
                         />
                     </FormControl>
-                    <Button
-                        variant='solid'
-                        color='primary'
-                        onClick={handleLogin}
-                        loading={loading}
-                        disabled={isWeChatMiniProgram()}
-                        fullWidth
-                    >
-                        {isWeChatMiniProgram() ? '自动登录中...' : '登录'}
+                    <FormControl>
+                        <FormLabel>密码</FormLabel>
+                        <Input
+                            placeholder='请输入密码'
+                            type='password'
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            onKeyPress={e => {
+                                if (e.key === 'Enter') {
+                                    handleLogin();
+                                }
+                            }}
+                        />
+                    </FormControl>
+                    <Button variant='solid' color='primary' onClick={handleLogin} loading={loading} fullWidth>
+                        登录
                     </Button>
                 </Box>
             </Card>
         </Box>
     );
 }
-

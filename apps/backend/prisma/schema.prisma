@@ -38,6 +38,7 @@ model Resource {
   hash         String   @unique
   fileSize     Int
   fileType     String?
+  mimeType     String?
   cosKey       String?
   originalName String?
   uploaderId   Int

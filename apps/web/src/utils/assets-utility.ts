@@ -22,13 +22,10 @@ export async function defineAssets() {
         // The game will start immediately, but these asserts will be loaded in the background.
         // 预加载导航图标
         Assets.backgroundLoadBundle('navigation_icons');
-
-        console.log('Assets initialized with manifest from API');
     } catch (error) {
         console.error('Failed to initialize assets with API resources:', error);
 
         // 如果 API 调用失败，回退到原始 manifest
-        console.log('Falling back to original manifest');
         Assets.init({ manifest });
 
         await Assets.loadBundle(MAIN_MENU_ROUTE);
@@ -49,8 +46,6 @@ export async function addDynamicAssets(assets: Array<{ alias: string; src: strin
 
         // 后台加载新添加的资源
         Assets.backgroundLoad([...assets.map(asset => asset.alias)]);
-
-        console.log(`Dynamic assets added:`, assets);
     } catch (error) {
         console.error(`Failed to add dynamic assets:`, error);
         throw error;
@@ -67,8 +62,6 @@ export async function reloadAllAssets(): Promise<void> {
 
         // 重新初始化 Assets 系统
         await defineAssets();
-
-        console.log('All assets reloaded successfully');
     } catch (error) {
         console.error('Failed to reload assets:', error);
         throw error;

@@ -17,19 +17,22 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiProperty,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
+import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -37,15 +40,20 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ManifestService } from './manifest.service';
 
+export class GetFileDto {
+  @ApiProperty({ description: '文件URL' })
+  @IsString()
+  @IsNotEmpty()
+  fileUrl: string;
+}
+
 @ApiTags('manifest')
 @Controller('manifest')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class ManifestController {
   constructor(private readonly manifestService: ManifestService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: '上传资源（仅管理员）' })
@@ -73,7 +81,8 @@ export class ManifestController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取资源列表' })
+  @Public()
+  @ApiOperation({ summary: '获取资源列表（公开接口）' })
   @ApiResponse({
     status: 200,
     description: '资源列表',
@@ -102,7 +111,7 @@ export class ManifestController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '删除资源（仅管理员）' })
   @ApiResponse({ status: 200, description: '删除成功' })
@@ -114,7 +123,7 @@ export class ManifestController {
   }
 
   @Put(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '更新资源元数据（仅管理员）' })
   @ApiResponse({ status: 200, description: '资源更新成功' })
@@ -126,7 +135,7 @@ export class ManifestController {
   }
 
   @Post(':id/migrate-to-cos')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '将资源迁移到腾讯云 COS（仅管理员）' })
   @ApiResponse({ status: 200, description: '迁移成功，返回更新后的资源' })
@@ -134,5 +143,60 @@ export class ManifestController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ResourceResponseDto> {
     return this.manifestService.migrateToCos(id);
+  }
+
+  @Post('download')
+  @ApiOperation({ summary: '获取文件（POST）' })
+  async getFile(@Body() getFileDto: GetFileDto, @Res() res: Response) {
+    const { buffer, mimeType } = await this.manifestService.downloadByFileUrl(
+      getFileDto.fileUrl,
+    );
+    res.setHeader('Content-Type', mimeType);
+    res.send(buffer);
+  }
+
+  @Get('proxy')
+  @Public()
+  @ApiOperation({
+    summary: '代理获取文件（GET，用于前端资源加载，不带扩展名）',
+  })
+  @ApiResponse({ status: 200, description: '文件内容' })
+  async proxyFile(@Query('url') url: string, @Res() res: Response) {
+    return this.handleProxyRequest(url, res);
+  }
+
+  @Get('proxy/*')
+  @Public()
+  @ApiOperation({
+    summary: '代理获取文件（GET，用于前端资源加载，支持文件名路径）',
+  })
+  @ApiResponse({ status: 200, description: '文件内容' })
+  async proxyFileWithPath(@Query('url') url: string, @Res() res: Response) {
+    return this.handleProxyRequest(url, res);
+  }
+
+  private async handleProxyRequest(url: string, res: Response) {
+    if (!url) {
+      res.status(400).send('Missing url parameter');
+      return;
+    }
+
+    try {
+      // 解码 URL 参数
+      const decodedUrl = decodeURIComponent(url);
+      const { buffer, mimeType } =
+        await this.manifestService.downloadByFileUrl(decodedUrl);
+
+      // 设置响应头
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Length', buffer.length.toString());
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(404).send(error.message || 'File not found');
+    }
   }
 }

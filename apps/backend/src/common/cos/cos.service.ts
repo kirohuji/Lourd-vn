@@ -145,4 +145,53 @@ export class CosService {
   getFileUrl(key: string): string {
     return `https://${this.config.domain}/${key}`;
   }
+
+  /**
+   * 从 COS URL 中提取 Key
+   * @param url COS 资源 URL
+   * @returns COS Key
+   */
+  extractKeyFromUrl(url: string): string | null {
+    try {
+      // 匹配 COS URL 格式: https://bucket.cos.region.myqcloud.com/key
+      // 或 https://domain/key
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+
+      // 如果是通过 domain 访问，直接返回 pathname（去掉开头的 /）
+      if (url.includes(this.config.domain)) {
+        return pathname.startsWith('/') ? pathname.slice(1) : pathname;
+      }
+
+      // 如果是通过 bucket.cos.region.myqcloud.com 访问
+      // pathname 就是 key（去掉开头的 /）
+      if (pathname && pathname.length > 1) {
+        return pathname.startsWith('/') ? pathname.slice(1) : pathname;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to extract key from URL:', error);
+      return null;
+    }
+  }
+
+  async getFile(key: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      this.cos.getObject(
+        {
+          Bucket: this.config.bucket,
+          Region: this.config.region,
+          Key: key,
+        },
+        (err: COS.CosError | null, data: COS.GetObjectResult) => {
+          if (err) {
+            reject(new Error(err.message || 'Failed to get file'));
+          } else {
+            resolve(data.Body);
+          }
+        },
+      );
+    });
+  }
 }
