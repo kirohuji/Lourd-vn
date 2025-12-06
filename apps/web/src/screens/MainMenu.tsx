@@ -1,5 +1,4 @@
 import { canvas, ImageSprite, narration } from '@drincs/pixi-vn';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, CircularProgress } from '@mui/joy';
 import Stack from '@mui/joy/Stack';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,7 +15,7 @@ import useInterfaceStore from '../stores/useInterfaceStore';
 import useSettingsScreenStore from '../stores/useSettingsScreenStore';
 import { getCanvasDimensions } from '../utils/device-utility';
 import { loadSave } from '../utils/save-utility';
-import { analyzeScriptPackage, ScriptPackageAnalysis } from '../utils/script-package-importer';
+import { ScriptPackageAnalysis } from '../utils/script-package-importer';
 import ScriptPackageAnalysisModal from './modals/ScriptPackageAnalysis';
 
 export default function MainMenu() {
@@ -30,8 +29,8 @@ export default function MainMenu() {
     const isMobile = useIsMobile();
     const [loading, setLoading] = useState(false);
     const [analysisOpen, setAnalysisOpen] = useState(false);
-    const [analysis, setAnalysis] = useState<ScriptPackageAnalysis | null>(null);
-    const [packageFile, setPackageFile] = useState<File | null>(null);
+    const [analysis] = useState<ScriptPackageAnalysis | null>(null);
+    const [packageFile] = useState<File | null>(null);
 
     useEffect(() => {
         editHideInterface(false);
@@ -164,7 +163,7 @@ export default function MainMenu() {
             >
                 {t('load')}
             </MenuButton>
-            <MenuButton
+            {/* <MenuButton
                 onClick={() => {
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -203,9 +202,9 @@ export default function MainMenu() {
                 }
             >
                 导入剧本包
-            </MenuButton>
+            </MenuButton> */}
             {/* 资源管理按钮 - 已移至管理后台 */}
-            <MenuButton
+            {/* <MenuButton
                 onClick={() => window.open('/admin/resources', '_blank')}
                 transitionDelay={0.5}
                 disabled={loading}
@@ -223,7 +222,7 @@ export default function MainMenu() {
                 }
             >
                 {t('resource_management')}
-            </MenuButton>
+            </MenuButton> */}
             <MenuButton
                 onClick={() => setOpenSettings(true)}
                 transitionDelay={0.6}
