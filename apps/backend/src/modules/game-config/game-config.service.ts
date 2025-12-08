@@ -74,6 +74,7 @@ export class GameConfigService {
       name: l.name,
       iconAlias: l.iconAlias,
       order: l.order,
+      spriteJson: (l.spriteJson as any) || undefined,
     }));
   }
 
@@ -85,6 +86,7 @@ export class GameConfigService {
       name: dto.name,
       iconAlias: dto.iconAlias ?? null,
       order: dto.order ?? 0,
+      spriteJson: dto.spriteJson ?? null,
     };
     const loc = await this.prisma.location.upsert({
       where: { id: (dto as any).id },
@@ -100,6 +102,7 @@ export class GameConfigService {
       name: loc.name,
       iconAlias: loc.iconAlias,
       order: loc.order,
+      spriteJson: (loc.spriteJson as any) || undefined,
     };
   }
 

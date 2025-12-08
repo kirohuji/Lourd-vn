@@ -35,6 +35,16 @@ export interface UpdateMapDto {
 }
 
 /**
+ * Sprite 配置
+ */
+export interface SpriteConfig {
+  xAlign?: number;
+  yAlign?: number;
+  width?: number;
+  height?: number;
+}
+
+/**
  * 地点配置
  */
 export interface LocationConfig {
@@ -43,6 +53,10 @@ export interface LocationConfig {
   name: string;
   iconAlias?: string | null;
   order: number;
+  /**
+   * Sprite 配置，包含位置和尺寸信息
+   */
+  spriteJson?: SpriteConfig | null;
 }
 
 export interface CreateLocationDto {
@@ -51,12 +65,14 @@ export interface CreateLocationDto {
   name: string;
   iconAlias?: string | null;
   order?: number;
+  spriteJson?: SpriteConfig | null;
 }
 
 export interface UpdateLocationDto {
   name?: string;
   iconAlias?: string | null;
   order?: number;
+  spriteJson?: SpriteConfig | null;
 }
 
 /**

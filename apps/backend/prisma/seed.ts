@@ -33,6 +33,12 @@ const gameConfig = JSON.parse(
     name: string;
     iconAlias?: string | null;
     order?: number;
+    spriteJson?: {
+      xAlign?: number;
+      yAlign?: number;
+      width?: number;
+      height?: number;
+    } | null;
   }>;
   rooms: Array<{
     id: string;
@@ -192,7 +198,8 @@ async function seedGameConfig() {
         name: loc.name,
         iconAlias: loc.iconAlias ?? null,
         order: loc.order ?? 0,
-      },
+        spriteJson: loc.spriteJson ?? null,
+      } as any,
     });
   }
 

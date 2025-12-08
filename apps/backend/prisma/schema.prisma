@@ -84,6 +84,11 @@ model Location {
   name      String
   iconAlias String?
   order     Int     @default(0)
+  /**
+   * Sprite 配置 JSON，包含位置和尺寸信息
+   * 结构: { xAlign?: number; yAlign?: number; width?: number; height?: number }
+   */
+  spriteJson Json?
 
   rooms     Room[]
 

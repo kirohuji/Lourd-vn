@@ -28,21 +28,34 @@
       "mapId": "main_map",
       "name": "MC Home",
       "iconAlias": "icon_location_home",
-      "order": 0
+      "order": 0,
+      "spriteJson": {
+        "xAlign": 0.3,
+        "yAlign": 0.2,
+        "width": 120,
+        "height": 120
+      }
     },
     {
       "id": "gym",
       "mapId": "main_map",
       "name": "Gym",
       "iconAlias": "icon_location_gym",
-      "order": 1
+      "order": 1,
+      "spriteJson": {
+        "xAlign": 0.5,
+        "yAlign": 0.3,
+        "width": 120,
+        "height": 120
+      }
     },
     {
       "id": "school",
       "mapId": "main_map",
       "name": "School",
       "iconAlias": null,
-      "order": 2
+      "order": 2,
+      "spriteJson": null
     }
   ],
   "rooms": [
@@ -62,8 +75,12 @@
       "hotspotsJson": [
         {
           "targetRoomId": "lounge",
-          "x": { "align": 0.95 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.95
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         }
@@ -85,8 +102,12 @@
       "hotspotsJson": [
         {
           "targetRoomId": "lounge",
-          "x": { "align": 0.95 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.95
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         }
@@ -108,8 +129,12 @@
       "hotspotsJson": [
         {
           "targetRoomId": "lounge",
-          "x": { "align": 0.95 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.95
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         }
@@ -128,8 +153,12 @@
       "hotspotsJson": [
         {
           "targetRoomId": "lounge",
-          "x": { "align": 0.05 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.05
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         }
@@ -152,40 +181,60 @@
         {
           "targetRoomId": "mc_room",
           "iconType": "hand",
-          "x": { "align": 0.05 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.05
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         },
         {
           "targetRoomId": "alice_room",
           "iconType": "arrow",
-          "x": { "align": 0.05 },
-          "y": { "align": 0.3 },
+          "x": {
+            "align": 0.05
+          },
+          "y": {
+            "align": 0.3
+          },
           "width": 80,
           "height": 120
         },
         {
           "targetRoomId": "ann_room",
           "iconType": "hand",
-          "x": { "align": 0.05 },
-          "y": { "align": 0.7 },
+          "x": {
+            "align": 0.05
+          },
+          "y": {
+            "align": 0.7
+          },
           "width": 80,
           "height": 120
         },
         {
           "targetRoomId": "bathroom",
           "iconType": "arrow",
-          "x": { "align": 0.95 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.95
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 80,
           "height": 120
         },
         {
           "targetRoomId": "terrace",
           "iconType": "hand",
-          "x": { "align": 0.95 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.95
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 100,
           "height": 150
         }
@@ -207,8 +256,12 @@
       "hotspotsJson": [
         {
           "targetRoomId": "lounge",
-          "x": { "align": 0.05 },
-          "y": { "align": 0.5 },
+          "x": {
+            "align": 0.05
+          },
+          "y": {
+            "align": 0.5
+          },
           "width": 100,
           "height": 150
         }
@@ -260,5 +313,3 @@
     }
   ]
 }
-
-

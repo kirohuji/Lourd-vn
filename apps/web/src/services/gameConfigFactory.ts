@@ -85,18 +85,21 @@ export async function initGameConfigFromBackend(): Promise<void> {
         const mapModel = mapById.get(loc.mapId);
         const spriteFactory = (location: any, { navigate }: { navigate: (path: string) => void }) => {
             const iconKey = loc.iconAlias || 'icon_location_home';
+            // 从后端获取 sprite 配置，如果没有则使用默认值
+            const spriteConfig = loc.spriteJson || {};
             const icon = new ImageSprite(
                 {
-                    xAlign: 0.5,
-                    yAlign: 0.3,
-                    height: 120,
-                    width: 120,
+                    xAlign: spriteConfig.xAlign ?? 0.5,
+                    yAlign: spriteConfig.yAlign ?? 0.3,
+                    height: spriteConfig.height ?? 120,
+                    width: spriteConfig.width ?? 120,
                     eventMode: 'static',
                     cursor: 'pointer',
                 },
                 iconKey,
             );
             icon.on('pointerdown', () => {
+                console.log('pointerdown', location);
                 const entrance = location.entrance;
                 if (entrance) {
                     navigator.currentRoom = entrance;
