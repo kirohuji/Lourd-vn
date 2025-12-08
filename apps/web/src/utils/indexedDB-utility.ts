@@ -1,181 +1,172 @@
-/**
- * IndexedDB 工具 - 仅用于游戏存档功能
- * 资源管理已迁移到后端 API
- */
+const INDEXED_DB_VERSION = 2; // Increment this version number when you change the database schema
+const INDEXED_DB_NAME = "game_db";
+export const INDEXED_DB_SAVE_TABLE = "saves";
 
-const INDEXED_DB_NAME = 'game-db';
-const INDEXED_DB_SAVE_TABLE = 'saves';
-
-/**
- * 初始化 IndexedDB（仅用于游戏存档）
- */
-export async function initializeIndexedDB(): Promise<void> {
+export function initializeIndexedDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME, 1);
-
-        request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
+        let request = indexedDB.open(INDEXED_DB_NAME, INDEXED_DB_VERSION);
+        // check if the object store exists
+        request.onupgradeneeded = function (_event) {
+            let db = request.result;
+            if (!db.objectStoreNames.contains(INDEXED_DB_SAVE_TABLE)) {
+                // create the object store
+                let objectStore = db.createObjectStore(INDEXED_DB_SAVE_TABLE, { keyPath: "id", autoIncrement: true });
+                objectStore.createIndex("id", "id", { unique: true });
+                objectStore.createIndex("date", "date", { unique: false });
+                objectStore.createIndex("name", "name", { unique: false });
+                objectStore.createIndex("gameVersion", "gameVersion", { unique: false });
+            }
         };
 
         request.onsuccess = function (_event) {
             resolve();
         };
-
-        request.onupgradeneeded = function (event: any) {
-            const db = event.target.result;
-
-            // 创建 saves 表（如果不存在）
-            if (!db.objectStoreNames.contains(INDEXED_DB_SAVE_TABLE)) {
-                const objectStore = db.createObjectStore(INDEXED_DB_SAVE_TABLE, {
-                    keyPath: 'id',
-                    autoIncrement: true,
-                });
-                objectStore.createIndex('date', 'date', { unique: false });
-            }
+        request.onerror = function (event) {
+            console.error("Error opening indexDB", event);
+            reject();
         };
     });
 }
 
-/**
- * 保存数据到 IndexedDB
- */
-export async function putRowIntoIndexDB<T extends { id?: number }>(
-    tableName: string,
-    data: T,
-): Promise<T & { id: number }> {
+export async function putRowIntoIndexDB<T extends {}>(tableName: string, data: T): Promise<T> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME);
+        let request = indexedDB.open(INDEXED_DB_NAME);
+
         request.onsuccess = function (_event) {
-            const db = request.result;
+            let db = request.result;
+            // run onupgradeneeded before onsuccess
             if (!db.objectStoreNames.contains(tableName)) {
-                reject(new Error(`Table ${tableName} does not exist`));
-                return;
+                console.error("Object store rescues does not exist");
+                reject();
             }
-            const transaction = db.transaction([tableName], 'readwrite');
-            const objectStore = transaction.objectStore(tableName);
-            const putRequest = objectStore.put(data);
-
-            putRequest.onsuccess = function () {
-                resolve({ ...data, id: putRequest.result as number });
+            let transaction = db.transaction([tableName], "readwrite");
+            let objectStore = transaction.objectStore(tableName);
+            let setRequest = objectStore.put(data);
+            setRequest.onsuccess = function (_event) {
+                resolve(data);
             };
-
-            putRequest.onerror = function (event) {
-                console.error('Error putting data into indexDB', event);
-                reject(new Error('Failed to save data'));
+            setRequest.onerror = function (event) {
+                console.error("Error adding save data to indexDB", event);
+                reject();
             };
         };
         request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
+            console.error("Error adding save data to indexDB", event);
         };
     });
 }
 
-/**
- * 从 IndexedDB 获取数据
- */
-export async function getRowFromIndexDB<T>(tableName: string, id: number): Promise<T | null> {
+export async function getRowFromIndexDB<T extends {}>(tableName: string, id: any): Promise<T | null> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME);
+        let request = indexedDB.open(INDEXED_DB_NAME);
         request.onsuccess = function (_event) {
-            const db = request.result;
+            let db = request.result;
+            // check if the object store exists
             if (!db.objectStoreNames.contains(tableName)) {
                 resolve(null);
                 return;
             }
-            const transaction = db.transaction([tableName], 'readonly');
-            const objectStore = transaction.objectStore(tableName);
-            const getRequest = objectStore.get(id);
-
-            getRequest.onsuccess = function () {
-                resolve(getRequest.result || null);
+            let transaction = db.transaction([tableName], "readwrite");
+            let objectStore = transaction.objectStore(tableName);
+            let getRequest = objectStore.get(id);
+            getRequest.onsuccess = function (_event) {
+                resolve(getRequest.result);
             };
-
             getRequest.onerror = function (event) {
-                console.error('Error getting data from indexDB', event);
-                reject(new Error('Failed to get data'));
+                console.error("Error getting save data from indexDB", event);
+                reject();
             };
         };
         request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
+            console.error("Error opening indexDB", event);
+            reject();
         };
     });
 }
 
-/**
- * 从 IndexedDB 获取最后一条数据
- */
-export async function getLastRowFromIndexDB<T>(
-    tableName: string,
-    indexName?: string,
-): Promise<T | null> {
+export async function getLastRowFromIndexDB<T extends {}>(tableName: string): Promise<T | null> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME);
+        let request = indexedDB.open(INDEXED_DB_NAME);
         request.onsuccess = function (_event) {
-            const db = request.result;
+            let db = request.result;
+            // check if the object store exists
             if (!db.objectStoreNames.contains(tableName)) {
                 resolve(null);
                 return;
             }
-            const transaction = db.transaction([tableName], 'readonly');
-            const objectStore = transaction.objectStore(tableName);
-            const index = indexName ? objectStore.index(indexName) : null;
-            const cursorRequest = index ? index.openCursor(null, 'prev') : objectStore.openCursor(null, 'prev');
-
-            cursorRequest.onsuccess = function (event: any) {
-                const cursor = event.target.result;
+            let transaction = db.transaction([tableName], "readwrite");
+            let objectStore = transaction.objectStore(tableName);
+            let getRequest = objectStore.openCursor(null, "prev");
+            getRequest.onsuccess = function (_event) {
+                let cursor = getRequest.result;
                 if (cursor) {
                     resolve(cursor.value);
                 } else {
                     resolve(null);
                 }
             };
-
-            cursorRequest.onerror = function (event) {
-                console.error('Error getting last data from indexDB', event);
-                reject(new Error('Failed to get last data'));
+            getRequest.onerror = function (event) {
+                console.error("Error getting save data from indexDB", event);
+                reject();
             };
         };
         request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
+            console.error("Error opening indexDB", event);
+            reject();
         };
     });
 }
 
-/**
- * 从 IndexedDB 获取列表
- */
+export async function deleteRowFromIndexDB(tableName: string, id: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+        let request = indexedDB.open(INDEXED_DB_NAME);
+        request.onsuccess = function (_event) {
+            let db = request.result;
+            let transaction = db.transaction([tableName], "readwrite");
+            let objectStore = transaction.objectStore(tableName);
+            let deleteRequest = objectStore.delete(id);
+            deleteRequest.onsuccess = function (_event) {
+                resolve();
+            };
+            deleteRequest.onerror = function (event) {
+                console.error("Error deleting save data from indexDB", event);
+                reject();
+            };
+        };
+        request.onerror = function (event) {
+            console.error("Error deleting save data from indexDB", event);
+        };
+    });
+}
+
 export async function getListFromIndexDB<T extends {}>(
     tableName: string,
     options: {
         order?: { field: keyof T; direction: IDBCursorDirection };
         pagination?: { offset: number; limit: number };
-    } = {},
+    } = {}
 ): Promise<T[]> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME);
+        let request = indexedDB.open(INDEXED_DB_NAME);
         request.onsuccess = function (_event) {
-            const db = request.result;
+            let db = request.result;
+            // check if the object store exists
             if (!db.objectStoreNames.contains(tableName)) {
                 resolve([]);
                 return;
             }
-            const transaction = db.transaction([tableName], 'readonly');
-            const objectStore = transaction.objectStore(tableName);
-            const getRequest = options.order
+            let transaction = db.transaction([tableName], "readwrite");
+            let objectStore = transaction.objectStore(tableName);
+            let getRequest = options.order
                 ? objectStore.index(options.order.field as string).openCursor(null, options.order.direction)
                 : objectStore.openCursor();
-            const results: T[] = [];
+            let results: T[] = [];
             let counter = 0;
-            const limit = options.pagination?.limit ?? Infinity;
-            const offset = options.pagination?.offset ?? 0;
+            let limit = options.pagination?.limit ?? Infinity;
+            let offset = options.pagination?.offset ?? 0;
             let advanced = false;
-
-            getRequest.onsuccess = function (_event: any) {
-                const cursor = getRequest.result;
+            getRequest.onsuccess = (_event) => {
+                let cursor = getRequest.result;
                 if (cursor) {
                     if (counter >= offset) {
                         results.push(cursor.value);
@@ -192,50 +183,14 @@ export async function getListFromIndexDB<T extends {}>(
                     }
                 }
             };
-
             getRequest.onerror = function (event) {
-                console.error('Error getting list from indexDB', event);
-                reject(new Error('Failed to get list'));
+                console.error("Error getting save data from indexDB", event);
+                reject();
             };
         };
         request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
+            console.error("Error opening indexDB", event);
+            reject();
         };
     });
 }
-
-/**
- * 从 IndexedDB 删除数据
- */
-export async function deleteRowFromIndexDB(tableName: string, id: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(INDEXED_DB_NAME);
-        request.onsuccess = function (_event) {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(tableName)) {
-                reject(new Error(`Table ${tableName} does not exist`));
-                return;
-            }
-            const transaction = db.transaction([tableName], 'readwrite');
-            const objectStore = transaction.objectStore(tableName);
-            const deleteRequest = objectStore.delete(id);
-
-            deleteRequest.onsuccess = function () {
-                resolve();
-            };
-
-            deleteRequest.onerror = function (event) {
-                console.error('Error deleting data from indexDB', event);
-                reject(new Error('Failed to delete data'));
-            };
-        };
-        request.onerror = function (event) {
-            console.error('Error opening indexDB', event);
-            reject(new Error('Failed to open IndexedDB'));
-        };
-    });
-}
-
-export { INDEXED_DB_SAVE_TABLE };
-

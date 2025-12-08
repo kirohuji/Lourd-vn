@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import TextMenuButton from "../components/TextMenuButton";
 import useNarrationFunctions from "../hooks/useNarrationFunctions";
 import { useQueryCanGoBack } from "../hooks/useQueryInterface";
-import useIsMobile from "../hooks/useIsMobile";
 import useQueryLastSave, { LAST_SAVE_USE_QUEY_KEY } from "../hooks/useQueryLastSave";
 import { SAVES_USE_QUEY_KEY } from "../hooks/useQuerySaves";
 import useAutoInfoStore from "../stores/useAutoInfoStore";
@@ -36,7 +35,6 @@ export default function QuickTools() {
     const { data: canGoBack = null } = useQueryCanGoBack();
     const nextStepLoading = useStepStore((state) => state.loading);
     const { goBack } = useNarrationFunctions();
-    const isMobile = useIsMobile();
     const textMenuVarians = useMemo(
         () =>
             hidden
@@ -48,18 +46,16 @@ export default function QuickTools() {
     return (
         <Stack
             direction='row'
-            justifyContent={isMobile ? 'space-around' : 'center'}
+            justifyContent='center'
             alignItems='flex-end'
-            spacing={isMobile ? 0.5 : { xs: 0.5, sm: 1, md: 2 }}
+            spacing={{ xs: 0.5, sm: 1, md: 2 }}
             sx={{
                 position: "absolute",
                 height: { xs: "0.9rem", sm: "1rem", md: "1.1rem", lg: "1.3rem", xl: "1.4rem" },
-                px: isMobile ? 2 : { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
-                pb: isMobile ? '16px' : 0,
+                paddingLeft: { xs: 1, sm: 2, md: 4, lg: 6, xl: 8 },
                 left: 0,
                 right: 0,
                 bottom: 0,
-                boxSizing: 'border-box',
             }}
             className={textMenuVarians}
         >

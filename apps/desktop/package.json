@@ -4,8 +4,8 @@
   "description": "Tauri desktop app for Lourd Game",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter web build:h5 && tauri dev",
-    "build": "pnpm --filter web build:h5 && tauri build",
+    "dev": "pnpm --filter web-nqtr build:h5 && tauri dev",
+    "build": "pnpm --filter web-nqtr build:h5 && tauri build",
     "tauri": "tauri"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserRole, LoginResponseDto, WechatLoginDto, EmailLoginDto } from '@lourd-game/shared';
+import { UserRole, LoginResponseDto, EmailLoginDto } from '@lourd-game/shared';
 import { apiClient } from '../utils/api-client';
 
 interface User {
@@ -12,7 +12,6 @@ interface AuthState {
     user: User | null;
     accessToken: string | null;
     isAuthenticated: boolean;
-    login: (dto: WechatLoginDto) => Promise<LoginResponseDto>;
     emailLogin: (dto: EmailLoginDto) => Promise<LoginResponseDto>;
     logout: () => void;
     checkAuth: () => void;
@@ -23,25 +22,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     accessToken: null,
     isAuthenticated: false,
-
-    login: async (dto: WechatLoginDto) => {
-        try {
-            const response = await apiClient.wechatLogin(dto);
-            // 保存用户信息到 localStorage
-            if (response.user) {
-                localStorage.setItem('user', JSON.stringify(response.user));
-            }
-            set({
-                user: response.user,
-                accessToken: response.accessToken,
-                isAuthenticated: true,
-            });
-            return response;
-        } catch (error) {
-            console.error('Login failed:', error);
-            throw error;
-        }
-    },
 
     emailLogin: async (dto: EmailLoginDto) => {
         try {
@@ -79,11 +59,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (token && userStr) {
             try {
                 const user = JSON.parse(userStr) as User;
-            set({
+                set({
                     user,
-                accessToken: token,
-                isAuthenticated: true,
-            });
+                    accessToken: token,
+                    isAuthenticated: true,
+                });
             } catch (error) {
                 console.error('Failed to parse user from localStorage:', error);
                 // 如果解析失败，清除无效数据
@@ -116,3 +96,4 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return user?.role === UserRole.ADMIN;
     },
 }));
+

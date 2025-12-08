@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.lourd.game",
   "build": {
-    "beforeDevCommand": "cd ../../web && pnpm dev:h5",
+    "beforeDevCommand": "cd ../../web-nqtr && pnpm dev:h5",
     "devUrl": "http://localhost:10086",
-    "beforeBuildCommand": "cd ../../web && pnpm build:h5",
-    "frontendDist": "../../web/dist"
+    "beforeBuildCommand": "cd ../../web-nqtr && pnpm build:h5",
+    "frontendDist": "../../web-nqtr/dist"
   },
   "app": {
     "withGlobalTauri": true,

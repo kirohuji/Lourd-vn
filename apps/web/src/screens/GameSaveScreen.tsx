@@ -10,7 +10,6 @@ import { useShallow } from "zustand/react/shallow";
 import GameSaveSlot from "../components/GameSaveSlot";
 import ModalDialogCustom from "../components/ModalDialog";
 import { MAIN_MENU_ROUTE } from "../constans";
-import useIsMobile from "../hooks/useIsMobile";
 import useMyNavigate from "../hooks/useMyNavigate";
 import { INTERFACE_DATA_USE_QUEY_KEY } from "../hooks/useQueryInterface";
 import useGameSaveScreenStore from "../stores/useGameSaveScreenStore";
@@ -29,7 +28,6 @@ export default function GameSaveScreen() {
     } = useGameSaveScreenStore(useShallow((state) => state));
     const { t } = useTranslation(["ui"]);
     const smScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down("lg"));
-    const isMobile = useIsMobile();
     const navigate = useMyNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
@@ -51,8 +49,8 @@ export default function GameSaveScreen() {
                 direction={"row"}
                 sx={{
                     position: "absolute",
-                    top: isMobile ? '16px' : 10,
-                    right: isMobile ? '16px' : 40,
+                    top: 10,
+                    right: 40,
                 }}
             >
                 <Tooltip title={t("load_from_file")}>
@@ -117,10 +115,9 @@ export default function GameSaveScreen() {
                 onChange={(_event, value) => setPage(value - 1)}
                 sx={{
                     position: "absolute",
-                    bottom: isMobile ? '16px' : 7,
+                    bottom: 7,
                     right: 0,
                     left: 0,
-                    px: isMobile ? 2 : 0,
                     justifySelf: "center",
                     "& .MuiPaginationItem-root": {
                         color: "var(--joy-palette-text-primary)",

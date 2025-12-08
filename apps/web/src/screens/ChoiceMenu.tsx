@@ -1,22 +1,20 @@
-import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
-import { Grid } from '@mui/joy';
-import { useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import ChoiceButton from '../components/ChoiceButton';
-import useDebouncedEffect from '../hooks/useDebouncedEffect';
-import useIsMobile from '../hooks/useIsMobile';
-import useNarrationFunctions from '../hooks/useNarrationFunctions';
-import { useQueryChoiceMenuOptions } from '../hooks/useQueryInterface';
-import useInterfaceStore from '../stores/useInterfaceStore';
-import useStepStore from '../stores/useStepStore';
-import useTypewriterStore from '../stores/useTypewriterStore';
+import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
+import { Grid } from "@mui/joy";
+import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import ChoiceButton from "../components/ChoiceButton";
+import useDebouncedEffect from "../hooks/useDebouncedEffect";
+import useNarrationFunctions from "../hooks/useNarrationFunctions";
+import { useQueryChoiceMenuOptions } from "../hooks/useQueryInterface";
+import useInterfaceStore from "../stores/useInterfaceStore";
+import useStepStore from "../stores/useStepStore";
+import useTypewriterStore from "../stores/useTypewriterStore";
 
 export default function ChoiceMenu() {
-    const isMobile = useIsMobile();
-    const nextStepLoading = useStepStore(state => state.loading);
+    const nextStepLoading = useStepStore((state) => state.loading);
     const { data: menu = [] } = useQueryChoiceMenuOptions();
-    const typewriterInProgress = useTypewriterStore(useShallow(state => state.inProgress));
-    const hidden = useInterfaceStore(useShallow(state => state.hidden));
+    const typewriterInProgress = useTypewriterStore(useShallow((state) => state.inProgress));
+    const hidden = useInterfaceStore(useShallow((state) => state.hidden));
     const { selectChoice } = useNarrationFunctions();
     const [open, setOpen] = useState(false);
 
@@ -34,28 +32,25 @@ export default function ChoiceMenu() {
             direction='column'
             justifyContent='center'
             alignItems='center'
-            rowSpacing={isMobile ? 2 : 2}
+            rowSpacing={2}
             sx={{
-                overflow: 'auto',
-                height: '100%',
-                gap: isMobile ? 1.5 : 1,
-                width: '100%',
-                pointerEvents: hidden ? 'none' : 'auto',
+                overflow: "auto",
+                height: "100%",
+                gap: 1,
+                width: "100%",
+                pointerEvents: hidden ? "none" : "auto",
                 margin: 0,
-                px: isMobile ? 3 : 0,
-                py: isMobile ? 3 : 0,
-                boxSizing: 'border-box',
             }}
             role='menu'
         >
             {menu.map((item, index) => (
                 <Grid
-                    key={'choice-' + index}
+                    key={"choice-" + index}
                     justifyContent='center'
                     alignItems='center'
                     className={
                         hidden
-                            ? 'motion-opacity-out-0 motion-translate-y-out-[50%]'
+                            ? "motion-opacity-out-0 motion-translate-y-out-[50%]"
                             : `motion-opacity-in-0 motion-translate-y-in-[50%] motion-delay-[${index * 200}ms]`
                     }
                 >
@@ -69,13 +64,8 @@ export default function ChoiceMenu() {
                         sx={{
                             left: 0,
                             right: 0,
-                            width: isMobile ? '100%' : undefined,
-                            maxWidth: isMobile ? '400px' : undefined,
-                            minHeight: isMobile ? '48px' : undefined,
-                            fontSize: isMobile ? '1rem' : undefined,
-                            fontWeight: isMobile ? 500 : undefined,
                         }}
-                        startDecorator={item.type === 'close' ? <KeyboardReturnIcon /> : undefined}
+                        startDecorator={item.type === "close" ? <KeyboardReturnIcon /> : undefined}
                     >
                         {item.text}
                     </ChoiceButton>

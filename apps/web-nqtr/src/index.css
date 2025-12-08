@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-motion";
+
+:root {
+  background-color: #242424;
+}
+
+html {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* 防止移动端双击缩放 */
+  touch-action: manipulation;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  /* 防止移动端选择文本 */
+  -webkit-user-select: none;
+  user-select: none;
+  /* 防止移动端点击高亮 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
