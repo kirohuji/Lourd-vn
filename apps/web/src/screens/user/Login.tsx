@@ -3,7 +3,7 @@ import { Box, Button, Card, FormControl, FormLabel, Input, Typography } from '@m
 import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LOADING_ROUTE, MAIN_MENU_ROUTE } from '../../constans';
+import { LOADING_ROUTE } from '../../constans';
 import { useAuthStore } from '../../stores/auth-store';
 
 export default function UserLogin() {

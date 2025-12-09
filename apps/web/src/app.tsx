@@ -14,7 +14,7 @@ const Home = lazy(async () => {
     return import("./Home");
 });
 
-function ErrorFallback({ error }: { error: Error }) {
+function ErrorFallback({ error }: { error: Error | undefined }) {
     return (
         <div
             role='alert'
@@ -41,7 +41,7 @@ function ErrorFallback({ error }: { error: Error }) {
                     marginTop: "1rem",
                 }}
             >
-                {error.message}
+                {error?.message || "An unknown error occurred"}
             </p>
         </div>
     );
