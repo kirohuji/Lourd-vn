@@ -1,4 +1,10 @@
-import { EmailLoginDto, LoginResponseDto } from '@lourd-game/shared';
+import { 
+    EmailLoginDto, 
+    LoginResponseDto, 
+    ManifestResponse, 
+    PaginatedResponse, 
+    CharacterConfig 
+} from '@lourd-game/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
@@ -95,6 +101,27 @@ class ApiClient {
 
     logout(): void {
         this.removeToken();
+    }
+
+    // Resource APIs
+    async getProjectManifest(projectId: number): Promise<ManifestResponse> {
+        return this.request<ManifestResponse>(
+            `/manifest/${projectId}/manifest/full`,
+            {
+                method: 'GET',
+                needAuth: false, // 这是公开端点
+            }
+        );
+    }
+
+    async getProjectCharacters(projectId: number): Promise<PaginatedResponse<CharacterConfig>> {
+        return this.request<PaginatedResponse<CharacterConfig>>(
+            `/game-config/characters?usedByProjectId=${projectId}`,
+            {
+                method: 'GET',
+                needAuth: true, // 需要认证
+            }
+        );
     }
 }
 

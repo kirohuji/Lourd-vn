@@ -182,11 +182,7 @@ export class AuthService {
       throw new UnauthorizedException('邮箱或密码错误');
     }
 
-    // 检查是否是管理员
-    if (user.role !== UserRole.ADMIN) {
-      throw new UnauthorizedException('该账户不是管理员账户');
-    }
-
+    // 允许 ADMIN 和 USER 角色登录
     // 生成 JWT token
     const payload: JwtPayload = {
       sub: user.id,

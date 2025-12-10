@@ -15,6 +15,17 @@ const manifest = JSON.parse(
   }>;
 };
 
+// 从本地 JSON 文件中读取 web 项目的 manifest 资源数据
+const webManifestJsonPath = path.join(__dirname, 'web-manifest-seed.json');
+const webManifest = JSON.parse(
+  fs.readFileSync(webManifestJsonPath, { encoding: 'utf-8' }),
+) as {
+  bundles: Array<{
+    name: string;
+    assets: Array<{ alias: string; src: string }>;
+  }>;
+};
+
 // 从本地 JSON 读取游戏配置（maps / locations / rooms / characters）
 const gameConfigJsonPath = path.join(__dirname, 'game-config-seed.json');
 const gameConfig = JSON.parse(
@@ -230,7 +241,7 @@ async function seedGameConfig(projectId: number) {
     const existing = await prisma.map.findUnique({
       where: { id: map.id },
     });
-    
+
     if (!existing) {
       // 创建地图（不再需要 projectId）
       await prisma.map.create({
@@ -308,7 +319,7 @@ async function seedGameConfig(projectId: number) {
     const existing = await prisma.character.findUnique({
       where: { id: ch.id },
     });
-    
+
     if (!existing) {
       // 创建角色（不再需要 projectId）
       await prisma.character.create({
@@ -346,20 +357,138 @@ async function seedGameConfig(projectId: number) {
   console.log('✅ Game config seeded successfully!');
 }
 
+async function seedWebProject() {
+  // 从环境变量获取 web 项目名称，如果没有则使用默认值
+  const projectName = process.env.WEB_PROJECT_NAME || 'web';
+
+  // 检查是否已存在 web 项目
+  const existingProject = await prisma.project.findUnique({
+    where: { name: projectName },
+  });
+
+  if (existingProject) {
+    console.log(
+      `✅ Web project already exists: ${existingProject.name} (ID: ${existingProject.id})`,
+    );
+    return existingProject;
+  }
+
+  // 创建 web 项目
+  const project = await prisma.project.create({
+    data: {
+      name: projectName,
+      description: 'Web application project',
+      enabled: true,
+    },
+  });
+
+  console.log(`✅ Web project created successfully!`);
+  console.log(`   Name: ${project.name}`);
+  console.log(`   ID: ${project.id}`);
+
+  return project;
+}
+
 async function main() {
   console.log('🌱 Starting seed...');
 
   // 1. 确保默认项目存在
   const defaultProject = await seedDefaultProject();
 
-  // 2. 确保管理员用户存在
+  // 2. 确保 web 项目存在
+  const webProject = await seedWebProject();
+
+  // 3. 确保管理员用户存在
   const admin = await seedAdminUser();
 
-  // 3. 将前端 manifest 中的资源写入数据库
+  // 4. 将默认项目 manifest 中的资源写入数据库
   await seedManifestResources(admin.id, defaultProject.id);
 
-  // 4. 写入基础游戏配置（地图 / 地点 / 房间 / 角色）
+  // 5. 将 web 项目 manifest 中的资源写入数据库
+  await seedManifestResourcesForWeb(admin.id, webProject.id);
+
+  // 6. 写入基础游戏配置（地图 / 地点 / 房间 / 角色）
   await seedGameConfig(defaultProject.id);
+
+  // 7. 为 web 项目写入游戏配置（如果有的话，可以复用或创建新的）
+  // 注意：这里暂时不创建新的游戏配置，使用默认项目的配置
+  // 如果需要为 web 项目创建独立的配置，可以在这里添加
+}
+
+async function seedManifestResourcesForWeb(adminId: number, projectId: number) {
+  console.log('🌱 Seeding web project manifest resources into database...');
+
+  const bundles = webManifest.bundles || [];
+
+  for (const bundle of bundles) {
+    const bundleName = bundle.name;
+    const assets = bundle.assets || [];
+
+    for (const asset of assets) {
+      // 如果已存在相同 alias 的资源，则跳过
+      const existing = await prisma.resource.findFirst({
+        where: { alias: asset.alias },
+      });
+
+      if (existing) {
+        // 如果资源已存在，检查是否已关联到项目
+        const usage = await prisma.projectResourceUsage.findUnique({
+          where: {
+            projectId_resourceId: {
+              projectId,
+              resourceId: existing.id,
+            },
+          },
+        });
+        if (!usage) {
+          // 将现有资源关联到项目
+          await prisma.projectResourceUsage.create({
+            data: {
+              projectId,
+              resourceId: existing.id,
+            },
+          });
+        }
+        continue;
+      }
+
+      // 使用资源 URL 生成一个稳定的哈希（不需要真实文件内容）
+      const hash = createHash('md5').update(asset.src).digest('hex');
+
+      // 从 URL 中推断文件类型（扩展名）
+      let fileType: string | null = null;
+      const urlWithoutQuery = asset.src.split('?')[0];
+      const extMatch = urlWithoutQuery.split('.').pop();
+      if (extMatch && extMatch.length <= 10) {
+        fileType = extMatch.toLowerCase();
+      }
+
+      // 创建资源（不再需要 projectId）
+      const resource = await prisma.resource.create({
+        data: {
+          alias: asset.alias,
+          src: asset.src,
+          bundle: bundleName,
+          hash,
+          fileSize: 0,
+          fileType,
+          cosKey: null,
+          originalName: null,
+          uploaderId: adminId,
+        },
+      });
+
+      // 将资源关联到项目
+      await prisma.projectResourceUsage.create({
+        data: {
+          projectId,
+          resourceId: resource.id,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Web project manifest resources seeded successfully!');
 }
 
 main()

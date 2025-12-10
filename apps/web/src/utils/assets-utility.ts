@@ -1,6 +1,7 @@
-import { Assets } from "@drincs/pixi-vn";
-import manifest from "../assets/manifest";
+import { Assets, AssetsManifest } from "@drincs/pixi-vn";
 import { MAIN_MENU_ROUTE } from "../constans";
+import { apiClient } from "./api-client";
+import { getProjectId } from "./project-config";
 
 /**
  * Define all the assets that will be used in the game.
@@ -8,14 +9,32 @@ import { MAIN_MENU_ROUTE } from "../constans";
  * You can read more about assets management in the documentation: https://pixi-vn.web.app/start/assets-management.html
  */
 export async function defineAssets() {
-    Assets.init({ manifest });
+    // 获取项目 ID
+    const projectId = await getProjectId();
+    
+    if (!projectId) {
+        console.error('Project ID not found. Please set VITE_PROJECT_ID environment variable.');
+        throw new Error('Project ID is required to load assets');
+    }
 
-    // The game will not start until these asserts are loaded.
-    await Assets.loadBundle(MAIN_MENU_ROUTE);
+    try {
+        // 从 API 获取 manifest
+        const manifestResponse = await apiClient.getProjectManifest(projectId);
+        const manifest: AssetsManifest = manifestResponse.manifest;
 
-    // The game will start immediately, but these asserts will be loaded in the background.
-    // Assets.backgroundLoadBundle("main_menu");
-    // Assets.backgroundLoad("background_main_menu");
+        // 初始化 Assets
+        Assets.init({ manifest });
+
+        // The game will not start until these asserts are loaded.
+        await Assets.loadBundle(MAIN_MENU_ROUTE);
+
+        // The game will start immediately, but these asserts will be loaded in the background.
+        // Assets.backgroundLoadBundle("main_menu");
+        // Assets.backgroundLoad("background_main_menu");
+    } catch (error) {
+        console.error('Failed to load assets from API:', error);
+        throw error;
+    }
 }
 
 /**

@@ -117,6 +117,7 @@ export class GameConfigController {
   // Characters
   @Get('characters')
   @ApiOperation({ summary: '获取角色列表（支持 usedByProjectId 查询参数）' })
+  @Roles(UserRole.ADMIN, UserRole.USER)
   async listCharacters(
     @Query('usedByProjectId') usedByProjectId?: string,
   ): Promise<PaginatedResponse<CharacterConfig>> {

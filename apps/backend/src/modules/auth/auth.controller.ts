@@ -20,7 +20,7 @@ export class AuthController {
   }
 
   @Post('email/login')
-  @ApiOperation({ summary: '邮箱登录（管理员）' })
+  @ApiOperation({ summary: '邮箱登录（管理员和普通用户）' })
   @ApiResponse({ status: 200, description: '登录成功' })
   async emailLogin(@Body() dto: EmailLoginDto): Promise<LoginResponseDto> {
     return this.authService.emailLogin(dto);
