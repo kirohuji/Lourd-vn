@@ -3,24 +3,25 @@ import { Box, Button, Card, FormControl, FormLabel, Input, Typography } from '@m
 import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LOADING_ROUTE } from '../../constans';
+import { MAIN_MENU_ROUTE } from '../../constans';
+import { useAuth } from '../../providers/AuthProvider';
 import { useAuthStore } from '../../stores/auth-store';
 
 export default function UserLogin() {
+    const { emailLogin } = useAuthStore();
+    const { status, isAuthenticated } = useAuth();
     const navigate = useNavigate();
-    const { emailLogin, isAuthenticated, checkAuth } = useAuthStore();
     const { enqueueSnackbar } = useSnackbar();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // 检查是否已登录，如果已登录则跳转到主菜单
+    // 如果已登录，重定向到主菜单
     useEffect(() => {
-        checkAuth();
-        if (isAuthenticated) {
-            navigate(LOADING_ROUTE);
+        if (status === 'authenticated' && isAuthenticated) {
+            navigate(MAIN_MENU_ROUTE, { replace: true });
         }
-    }, [isAuthenticated, navigate, checkAuth]);
+    }, [status, isAuthenticated, navigate]);
 
     const handleLogin = async () => {
         if (!email.trim()) {
@@ -40,8 +41,6 @@ export default function UserLogin() {
             };
             await emailLogin(dto);
             enqueueSnackbar('登录成功', { variant: 'success' });
-            // 登录成功后先进入 Loading 场景，在那里完成游戏数据初始化
-            navigate(LOADING_ROUTE);
         } catch (error: any) {
             console.error('登录失败:', error);
             enqueueSnackbar(`登录失败: ${error.message}`, { variant: 'error' });
@@ -101,4 +100,3 @@ export default function UserLogin() {
         </Box>
     );
 }
-

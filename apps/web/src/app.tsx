@@ -1,19 +1,32 @@
 import { setupPixivnViteData } from '@drincs/pixi-vn/vite-listener';
+import { Box, CircularProgress } from '@mui/joy';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useI18n } from './i18n';
-import LoadingScreen from './screens/LoadingScreen';
-import { defineAssets } from './utils/assets-utility';
-import { loadCharactersFromAPI } from './utils/characters-utility';
-import { initializeIndexedDB } from './utils/indexedDB-utility';
-import { importAllInkLabels } from './utils/ink-utility';
 
 const Home = lazy(async () => {
-    await loadCharactersFromAPI(), await Promise.all([import('./values'), import('./labels')]);
-    await Promise.all([initializeIndexedDB(), defineAssets(), useI18n(), importAllInkLabels()]);
+    // 只导入必要的代码，不进行资源初始化
+    // 资源初始化将在 LoadingScreen 中进行
+    // await Promise.all([import('./values'), import('./labels')]);
     setupPixivnViteData();
     return import('./Home');
 });
+
+// 简单的加载组件，不依赖 Router
+function SimpleLoadingScreen() {
+    return (
+        <Box
+            sx={{
+                height: '100vh',
+                width: '100vw',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <CircularProgress size='lg' />
+        </Box>
+    );
+}
 
 function ErrorFallback({ error }: { error: Error | undefined }) {
     return (
@@ -51,7 +64,7 @@ function ErrorFallback({ error }: { error: Error | undefined }) {
 export default function App() {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <Suspense fallback={<LoadingScreen />}>
+            <Suspense fallback={<SimpleLoadingScreen />}>
                 <Home />
             </Suspense>
         </ErrorBoundary>

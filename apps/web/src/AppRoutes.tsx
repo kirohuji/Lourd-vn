@@ -1,16 +1,15 @@
-import { Route, Routes, useLocation } from "react-router-dom";
-import NextButton from "./components/NextButton";
-import VisibilityButton from "./components/VisibilityButton";
-import { LOADING_ROUTE, LOGIN_ROUTE, MAIN_MENU_ROUTE, NARRATION_ROUTE } from "./constans";
-import useSkipAutoDetector from "./hooks/useSkipAutoDetector";
-import HistoryScreen from "./screens/HistoryScreen";
-import LoadingScreen from "./screens/LoadingScreen";
-import MainMenu from "./screens/MainMenu";
-import TextInput from "./screens/modals/TextInput";
-import NarrationScreen from "./screens/NarrationScreen";
-import QuickTools from "./screens/QuickTools";
-import UserLogin from "./screens/user/Login";
-import { AuthGuard } from "./utils/auth-guard";
+import { Route, Routes, useLocation } from 'react-router-dom';
+import NextButton from './components/NextButton';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import VisibilityButton from './components/VisibilityButton';
+import { LOGIN_ROUTE, MAIN_MENU_ROUTE, NARRATION_ROUTE } from './constans';
+import useSkipAutoDetector from './hooks/useSkipAutoDetector';
+import HistoryScreen from './screens/HistoryScreen';
+import MainMenu from './screens/MainMenu';
+import TextInput from './screens/modals/TextInput';
+import NarrationScreen from './screens/NarrationScreen';
+import QuickTools from './screens/QuickTools';
+import UserLogin from './screens/user/Login';
 
 export default function AppRoutes() {
     return (
@@ -20,30 +19,21 @@ export default function AppRoutes() {
 
             {/* 游戏路由 - 需要登录 */}
             <Route
-                key={"main_menu"}
+                key={'main_menu'}
                 path={MAIN_MENU_ROUTE}
                 element={
-                    <AuthGuard requireAuth={true} redirectTo={LOGIN_ROUTE}>
+                    <ProtectedRoute requireAuth={true} redirectTo={LOGIN_ROUTE}>
                         <MainMenu />
-                    </AuthGuard>
+                    </ProtectedRoute>
                 }
             />
             <Route
-                key={"loading"}
-                path={LOADING_ROUTE}
-                element={
-                    <AuthGuard requireAuth={true} redirectTo={LOGIN_ROUTE}>
-                        <LoadingScreen />
-                    </AuthGuard>
-                }
-            />
-            <Route
-                key={"narration"}
+                key={'narration'}
                 path={NARRATION_ROUTE}
                 element={
-                    <AuthGuard requireAuth={true} redirectTo={LOGIN_ROUTE}>
+                    <ProtectedRoute requireAuth={true} redirectTo={LOGIN_ROUTE}>
                         <NarrationElement />
-                    </AuthGuard>
+                    </ProtectedRoute>
                 }
             />
 
@@ -83,8 +73,8 @@ function CatchAllRoute() {
     }
 
     return (
-        <AuthGuard requireAuth={true} redirectTo={LOGIN_ROUTE}>
+        <ProtectedRoute requireAuth={true} redirectTo={LOGIN_ROUTE}>
             <MainMenu />
-        </AuthGuard>
+        </ProtectedRoute>
     );
 }

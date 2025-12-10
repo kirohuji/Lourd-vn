@@ -1,14 +1,14 @@
-import { RegisteredCharacters } from "@drincs/pixi-vn";
-import { generateJsonInkTranslation } from "@drincs/pixi-vn-ink";
-import i18n from "i18next";
-import Backend from "i18next-chained-backend";
-import resourcesToBackend from "i18next-resources-to-backend";
-import { initReactI18next } from "react-i18next";
-import { convertInkToJson } from "./utils/ink-utility";
+import { RegisteredCharacters } from '@drincs/pixi-vn';
+import { generateJsonInkTranslation } from '@drincs/pixi-vn-ink';
+import i18n from 'i18next';
+import Backend from 'i18next-chained-backend';
+import resourcesToBackend from 'i18next-resources-to-backend';
+import { initReactI18next } from 'react-i18next';
+import { convertInkToJson } from './utils/ink-utility';
 
 function getUserLang(): string {
-    let userLang: string = navigator.language || "en";
-    return userLang?.toLocaleLowerCase()?.split("-")[0];
+    let userLang: string = navigator.language || 'en';
+    return userLang?.toLocaleLowerCase()?.split('-')[0];
 }
 
 function getLocalesResource(lng: string): Promise<any> {
@@ -34,31 +34,35 @@ async function generateResourceToTranslate(lng: string): Promise<any> {
 }
 
 export async function downloadResourceToTranslate() {
-    const lng = i18n.options.fallbackLng?.toString() || "en";
+    const lng = i18n.options.fallbackLng?.toString() || 'en';
     const data = await generateResourceToTranslate(lng);
     const jsonString = JSON.stringify(data);
     // download the save data as a JSON file
-    const blob = new Blob([jsonString], { type: "application/json" });
+    const blob = new Blob([jsonString], { type: 'application/json' });
     // download the file
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
     a.download = `strings_${lng}.json`;
     a.click();
 }
 
-export const useI18n = () => {
+/**
+ * Initialize i18next. This function can be called from anywhere (not just React components).
+ * It's safe to call multiple times - initialization only happens once.
+ */
+export function initI18n(): void {
     if (!i18n.isInitialized) {
         i18n.use(Backend)
             .use(initReactI18next)
             .init({
                 debug: false,
-                fallbackLng: "en",
+                fallbackLng: 'en',
                 lng: getUserLang(),
                 interpolation: {
                     escapeValue: false,
                 },
-                load: "currentOnly",
+                load: 'currentOnly',
                 backend: {
                     backends: [
                         resourcesToBackend(async (lng: string, ns: string) => {
@@ -69,8 +73,8 @@ export const useI18n = () => {
                 },
                 missingInterpolationHandler(_text, value, _options) {
                     let key = value[1];
-                    if (key === "steph_fullname") {
-                        return "Stephanie";
+                    if (key === 'steph_fullname') {
+                        return 'Stephanie';
                     }
                     let character = RegisteredCharacters.get(key);
                     if (character) {
@@ -80,4 +84,13 @@ export const useI18n = () => {
                 },
             });
     }
+}
+
+/**
+ * React hook to ensure i18next is initialized.
+ * For backwards compatibility. Components can use this hook, but initialization
+ * should ideally happen before any component renders.
+ */
+export const useI18n = () => {
+    initI18n();
 };

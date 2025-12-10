@@ -1,6 +1,7 @@
-import { SnackbarProvider } from "notistack";
-import { BrowserRouter } from "react-router-dom";
-import MyThemeProvider from "./ThemeProvider";
+import { SnackbarProvider } from 'notistack';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './AuthProvider';
+import MyThemeProvider from './ThemeProvider';
 
 export default function RootProvider({ children }: { children: React.ReactNode }) {
     return (
@@ -8,11 +9,11 @@ export default function RootProvider({ children }: { children: React.ReactNode }
             <MyThemeProvider>
                 <SnackbarProvider
                     anchorOrigin={{
-                        vertical: "top",
-                        horizontal: "left",
+                        vertical: 'top',
+                        horizontal: 'left',
                     }}
                 >
-                    {children}
+                    <AuthProvider>{children}</AuthProvider>
                 </SnackbarProvider>
             </MyThemeProvider>
         </BrowserRouter>
