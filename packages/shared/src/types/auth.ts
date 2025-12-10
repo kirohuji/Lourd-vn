@@ -1,4 +1,6 @@
-import { UserRole } from './user';
+// UserRole is imported from the index to avoid module resolution issues
+// This will be resolved when both auth and user are exported from index
+type UserRole = import('./user.js').UserRole;
 
 /**
  * 微信登录请求 DTO

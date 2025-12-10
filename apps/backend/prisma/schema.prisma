@@ -6,13 +6,29 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
 enum UserRole {
   USER
   ADMIN
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 项目使用的资源（多对多关系）
+  usedResources  ProjectResourceUsage[]
+  usedMaps       ProjectMapUsage[]
+  usedCharacters ProjectCharacterUsage[]
+
+  @@map("projects")
 }
 
 model User {
@@ -45,7 +61,10 @@ model Resource {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  
+  // 被哪些项目使用（多对多关系）
+  usedByProjects ProjectResourceUsage[]
 
   @@index([bundle])
   @@index([alias])
@@ -69,9 +88,12 @@ model Map {
   bundle         String?
   backgroundType String   @default("timeSlots")
   backgroundJson Json?
-
+  
   locations      Location[]
   rooms          Room[]
+  
+  // 被哪些项目使用（多对多关系）
+  usedByProjects ProjectMapUsage[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -121,7 +143,57 @@ model Character {
   enabled   Boolean @default(true)
   order     Int     @default(0)
 
+  // 被哪些项目使用（多对多关系）
+  usedByProjects ProjectCharacterUsage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+// 项目使用资源的关联表
+model ProjectResourceUsage {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  resourceId Int
+  createdAt  DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  resource  Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, resourceId])
+  @@index([projectId])
+  @@index([resourceId])
+  @@map("project_resource_usage")
+}
+
+// 项目使用地图的关联表
+model ProjectMapUsage {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  mapId     String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  map     Map     @relation(fields: [mapId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, mapId])
+  @@index([projectId])
+  @@index([mapId])
+  @@map("project_map_usage")
+}
+
+// 项目使用角色的关联表
+model ProjectCharacterUsage {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  characterId String
+  createdAt   DateTime @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, characterId])
+  @@index([projectId])
+  @@index([characterId])
+  @@map("project_character_usage")
+}

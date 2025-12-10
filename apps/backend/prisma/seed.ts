@@ -63,6 +63,38 @@ const gameConfig = JSON.parse(
 
 const prisma = new PrismaClient();
 
+async function seedDefaultProject() {
+  // 从环境变量获取默认项目名称，如果没有则使用默认值
+  const projectName = process.env.DEFAULT_PROJECT_NAME || 'default';
+
+  // 检查是否已存在默认项目
+  const existingProject = await prisma.project.findUnique({
+    where: { name: projectName },
+  });
+
+  if (existingProject) {
+    console.log(
+      `✅ Default project already exists: ${existingProject.name} (ID: ${existingProject.id})`,
+    );
+    return existingProject;
+  }
+
+  // 创建默认项目
+  const project = await prisma.project.create({
+    data: {
+      name: projectName,
+      description: 'Default project',
+      enabled: true,
+    },
+  });
+
+  console.log(`✅ Default project created successfully!`);
+  console.log(`   Name: ${project.name}`);
+  console.log(`   ID: ${project.id}`);
+
+  return project;
+}
+
 async function seedAdminUser() {
   // 从环境变量获取管理员邮箱和密码，如果没有则使用默认值
   const adminEmail = process.env.ADMIN_EMAIL || 'z1309014381@gmail.com';
@@ -112,7 +144,7 @@ async function seedAdminUser() {
   return admin;
 }
 
-async function seedManifestResources(adminId: number) {
+async function seedManifestResources(adminId: number, projectId: number) {
   console.log('🌱 Seeding manifest resources into database...');
 
   const bundles = manifest.bundles || [];
@@ -128,6 +160,24 @@ async function seedManifestResources(adminId: number) {
       });
 
       if (existing) {
+        // 如果资源已存在，检查是否已关联到项目
+        const usage = await prisma.projectResourceUsage.findUnique({
+          where: {
+            projectId_resourceId: {
+              projectId,
+              resourceId: existing.id,
+            },
+          },
+        });
+        if (!usage) {
+          // 将现有资源关联到项目
+          await prisma.projectResourceUsage.create({
+            data: {
+              projectId,
+              resourceId: existing.id,
+            },
+          });
+        }
         continue;
       }
 
@@ -142,7 +192,8 @@ async function seedManifestResources(adminId: number) {
         fileType = extMatch.toLowerCase();
       }
 
-      await prisma.resource.create({
+      // 创建资源（不再需要 projectId）
+      const resource = await prisma.resource.create({
         data: {
           alias: asset.alias,
           src: asset.src,
@@ -155,13 +206,21 @@ async function seedManifestResources(adminId: number) {
           uploaderId: adminId,
         },
       });
+
+      // 将资源关联到项目
+      await prisma.projectResourceUsage.create({
+        data: {
+          projectId,
+          resourceId: resource.id,
+        },
+      });
     }
   }
 
   console.log('✅ Manifest resources seeded successfully!');
 }
 
-async function seedGameConfig() {
+async function seedGameConfig(projectId: number) {
   console.log(
     '🌱 Seeding game config (maps / locations / rooms / characters)...',
   );
@@ -171,17 +230,37 @@ async function seedGameConfig() {
     const existing = await prisma.map.findUnique({
       where: { id: map.id },
     });
-    if (existing) continue;
+    
+    if (!existing) {
+      // 创建地图（不再需要 projectId）
+      await prisma.map.create({
+        data: {
+          id: map.id,
+          name: map.name,
+          bundle: map.bundle,
+          backgroundType: map.backgroundType,
+          backgroundJson: map.backgroundJson ?? null,
+        },
+      });
+    }
 
-    await prisma.map.create({
-      data: {
-        id: map.id,
-        name: map.name,
-        bundle: map.bundle,
-        backgroundType: map.backgroundType,
-        backgroundJson: map.backgroundJson ?? null,
+    // 将地图关联到项目
+    const usage = await prisma.projectMapUsage.findUnique({
+      where: {
+        projectId_mapId: {
+          projectId,
+          mapId: map.id,
+        },
       },
     });
+    if (!usage) {
+      await prisma.projectMapUsage.create({
+        data: {
+          projectId,
+          mapId: map.id,
+        },
+      });
+    }
   }
 
   // Locations
@@ -229,19 +308,39 @@ async function seedGameConfig() {
     const existing = await prisma.character.findUnique({
       where: { id: ch.id },
     });
-    if (existing) continue;
+    
+    if (!existing) {
+      // 创建角色（不再需要 projectId）
+      await prisma.character.create({
+        data: {
+          id: ch.id,
+          name: ch.name,
+          age: ch.age ?? null,
+          icon: ch.icon ?? null,
+          color: ch.color ?? null,
+          enabled: ch.enabled ?? true,
+          order: ch.order ?? 0,
+        },
+      });
+    }
 
-    await prisma.character.create({
-      data: {
-        id: ch.id,
-        name: ch.name,
-        age: ch.age ?? null,
-        icon: ch.icon ?? null,
-        color: ch.color ?? null,
-        enabled: ch.enabled ?? true,
-        order: ch.order ?? 0,
+    // 将角色关联到项目
+    const usage = await prisma.projectCharacterUsage.findUnique({
+      where: {
+        projectId_characterId: {
+          projectId,
+          characterId: ch.id,
+        },
       },
     });
+    if (!usage) {
+      await prisma.projectCharacterUsage.create({
+        data: {
+          projectId,
+          characterId: ch.id,
+        },
+      });
+    }
   }
 
   console.log('✅ Game config seeded successfully!');
@@ -250,14 +349,17 @@ async function seedGameConfig() {
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // 1. 确保管理员用户存在
+  // 1. 确保默认项目存在
+  const defaultProject = await seedDefaultProject();
+
+  // 2. 确保管理员用户存在
   const admin = await seedAdminUser();
 
-  // 2. 将前端 manifest 中的资源写入数据库
-  await seedManifestResources(admin.id);
+  // 3. 将前端 manifest 中的资源写入数据库
+  await seedManifestResources(admin.id, defaultProject.id);
 
-  // 3. 写入基础游戏配置（地图 / 地点 / 房间 / 角色）
-  await seedGameConfig();
+  // 4. 写入基础游戏配置（地图 / 地点 / 房间 / 角色）
+  await seedGameConfig(defaultProject.id);
 }
 
 main()

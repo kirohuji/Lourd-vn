@@ -147,6 +147,15 @@ export class ManifestService {
       ];
     }
 
+    // 如果指定了 usedByProjectId，只查询该项目使用的资源
+    if (query.usedByProjectId) {
+      where.usedByProjects = {
+        some: {
+          projectId: Number(query.usedByProjectId),
+        },
+      };
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.resource.findMany({
         where,
@@ -449,5 +458,107 @@ export class ManifestService {
     mimeType = mimeType || 'application/octet-stream';
 
     return { buffer, mimeType };
+  }
+
+  /**
+   * 将资源添加到项目
+   */
+  async addResourceToProject(
+    projectId: number,
+    resourceId: number,
+  ): Promise<void> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 检查资源是否存在
+    const resource = await this.prisma.resource.findUnique({
+      where: { id: resourceId },
+    });
+    if (!resource) {
+      throw new NotFoundException(`Resource with ID ${resourceId} not found`);
+    }
+
+    // 检查是否已存在关联
+    const existing = await this.prisma.projectResourceUsage.findUnique({
+      where: {
+        projectId_resourceId: {
+          projectId,
+          resourceId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        'Resource is already associated with this project',
+      );
+    }
+
+    // 创建关联
+    await this.prisma.projectResourceUsage.create({
+      data: {
+        projectId,
+        resourceId,
+      },
+    });
+  }
+
+  /**
+   * 从项目移除资源（不删除资源本身）
+   */
+  async removeResourceFromProject(
+    projectId: number,
+    resourceId: number,
+  ): Promise<void> {
+    const usage = await this.prisma.projectResourceUsage.findUnique({
+      where: {
+        projectId_resourceId: {
+          projectId,
+          resourceId,
+        },
+      },
+    });
+
+    if (!usage) {
+      throw new NotFoundException(
+        'Resource is not associated with this project',
+      );
+    }
+
+    await this.prisma.projectResourceUsage.delete({
+      where: {
+        projectId_resourceId: {
+          projectId,
+          resourceId,
+        },
+      },
+    });
+  }
+
+  /**
+   * 获取项目使用的所有资源
+   */
+  async getProjectResources(
+    projectId: number,
+    query?: ResourceQueryDto,
+  ): Promise<PaginatedResponse<ResourceResponseDto>> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 使用 findAll 方法，传入 usedByProjectId
+    return this.findAll({
+      ...query,
+      usedByProjectId: projectId,
+    });
   }
 }

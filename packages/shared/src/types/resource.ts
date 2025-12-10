@@ -66,6 +66,7 @@ export interface ResourceQueryDto {
     limit?: number;
     bundle?: string;
     search?: string;
+    usedByProjectId?: number; // 查询指定项目使用的资源
 }
 
 /**

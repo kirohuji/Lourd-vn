@@ -6,13 +6,15 @@
   "scripts": {
     "dev:web": "cd apps/web && pnpm dev",
     "dev:web-nqtr": "cd apps/web-nqtr && pnpm dev",
+    "dev:admin": "cd apps/admin && pnpm dev",
     "dev:backend": "pnpm --filter backend start:dev",
     "dev:desktop": "pnpm --filter desktop dev",
     "build:web": "cd apps/web && pnpm build",
     "build:web-nqtr": "cd apps/web-nqtr && pnpm build",
+    "build:admin": "cd apps/admin && pnpm build",
     "build:backend": "pnpm --filter backend build",
     "build:desktop": "pnpm --filter desktop build",
-    "build": "pnpm build:backend && pnpm build:web && pnpm build:desktop",
+    "build": "pnpm build:backend && pnpm build:web && pnpm build:admin && pnpm build:desktop",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check"
   },

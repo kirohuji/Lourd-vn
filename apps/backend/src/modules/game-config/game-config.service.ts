@@ -13,7 +13,11 @@ import {
   UpdateMapDto,
   UpdateRoomDto,
 } from '@lourd-game/shared';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
@@ -21,8 +25,20 @@ export class GameConfigService {
   constructor(private prisma: PrismaService) {}
 
   // Maps
-  async listMaps(): Promise<MapConfig[]> {
+  async listMaps(usedByProjectId?: number): Promise<MapConfig[]> {
+    const where: any = {};
+
+    // 如果指定了 usedByProjectId，只查询该项目使用的地图
+    if (usedByProjectId) {
+      where.usedByProjects = {
+        some: {
+          projectId: usedByProjectId,
+        },
+      };
+    }
+
     const maps = await this.prisma.map.findMany({
+      where,
       orderBy: { createdAt: 'asc' },
     });
     return maps.map((m) => ({
@@ -34,7 +50,9 @@ export class GameConfigService {
     }));
   }
 
-  async upsertMap(dto: CreateMapDto | UpdateMapDto & { id: string }): Promise<MapConfig> {
+  async upsertMap(
+    dto: CreateMapDto | (UpdateMapDto & { id: string }),
+  ): Promise<MapConfig> {
     const data: any = {
       name: dto.name,
       bundle: dto.bundle ?? null,
@@ -79,7 +97,9 @@ export class GameConfigService {
   }
 
   async upsertLocation(
-    dto: CreateLocationDto | UpdateLocationDto & { id: string; mapId: string },
+    dto:
+      | CreateLocationDto
+      | (UpdateLocationDto & { id: string; mapId: string }),
   ): Promise<LocationConfig> {
     const data: any = {
       mapId: (dto as any).mapId,
@@ -129,7 +149,7 @@ export class GameConfigService {
   }
 
   async upsertRoom(
-    dto: CreateRoomDto | UpdateRoomDto & { id: string; locationId: string },
+    dto: CreateRoomDto | (UpdateRoomDto & { id: string; locationId: string }),
   ): Promise<RoomConfig> {
     const data: any = {
       mapId: dto.mapId ?? null,
@@ -165,8 +185,22 @@ export class GameConfigService {
   }
 
   // Characters
-  async listCharacters(): Promise<PaginatedResponse<CharacterConfig>> {
+  async listCharacters(
+    usedByProjectId?: number,
+  ): Promise<PaginatedResponse<CharacterConfig>> {
+    const where: any = {};
+
+    // 如果指定了 usedByProjectId，只查询该项目使用的角色
+    if (usedByProjectId) {
+      where.usedByProjects = {
+        some: {
+          projectId: usedByProjectId,
+        },
+      };
+    }
+
     const chars = await this.prisma.character.findMany({
+      where,
       orderBy: { order: 'asc' },
     });
     const data: CharacterConfig[] = chars.map((c) => ({
@@ -188,7 +222,7 @@ export class GameConfigService {
   }
 
   async upsertCharacter(
-    dto: CreateCharacterDto | UpdateCharacterDto & { id: string },
+    dto: CreateCharacterDto | (UpdateCharacterDto & { id: string }),
   ): Promise<CharacterConfig> {
     const data: any = {
       name: dto.name,
@@ -224,6 +258,156 @@ export class GameConfigService {
     }
     await this.prisma.character.delete({ where: { id } });
   }
+
+  // Project Map Usage
+  async addMapToProject(projectId: number, mapId: string): Promise<void> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 检查地图是否存在
+    const map = await this.prisma.map.findUnique({
+      where: { id: mapId },
+    });
+    if (!map) {
+      throw new NotFoundException(`Map with ID ${mapId} not found`);
+    }
+
+    // 检查是否已存在关联
+    const existing = await this.prisma.projectMapUsage.findUnique({
+      where: {
+        projectId_mapId: {
+          projectId,
+          mapId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        'Map is already associated with this project',
+      );
+    }
+
+    // 创建关联
+    await this.prisma.projectMapUsage.create({
+      data: {
+        projectId,
+        mapId,
+      },
+    });
+  }
+
+  async removeMapFromProject(projectId: number, mapId: string): Promise<void> {
+    const usage = await this.prisma.projectMapUsage.findUnique({
+      where: {
+        projectId_mapId: {
+          projectId,
+          mapId,
+        },
+      },
+    });
+
+    if (!usage) {
+      throw new NotFoundException('Map is not associated with this project');
+    }
+
+    await this.prisma.projectMapUsage.delete({
+      where: {
+        projectId_mapId: {
+          projectId,
+          mapId,
+        },
+      },
+    });
+  }
+
+  async getProjectMaps(projectId: number): Promise<MapConfig[]> {
+    return this.listMaps(projectId);
+  }
+
+  // Project Character Usage
+  async addCharacterToProject(
+    projectId: number,
+    characterId: string,
+  ): Promise<void> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 检查角色是否存在
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+    });
+    if (!character) {
+      throw new NotFoundException(`Character with ID ${characterId} not found`);
+    }
+
+    // 检查是否已存在关联
+    const existing = await this.prisma.projectCharacterUsage.findUnique({
+      where: {
+        projectId_characterId: {
+          projectId,
+          characterId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        'Character is already associated with this project',
+      );
+    }
+
+    // 创建关联
+    await this.prisma.projectCharacterUsage.create({
+      data: {
+        projectId,
+        characterId,
+      },
+    });
+  }
+
+  async removeCharacterFromProject(
+    projectId: number,
+    characterId: string,
+  ): Promise<void> {
+    const usage = await this.prisma.projectCharacterUsage.findUnique({
+      where: {
+        projectId_characterId: {
+          projectId,
+          characterId,
+        },
+      },
+    });
+
+    if (!usage) {
+      throw new NotFoundException(
+        'Character is not associated with this project',
+      );
+    }
+
+    await this.prisma.projectCharacterUsage.delete({
+      where: {
+        projectId_characterId: {
+          projectId,
+          characterId,
+        },
+      },
+    });
+  }
+
+  async getProjectCharacters(
+    projectId: number,
+  ): Promise<PaginatedResponse<CharacterConfig>> {
+    return this.listCharacters(projectId);
+  }
 }
-
-

@@ -200,3 +200,48 @@ export class ManifestController {
     }
   }
 }
+
+@ApiTags('projects')
+@Controller('projects')
+export class ProjectResourceController {
+  constructor(private readonly manifestService: ManifestService) {}
+
+  @Get(':projectId/resources')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '获取项目使用的资源列表（仅管理员）' })
+  @ApiResponse({ status: 200, description: '项目资源列表' })
+  async getProjectResources(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Query() query: ResourceQueryDto,
+  ): Promise<PaginatedResponse<ResourceResponseDto>> {
+    return this.manifestService.getProjectResources(projectId, query);
+  }
+
+  @Post(':projectId/resources/:resourceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '将资源添加到项目（仅管理员）' })
+  @ApiResponse({ status: 201, description: '资源已添加到项目' })
+  async addResourceToProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('resourceId', ParseIntPipe) resourceId: number,
+  ): Promise<void> {
+    return this.manifestService.addResourceToProject(projectId, resourceId);
+  }
+
+  @Delete(':projectId/resources/:resourceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '从项目移除资源（仅管理员）' })
+  @ApiResponse({ status: 200, description: '资源已从项目移除' })
+  async removeResourceFromProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('resourceId', ParseIntPipe) resourceId: number,
+  ): Promise<void> {
+    return this.manifestService.removeResourceFromProject(
+      projectId,
+      resourceId,
+    );
+  }
+}

@@ -20,14 +20,16 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { UseGuards } from '@nestjs/common';
 import { GameConfigService } from './game-config.service';
 
 @ApiTags('game-config')
@@ -40,9 +42,12 @@ export class GameConfigController {
 
   // Maps
   @Get('maps')
-  @ApiOperation({ summary: '获取所有地图' })
-  async listMaps(): Promise<MapConfig[]> {
-    return this.service.listMaps();
+  @ApiOperation({ summary: '获取所有地图（支持 usedByProjectId 查询参数）' })
+  async listMaps(
+    @Query('usedByProjectId') usedByProjectId?: string,
+  ): Promise<MapConfig[]> {
+    const projectId = usedByProjectId ? Number(usedByProjectId) : undefined;
+    return this.service.listMaps(projectId);
   }
 
   @Put('maps/:id')
@@ -109,9 +114,12 @@ export class GameConfigController {
 
   // Characters
   @Get('characters')
-  @ApiOperation({ summary: '获取角色列表' })
-  async listCharacters(): Promise<PaginatedResponse<CharacterConfig>> {
-    return this.service.listCharacters();
+  @ApiOperation({ summary: '获取角色列表（支持 usedByProjectId 查询参数）' })
+  async listCharacters(
+    @Query('usedByProjectId') usedByProjectId?: string,
+  ): Promise<PaginatedResponse<CharacterConfig>> {
+    const projectId = usedByProjectId ? Number(usedByProjectId) : undefined;
+    return this.service.listCharacters(projectId);
   }
 
   @Put('characters/:id')
@@ -131,4 +139,65 @@ export class GameConfigController {
   }
 }
 
+@ApiTags('projects')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@Controller('projects')
+export class ProjectGameConfigController {
+  constructor(private readonly service: GameConfigService) {}
 
+  // Project Maps
+  @Get(':projectId/maps')
+  @ApiOperation({ summary: '获取项目使用的地图列表' })
+  async getProjectMaps(
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<MapConfig[]> {
+    return this.service.getProjectMaps(projectId);
+  }
+
+  @Post(':projectId/maps/:mapId')
+  @ApiOperation({ summary: '将地图添加到项目' })
+  async addMapToProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('mapId') mapId: string,
+  ): Promise<void> {
+    return this.service.addMapToProject(projectId, mapId);
+  }
+
+  @Delete(':projectId/maps/:mapId')
+  @ApiOperation({ summary: '从项目移除地图' })
+  async removeMapFromProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('mapId') mapId: string,
+  ): Promise<void> {
+    return this.service.removeMapFromProject(projectId, mapId);
+  }
+
+  // Project Characters
+  @Get(':projectId/characters')
+  @ApiOperation({ summary: '获取项目使用的角色列表' })
+  async getProjectCharacters(
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<PaginatedResponse<CharacterConfig>> {
+    return this.service.getProjectCharacters(projectId);
+  }
+
+  @Post(':projectId/characters/:characterId')
+  @ApiOperation({ summary: '将角色添加到项目' })
+  async addCharacterToProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('characterId') characterId: string,
+  ): Promise<void> {
+    return this.service.addCharacterToProject(projectId, characterId);
+  }
+
+  @Delete(':projectId/characters/:characterId')
+  @ApiOperation({ summary: '从项目移除角色' })
+  async removeCharacterFromProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('characterId') characterId: string,
+  ): Promise<void> {
+    return this.service.removeCharacterFromProject(projectId, characterId);
+  }
+}
