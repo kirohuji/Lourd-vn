@@ -2,6 +2,7 @@ import { Assets, AssetsManifest } from "@drincs/pixi-vn";
 import { MAIN_MENU_ROUTE } from "../constans";
 import { apiClient } from "./api-client";
 import { getProjectId } from "./project-config";
+import { processManifest } from "./manifest-manager";
 
 /**
  * Define all the assets that will be used in the game.
@@ -20,7 +21,10 @@ export async function defineAssets() {
     try {
         // 从 API 获取 manifest
         const manifestResponse = await apiClient.getProjectManifest(projectId);
-        const manifest: AssetsManifest = manifestResponse.manifest;
+        let manifest: AssetsManifest = manifestResponse.manifest;
+
+        // 处理 manifest，将 COS URL 转换为代理 URL 以避免 CORS 问题
+        manifest = processManifest(manifest);
 
         // 初始化 Assets
         Assets.init({ manifest });
