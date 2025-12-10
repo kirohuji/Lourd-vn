@@ -8,15 +8,14 @@ interface LoadingScreenProps {
     onError?: (error: Error) => void;
 }
 
+// 使用模块级别的变量来追踪初始化状态，防止重复初始化
+let isInitializing = false;
+let initializationPromise: Promise<void> | null = null;
+
 export default function LoadingScreen({ onComplete, onError }: LoadingScreenProps = {}) {
-    const { isAuthenticated, checkAuth } = useAuthStore();
+    const { isAuthenticated } = useAuthStore();
     const [loadingStatus, setLoadingStatus] = useState<string>('正在初始化游戏...');
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        // 检查认证状态
-        checkAuth();
-    }, [checkAuth]);
 
     useEffect(() => {
         // 如果未认证，不进行初始化
@@ -24,12 +23,37 @@ export default function LoadingScreen({ onComplete, onError }: LoadingScreenProp
             return;
         }
 
+        // 如果正在初始化或已经初始化，等待现有的初始化完成
+        if (isInitializing && initializationPromise) {
+            initializationPromise
+                .then(() => {
+                    if (onComplete) {
+                        setTimeout(() => {
+                            onComplete();
+                        }, 500);
+                    }
+                })
+                .catch(err => {
+                    if (onError) {
+                        onError(err);
+                    }
+                });
+            return;
+        }
+
+        // 标记为正在初始化
+        isInitializing = true;
+
         // 开始游戏初始化
         const init = async () => {
             try {
                 setLoadingStatus('正在加载角色...');
                 await initializeGame();
                 setLoadingStatus('初始化完成');
+
+                // 初始化成功，标记为已完成
+                isInitializing = false;
+                initializationPromise = null;
 
                 // 初始化完成后调用回调
                 if (onComplete) {
@@ -43,6 +67,10 @@ export default function LoadingScreen({ onComplete, onError }: LoadingScreenProp
                 setError(errorMessage);
                 setLoadingStatus('初始化失败');
 
+                // 重置初始化标志，允许重试
+                isInitializing = false;
+                initializationPromise = null;
+
                 // 调用错误回调
                 if (onError) {
                     onError(err);
@@ -50,8 +78,11 @@ export default function LoadingScreen({ onComplete, onError }: LoadingScreenProp
             }
         };
 
-        init();
-    }, [isAuthenticated, onComplete, onError]);
+        // 保存初始化 promise，以便其他组件实例可以等待同一个初始化
+        initializationPromise = init();
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]); // 移除 onComplete 和 onError 作为依赖
 
     // 如果未认证，不渲染内容
     if (!isAuthenticated) {

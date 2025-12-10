@@ -33,10 +33,16 @@ function AppBootstrap() {
         }
     }, [status]);
 
-    // 处理未认证时的重定向
+    // 处理未认证时的重定向，以及已认证时访问登录页的重定向
     useEffect(() => {
         // 如果正在检查认证状态，等待完成
         if (status === 'checking') {
+            return;
+        }
+
+        // 如果已认证但当前在登录页，重定向到主菜单
+        if (status === 'authenticated' && location.pathname === LOGIN_ROUTE) {
+            navigate('/', { replace: true });
             return;
         }
 

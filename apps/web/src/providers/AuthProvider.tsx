@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import type { User } from '../stores/auth-store';
 import { useAuthStore } from '../stores/auth-store';
 
@@ -27,15 +27,22 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const { isAuthenticated, user, checkAuth } = useAuthStore();
+    // 使用 ref 追踪是否已经初始化过状态
+    const statusInitializedRef = useRef(false);
 
     // 初始化时立即确定状态（因为 zustand store 已经在创建时读取了 localStorage）
     const [status, setStatus] = useState<AuthStatus>(() => {
         // 由于 store 在创建时就初始化了，可以直接读取当前状态
+        statusInitializedRef.current = true;
         return isAuthenticated ? 'authenticated' : 'unauthenticated';
     });
 
-    // 根据认证状态更新 status
+    // 根据认证状态更新 status（但只在状态已经初始化后更新，避免初始状态闪烁）
     useEffect(() => {
+        if (!statusInitializedRef.current) {
+            return;
+        }
+
         if (isAuthenticated) {
             setStatus('authenticated');
         } else {
