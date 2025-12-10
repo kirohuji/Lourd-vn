@@ -1,9 +1,4 @@
-import { useState } from 'react';
-import { CharacterConfig, UpdateCharacterDto } from '@lourd-game/shared';
-import { useCharacters, useUpsertCharacter, useDeleteCharacter } from '@/lib/hooks/use-characters';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CharacterForm } from '@/components/features/character-form';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,15 +9,28 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { CharacterForm } from '@/components/features/character-form';
-import { RefreshCw, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { useCharacters, useDeleteCharacter, useUpsertCharacter } from '@/lib/hooks/use-characters';
+import { CharacterConfig, UpdateCharacterDto } from '@lourd-game/shared';
+import { Edit, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 export function CharactersPage() {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [characterToDelete, setCharacterToDelete] = useState<CharacterConfig | null>(null);
     const [editCharacter, setEditCharacter] = useState<CharacterConfig | null>(null);
+    const [characterId, setCharacterId] = useState('');
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
     const [icon, setIcon] = useState('');
@@ -38,30 +46,45 @@ export function CharactersPage() {
     const characters = data?.data || [];
 
     const openEdit = (c?: CharacterConfig) => {
-        const char =
-            c ||
-            ({
-                id: '',
-                name: '',
-                enabled: true,
-                order: 0,
-            } as CharacterConfig);
-        setEditCharacter(char);
-        setName(char.name);
-        setAge(char.age != null ? String(char.age) : '');
-        setIcon(char.icon || '');
-        setColor(char.color || '');
-        setEnabled(char.enabled);
-        setOrder(String(char.order ?? 0));
+        if (c) {
+            // 编辑模式
+            setEditCharacter(c);
+            setCharacterId(c.id);
+            setName(c.name);
+            setAge(c.age != null ? String(c.age) : '');
+            setIcon(c.icon || '');
+            setColor(c.color || '');
+            setEnabled(c.enabled);
+            setOrder(String(c.order ?? 0));
+        } else {
+            // 新增模式
+            setEditCharacter(null);
+            setCharacterId('');
+            setName('');
+            setAge('');
+            setIcon('');
+            setColor('');
+            setEnabled(true);
+            setOrder('0');
+        }
         setEditDialogOpen(true);
     };
 
     const handleSave = async () => {
-        if (!editCharacter) return;
-        if (!editCharacter.id) {
+        // 验证必填字段
+        if (!characterId.trim()) {
             toast({
-                title: '警告',
-                description: '当前简化版暂不支持新建 ID，请先在后端 seed 或数据库中创建 ID',
+                title: '错误',
+                description: '请输入角色 ID',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (!name.trim()) {
+            toast({
+                title: '错误',
+                description: '请输入角色名称',
                 variant: 'destructive',
             });
             return;
@@ -76,13 +99,14 @@ export function CharactersPage() {
                 enabled,
                 order: order ? Number(order) : 0,
             };
-            await upsertCharacter.mutateAsync({ id: editCharacter.id, dto });
+            await upsertCharacter.mutateAsync({ id: characterId.trim(), dto });
             toast({
                 title: '成功',
-                description: '角色已保存',
+                description: editCharacter ? '角色已更新' : '角色已创建',
             });
             setEditCharacter(null);
             setEditDialogOpen(false);
+            refetch();
         } catch (error: any) {
             toast({
                 title: '保存失败',
@@ -118,7 +142,8 @@ export function CharactersPage() {
                 <div>
                     <h1 className='text-3xl font-bold'>角色编辑</h1>
                     <p className='mt-1 text-sm text-muted-foreground'>
-                        这里可以查看和编辑角色的名称、头像、颜色、排序等基础信息。当前版本同样要求 ID 由后端或数据库预先创建。
+                        这里可以查看和编辑角色的名称、头像、颜色、排序等基础信息。当前版本同样要求 ID
+                        由后端或数据库预先创建。
                     </p>
                 </div>
                 <div className='flex gap-2'>
@@ -128,7 +153,7 @@ export function CharactersPage() {
                     </Button>
                     <Button onClick={() => openEdit()}>
                         <Plus className='mr-2 h-4 w-4' />
-                        编辑/新建角色
+                        新增角色
                     </Button>
                 </div>
             </div>
@@ -200,17 +225,20 @@ export function CharactersPage() {
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                 <DialogContent className='max-w-2xl'>
                     <DialogHeader>
-                        <DialogTitle>编辑角色</DialogTitle>
-                        <DialogDescription>修改角色信息</DialogDescription>
+                        <DialogTitle>{editCharacter ? '编辑角色' : '新增角色'}</DialogTitle>
+                        <DialogDescription>
+                            {editCharacter ? '修改角色信息' : '创建新角色，请填写角色 ID 和名称'}
+                        </DialogDescription>
                     </DialogHeader>
                     <CharacterForm
-                        character={editCharacter}
+                        characterId={characterId}
                         name={name}
                         age={age}
                         icon={icon}
                         color={color}
                         enabled={enabled}
                         order={order}
+                        onCharacterIdChange={setCharacterId}
                         onNameChange={setName}
                         onAgeChange={setAge}
                         onIconChange={setIcon}
@@ -249,4 +277,3 @@ export function CharactersPage() {
         </div>
     );
 }
-

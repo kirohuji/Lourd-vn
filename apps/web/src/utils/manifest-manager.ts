@@ -1,4 +1,6 @@
 import { AssetsManifest } from '@drincs/pixi-vn';
+import { apiClient } from './api-client';
+import { getProjectId } from './project-config';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
@@ -153,3 +155,88 @@ export function processManifest(manifest: AssetsManifest): AssetsManifest {
     };
 }
 
+/**
+ * 从后端 API 获取 manifest 并合并基础 manifest
+ * @param baseManifest 基础 manifest（本地 manifest）
+ * @returns 合并后的 manifest
+ */
+export async function generateManifestFromAPI(baseManifest?: AssetsManifest): Promise<AssetsManifest> {
+    try {
+        // 获取项目 ID
+        const projectId = await getProjectId();
+
+        if (!projectId) {
+            console.warn('Project ID not found. Using base manifest only.');
+            return baseManifest ? processManifest(baseManifest) : { bundles: [] };
+        }
+
+        // 从后端 API 获取 manifest
+        const response = await apiClient.getProjectManifest(projectId);
+        const apiManifest = response.manifest;
+
+        // 如果没有基础 manifest，处理 API manifest
+        if (!baseManifest?.bundles) {
+            if (apiManifest.bundles) {
+                return processManifest(apiManifest);
+            }
+            return apiManifest;
+        }
+
+        // 合并基础 manifest 和 API manifest
+        const bundleMap = new Map<string, Array<{ alias: string; src: string; format?: string }>>();
+
+        // 添加基础 manifest 的 bundles
+        baseManifest.bundles.forEach(bundle => {
+            const assetsArray = Array.isArray(bundle.assets) ? bundle.assets : [];
+            const convertedAssets = assetsArray
+                .map(asset => {
+                    // 处理不同格式的 src
+                    let src = '';
+                    const assetSrc = asset.src as any;
+                    if (typeof assetSrc === 'string') {
+                        src = assetSrc;
+                    } else if (Array.isArray(assetSrc)) {
+                        src = assetSrc[0] || '';
+                    } else if (assetSrc && typeof assetSrc === 'object') {
+                        src = String(assetSrc);
+                    }
+                    // 创建临时 asset 对象用于处理
+                    return processAsset({ ...asset, src });
+                })
+                .filter(asset => asset.alias && asset.src);
+
+            bundleMap.set(bundle.name, convertedAssets);
+        });
+
+        // 合并 API manifest 的 bundles
+        if (apiManifest.bundles) {
+            apiManifest.bundles.forEach((bundle: any) => {
+                const existingAssets = bundleMap.get(bundle.name) || [];
+                const assetsArray = Array.isArray(bundle.assets) ? bundle.assets : [];
+                const newAssets = assetsArray.map(processAsset);
+
+                // 避免重复的 alias
+                const existingAliases = new Set(existingAssets.map(asset => asset.alias));
+                newAssets.forEach((asset: any) => {
+                    if (asset.alias && asset.src && !existingAliases.has(asset.alias)) {
+                        existingAssets.push(asset);
+                    }
+                });
+
+                bundleMap.set(bundle.name, existingAssets);
+            });
+        }
+
+        // 生成最终的 bundles 数组
+        const bundles = Array.from(bundleMap.entries()).map(([name, assets]) => ({
+            name,
+            assets,
+        }));
+
+        return { bundles };
+    } catch (error) {
+        console.error('从 API 获取 manifest 失败:', error);
+        // 如果 API 调用失败，回退到基础 manifest
+        return baseManifest ? processManifest(baseManifest) : { bundles: [] };
+    }
+}

@@ -4,12 +4,6 @@ INCLUDE second_part.ink
 === start ===
 # lazyload bundle m01 fm01 fm02
 # show image bg bg01-hallway
-我辞职的时间点，似乎不算聪明。
-也是在那天早晨，我第一次发现——
-原来城市的风，是会从人群的缝隙里穿过来的。
-在写字楼的五年，我从未真正抬头看过天空。
-
-# show image bg bg01-hallway
 # show imagecontainer james [m01-body m01-eyes-smile m01-mouth-neutral01] xAlign 0.5 yAlign 1 with movein direction right ease circInOut type spring
 james: You're my roommate's replacement, huh?
 # show imagecontainer james [m01-body m01-eyes-grin m01-mouth-smile01]

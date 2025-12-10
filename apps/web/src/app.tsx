@@ -1,24 +1,18 @@
-import { setupPixivnViteData } from "@drincs/pixi-vn/vite-listener";
-import { lazy, Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { useI18n } from "./i18n";
-import LoadingScreen from "./screens/LoadingScreen";
-import { defineAssets } from "./utils/assets-utility";
-import { initializeIndexedDB } from "./utils/indexedDB-utility";
-import { importAllInkLabels } from "./utils/ink-utility";
-import { loadCharactersFromAPI } from "./utils/characters-utility";
+import { setupPixivnViteData } from '@drincs/pixi-vn/vite-listener';
+import { lazy, Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+import { useI18n } from './i18n';
+import LoadingScreen from './screens/LoadingScreen';
+import { defineAssets } from './utils/assets-utility';
+import { loadCharactersFromAPI } from './utils/characters-utility';
+import { initializeIndexedDB } from './utils/indexedDB-utility';
+import { importAllInkLabels } from './utils/ink-utility';
 
 const Home = lazy(async () => {
-    await Promise.all([import("./values"), import("./labels")]);
-    await Promise.all([
-        initializeIndexedDB(), 
-        defineAssets(), 
-        loadCharactersFromAPI(),
-        useI18n(), 
-        importAllInkLabels()
-    ]);
+    await loadCharactersFromAPI(), await Promise.all([import('./values'), import('./labels')]);
+    await Promise.all([initializeIndexedDB(), defineAssets(), useI18n(), importAllInkLabels()]);
     setupPixivnViteData();
-    return import("./Home");
+    return import('./Home');
 });
 
 function ErrorFallback({ error }: { error: Error | undefined }) {
@@ -26,29 +20,29 @@ function ErrorFallback({ error }: { error: Error | undefined }) {
         <div
             role='alert'
             style={{
-                pointerEvents: "auto",
-                backgroundColor: "black",
+                pointerEvents: 'auto',
+                backgroundColor: 'black',
             }}
         >
             <h2
                 style={{
-                    color: "red",
-                    fontSize: "2rem",
-                    textAlign: "center",
-                    marginTop: "1rem",
+                    color: 'red',
+                    fontSize: '2rem',
+                    textAlign: 'center',
+                    marginTop: '1rem',
                 }}
             >
                 Something went wrong
             </h2>
             <p
                 style={{
-                    color: "white",
-                    fontSize: "1.5rem",
-                    textAlign: "center",
-                    marginTop: "1rem",
+                    color: 'white',
+                    fontSize: '1.5rem',
+                    textAlign: 'center',
+                    marginTop: '1rem',
                 }}
             >
-                {error?.message || "An unknown error occurred"}
+                {error?.message || 'An unknown error occurred'}
             </p>
         </div>
     );

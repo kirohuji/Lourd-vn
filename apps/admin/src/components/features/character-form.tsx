@@ -1,16 +1,16 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { CharacterConfig } from '@lourd-game/shared';
 
 interface CharacterFormProps {
-    character: CharacterConfig | null;
+    characterId: string;
     name: string;
     age: string;
     icon: string;
     color: string;
     enabled: boolean;
     order: string;
+    onCharacterIdChange: (value: string) => void;
     onNameChange: (value: string) => void;
     onAgeChange: (value: string) => void;
     onIconChange: (value: string) => void;
@@ -20,13 +20,14 @@ interface CharacterFormProps {
 }
 
 export function CharacterForm({
-    character,
+    characterId,
     name,
     age,
     icon,
     color,
     enabled,
     order,
+    onCharacterIdChange,
     onNameChange,
     onAgeChange,
     onIconChange,
@@ -37,8 +38,13 @@ export function CharacterForm({
     return (
         <div className='space-y-4'>
             <div className='space-y-2'>
-                <Label htmlFor='char-id'>ID</Label>
-                <Input id='char-id' value={character?.id || ''} disabled />
+                <Label htmlFor='char-id'>ID *</Label>
+                <Input
+                    id='char-id'
+                    value={characterId}
+                    onChange={e => onCharacterIdChange(e.target.value)}
+                    placeholder='请输入角色 ID'
+                />
             </div>
             <div className='space-y-2'>
                 <Label htmlFor='char-name'>名称 *</Label>

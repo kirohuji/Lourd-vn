@@ -1,8 +1,7 @@
-import { Assets, AssetsManifest } from "@drincs/pixi-vn";
-import { MAIN_MENU_ROUTE } from "../constans";
-import { apiClient } from "./api-client";
-import { getProjectId } from "./project-config";
-import { processManifest } from "./manifest-manager";
+import { Assets } from '@drincs/pixi-vn';
+import manifest from '../assets/manifest';
+import { MAIN_MENU_ROUTE } from '../constans';
+import { generateManifestFromAPI } from './manifest-manager';
 
 /**
  * Define all the assets that will be used in the game.
@@ -10,24 +9,12 @@ import { processManifest } from "./manifest-manager";
  * You can read more about assets management in the documentation: https://pixi-vn.web.app/start/assets-management.html
  */
 export async function defineAssets() {
-    // 获取项目 ID
-    const projectId = await getProjectId();
-    
-    if (!projectId) {
-        console.error('Project ID not found. Please set VITE_PROJECT_ID environment variable.');
-        throw new Error('Project ID is required to load assets');
-    }
-
     try {
-        // 从 API 获取 manifest
-        const manifestResponse = await apiClient.getProjectManifest(projectId);
-        let manifest: AssetsManifest = manifestResponse.manifest;
+        // 从后端 API 获取 manifest 并合并基础 manifest
+        const dynamicManifest = await generateManifestFromAPI(manifest);
 
-        // 处理 manifest，将 COS URL 转换为代理 URL 以避免 CORS 问题
-        manifest = processManifest(manifest);
-
-        // 初始化 Assets
-        Assets.init({ manifest });
+        // 初始化 Assets 系统
+        Assets.init({ manifest: dynamicManifest });
 
         // The game will not start until these asserts are loaded.
         await Assets.loadBundle(MAIN_MENU_ROUTE);
@@ -36,8 +23,12 @@ export async function defineAssets() {
         // Assets.backgroundLoadBundle("main_menu");
         // Assets.backgroundLoad("background_main_menu");
     } catch (error) {
-        console.error('Failed to load assets from API:', error);
-        throw error;
+        console.error('Failed to initialize assets with API resources:', error);
+
+        // 如果 API 调用失败，回退到原始 manifest
+        Assets.init({ manifest });
+
+        await Assets.loadBundle(MAIN_MENU_ROUTE);
     }
 }
 
