@@ -86,6 +86,20 @@ export interface PaginatedResponse<T> {
     totalPages: number;
 }
 
+/**
+ * Bundle 信息
+ */
+export interface BundleInfo {
+    name: string;
+    resourceCount: number;
+    bundleType: 'common' | 'chapter' | 'mixed';
+    createdAt: Date;
+}
+
+/**
+ * Bundle 列表响应（使用分页响应格式）
+ */
+export type BundleListResponse = PaginatedResponse<BundleInfo>;
 
 /**
  * Manifest 生成响应

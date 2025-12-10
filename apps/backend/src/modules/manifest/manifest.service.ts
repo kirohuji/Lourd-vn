@@ -204,6 +204,101 @@ export class ManifestService {
     };
   }
 
+  /**
+   * 获取 Bundle 列表（包含统计信息）
+   */
+  async getBundleList(query: {
+    bundleType?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<any>> {
+    const page =
+      query.page !== undefined && query.page !== null ? Number(query.page) : 1;
+    const limit =
+      query.limit !== undefined && query.limit !== null
+        ? Number(query.limit)
+        : 10;
+
+    const safePage = Number.isNaN(page) || page < 1 ? 1 : page;
+    const safeLimit = Number.isNaN(limit) || limit < 1 ? 10 : limit;
+    const where: any = {};
+
+    if (query.bundleType) {
+      where.bundleType = query.bundleType;
+    }
+
+    if (query.search) {
+      where.OR = [{ bundle: { contains: query.search, mode: 'insensitive' } }];
+    }
+
+    // 获取所有资源，按 bundle 分组
+    const resources = await this.prisma.resource.findMany({
+      where,
+      select: {
+        bundle: true,
+        bundleType: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // 按 bundle 分组并计算统计信息
+    const bundleMap = new Map<
+      string,
+      {
+        name: string;
+        resourceCount: number;
+        bundleType: 'common' | 'chapter' | 'mixed';
+        createdAt: Date;
+      }
+    >();
+
+    resources.forEach((resource) => {
+      const bundle = resource.bundle || '未分类';
+      const bundleType =
+        (resource.bundleType as 'common' | 'chapter') || 'chapter';
+
+      if (!bundleMap.has(bundle)) {
+        bundleMap.set(bundle, {
+          name: bundle,
+          resourceCount: 0,
+          bundleType: bundleType,
+          createdAt: resource.createdAt,
+        });
+      }
+
+      const info = bundleMap.get(bundle)!;
+      info.resourceCount++;
+
+      // 更新最早创建时间
+      if (new Date(resource.createdAt) < new Date(info.createdAt)) {
+        info.createdAt = resource.createdAt;
+      }
+
+      // 检查 Bundle 类型是否混合
+      if (info.bundleType !== bundleType && info.resourceCount > 1) {
+        info.bundleType = 'mixed';
+      }
+    });
+
+    const allBundles = Array.from(bundleMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+
+    // 分页
+    const skip = (safePage - 1) * safeLimit;
+    const bundles = allBundles.slice(skip, skip + safeLimit);
+
+    return {
+      data: bundles,
+      total: allBundles.length,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(allBundles.length / safeLimit),
+    };
+  }
+
   async findOne(id: number): Promise<ResourceResponseDto> {
     const resource = await this.prisma.resource.findUnique({
       where: { id },
@@ -262,6 +357,116 @@ export class ManifestService {
       alias: updated.alias,
       src: updated.src,
       bundle: updated.bundle,
+      hash: updated.hash,
+      fileSize: updated.fileSize,
+      fileType: updated.fileType || undefined,
+      originalName: updated.originalName || undefined,
+      uploaderId: updated.uploaderId,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  }
+
+  /**
+   * 替换资源文件（更新文件并更新元数据）
+   */
+  async replaceFile(
+    id: number,
+    file: Express.Multer.File,
+    dto: UpdateResourceDto,
+  ): Promise<ResourceResponseDto> {
+    const resource = await this.prisma.resource.findUnique({
+      where: { id },
+    });
+
+    if (!resource) {
+      throw new NotFoundException(`Resource with ID ${id} not found`);
+    }
+
+    // 验证文件
+    const validation = validateFile(file, {
+      maxSize: MAX_FILE_SIZE,
+      allowedTypes: [...ALLOWED_FILE_TYPES],
+    });
+
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    // 计算新文件哈希
+    const newHash = calculateFileMD5(file.buffer);
+
+    // 如果新文件哈希与旧文件相同，检查是否已存在
+    if (newHash !== resource.hash) {
+      const existingResource = await this.prisma.resource.findUnique({
+        where: { hash: newHash },
+      });
+
+      if (existingResource && existingResource.id !== id) {
+        throw new BadRequestException(
+          `文件已存在: ${existingResource.originalName || existingResource.alias}`,
+        );
+      }
+    }
+
+    // 检查别名是否被其他资源使用
+    if (dto.alias && dto.alias !== resource.alias) {
+      const existingByAlias = await this.prisma.resource.findFirst({
+        where: {
+          alias: dto.alias,
+          id: { not: id },
+        },
+      });
+
+      if (existingByAlias) {
+        throw new BadRequestException(`别名 "${dto.alias}" 已存在`);
+      }
+    }
+
+    // 生成新的 COS Key
+    const cosKey = generateCosKey(newHash, file.originalname);
+
+    // 上传新文件到 COS
+    const fileUrl = await this.cosService.uploadFile(file.buffer, cosKey);
+
+    // 如果旧文件在 COS 上，尝试删除旧文件
+    if (resource.cosKey && resource.cosKey !== cosKey) {
+      try {
+        await this.cosService.deleteFile(resource.cosKey);
+      } catch (error) {
+        // 忽略删除失败的错误，不影响更新流程
+        console.warn(
+          `Failed to delete old file from COS: ${resource.cosKey}`,
+          error,
+        );
+      }
+    }
+
+    // 更新资源记录
+    const bundleType = dto.bundleType || resource.bundleType || 'chapter';
+    const updated = await this.prisma.resource.update({
+      where: { id },
+      data: {
+        alias: dto.alias !== undefined ? dto.alias : resource.alias,
+        src: fileUrl,
+        bundle: dto.bundle !== undefined ? dto.bundle : resource.bundle,
+        bundleType: bundleType,
+        hash: newHash,
+        fileSize: file.size,
+        fileType:
+          file.mimetype || file.originalname.split('.').pop()?.toLowerCase(),
+        mimeType: file.mimetype || undefined,
+        cosKey,
+        originalName: file.originalname,
+      } as any,
+    });
+
+    return {
+      id: updated.id,
+      alias: updated.alias,
+      src: updated.src,
+      bundle: updated.bundle,
+      bundleType: (updated as any).bundleType || undefined,
       hash: updated.hash,
       fileSize: updated.fileSize,
       fileType: updated.fileType || undefined,
@@ -662,5 +867,75 @@ export class ManifestService {
       ...query,
       usedByProjectId: projectId,
     });
+  }
+
+  /**
+   * 更新Bundle（批量更新该Bundle下所有资源的bundle和bundleType）
+   */
+  async updateBundleResources(
+    bundleName: string,
+    newBundleName?: string,
+    newBundleType?: string,
+  ): Promise<{ updatedCount: number }> {
+    // 检查Bundle是否存在（至少有一个资源使用该Bundle）
+    const existingResources = await this.prisma.resource.findMany({
+      where: { bundle: bundleName },
+      take: 1,
+    });
+
+    if (existingResources.length === 0) {
+      throw new NotFoundException(
+        `Bundle "${bundleName}" not found or has no resources`,
+      );
+    }
+
+    // 如果提供了新Bundle名称，检查是否已存在同名Bundle（且不是当前Bundle）
+    if (newBundleName && newBundleName !== bundleName) {
+      const existingBundle = await this.prisma.resource.findFirst({
+        where: { bundle: newBundleName },
+      });
+      if (existingBundle) {
+        throw new BadRequestException(
+          `Bundle "${newBundleName}" already exists. Please choose a different name.`,
+        );
+      }
+    }
+
+    // 验证 bundleType
+    if (
+      newBundleType &&
+      newBundleType !== 'common' &&
+      newBundleType !== 'chapter'
+    ) {
+      throw new BadRequestException(
+        `Invalid bundleType: ${newBundleType}. Must be "common" or "chapter"`,
+      );
+    }
+
+    // 构建更新数据
+    const updateData: any = {};
+    if (newBundleName && newBundleName !== bundleName) {
+      updateData.bundle = newBundleName;
+    }
+    if (newBundleType) {
+      updateData.bundleType = newBundleType;
+    }
+
+    // 如果没有需要更新的内容，直接返回
+    if (Object.keys(updateData).length === 0) {
+      return { updatedCount: 0 };
+    }
+
+    // 使用事务批量更新
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updateResult = await tx.resource.updateMany({
+        where: { bundle: bundleName },
+        data: updateData,
+      });
+
+      return updateResult.count;
+    });
+
+    return { updatedCount: result };
   }
 }

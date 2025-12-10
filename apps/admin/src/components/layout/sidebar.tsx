@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { useChapters } from '@/lib/hooks/use-chapters';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,10 @@ export function Sidebar() {
     const projects = projectsData?.data || [];
     const currentProjectId = params.projectId ? Number(params.projectId) : null;
     const currentProject = useMemo(() => projects.find(p => p.id === currentProjectId), [projects, currentProjectId]);
+
+    // 获取当前项目的章节列表
+    const { data: chapters } = useChapters(currentProjectId || 0);
+    const chaptersList = chapters || [];
 
     const handleLogout = () => {
         logout();
@@ -81,7 +86,19 @@ export function Sidebar() {
                       { title: '资源视图', href: `/admin/projects/${currentProjectId}/resources`, icon: HardDrive },
                       { title: '地图视图', href: `/admin/projects/${currentProjectId}/maps`, icon: Map },
                       { title: '角色视图', href: `/admin/projects/${currentProjectId}/characters`, icon: User },
-                      { title: '章节管理', href: `/admin/projects/${currentProjectId}/chapters`, icon: BookOpen },
+                      {
+                          title: '章节管理',
+                          href: `/admin/projects/${currentProjectId}/chapters`,
+                          icon: BookOpen,
+                          children:
+                              chaptersList.length > 0
+                                  ? chaptersList.map(chapter => ({
+                                        title: chapter.name,
+                                        href: `/admin/chapters/${chapter.id}/resources`,
+                                        icon: HardDrive,
+                                    }))
+                                  : undefined,
+                      },
                   ]
                 : undefined,
         },
@@ -102,10 +119,13 @@ export function Sidebar() {
             <div key={item.href}>
                 <button
                     onClick={() => {
+                        // 如果有 href，先导航
+                        if (item.href) {
+                            navigate(item.href);
+                        }
+                        // 如果有子项，切换展开状态
                         if (hasChildren) {
                             toggleExpanded(item.title);
-                        } else {
-                            navigate(item.href);
                         }
                     }}
                     className={cn(

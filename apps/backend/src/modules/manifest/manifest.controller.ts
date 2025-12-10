@@ -33,7 +33,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -47,6 +47,19 @@ export class GetFileDto {
   @IsString()
   @IsNotEmpty()
   fileUrl: string;
+}
+
+export class UpdateBundleDto {
+  @ApiProperty({ description: '新Bundle名称（可选）', required: false })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  newBundleName?: string;
+
+  @ApiProperty({ description: '新Bundle类型（可选，common 或 chapter）', required: false })
+  @IsOptional()
+  @IsString()
+  newBundleType?: 'common' | 'chapter';
 }
 
 @ApiTags('manifest')
@@ -95,6 +108,24 @@ export class ManifestController {
     return this.manifestService.findAll(query);
   }
 
+  @Get('bundles')
+  @Public()
+  @ApiOperation({ summary: '获取 Bundle 列表（包含统计信息）' })
+  @ApiResponse({
+    status: 200,
+    description: 'Bundle 列表',
+  })
+  async getBundleList(
+    @Query('bundleType') bundleType?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const limitNum = limit ? Number(limit) : 10;
+    return this.manifestService.getBundleList({ bundleType, search, page: pageNum, limit: limitNum });
+  }
+
   @Get('generate')
   @Public()
   @ApiOperation({ summary: '生成 Manifest（公开接口）' })
@@ -138,6 +169,35 @@ export class ManifestController {
     return this.manifestService.update(id, dto);
   }
 
+  @Put(':id/file')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '替换资源文件（仅管理员）' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        alias: { type: 'string' },
+        bundle: { type: 'string' },
+        bundleType: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: '资源文件替换成功' })
+  async replaceFile(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UpdateResourceDto,
+  ): Promise<ResourceResponseDto> {
+    return this.manifestService.replaceFile(id, file, dto);
+  }
+
   @Post(':id/migrate-to-cos')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -167,6 +227,22 @@ export class ManifestController {
   @ApiResponse({ status: 200, description: '文件内容' })
   async proxyFile(@Query('url') url: string, @Res() res: Response) {
     return this.handleProxyRequest(url, res);
+  }
+
+  @Put('bundles/:bundleName')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '更新Bundle（批量更新该Bundle下所有资源）' })
+  @ApiResponse({ status: 200, description: 'Bundle更新成功' })
+  async updateBundle(
+    @Param('bundleName') bundleName: string,
+    @Body() dto: UpdateBundleDto,
+  ): Promise<{ updatedCount: number }> {
+    return this.manifestService.updateBundleResources(
+      bundleName,
+      dto.newBundleName,
+      dto.newBundleType,
+    );
   }
 
   @Get('proxy/*')

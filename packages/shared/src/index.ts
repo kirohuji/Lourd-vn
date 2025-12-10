@@ -32,6 +32,8 @@ export type {
 } from './types/game-config.js';
 
 export type {
+    BundleInfo,
+    BundleListResponse,
     CreateResourceDto,
     ManifestResponse,
     PaginatedResponse,

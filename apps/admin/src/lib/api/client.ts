@@ -249,9 +249,64 @@ class ApiClient {
         });
     }
 
+    async replaceResourceFile(
+        id: number,
+        file: File,
+        dto: UpdateResourceDto,
+    ): Promise<ResourceResponseDto> {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (dto.alias !== undefined) {
+            formData.append('alias', dto.alias);
+        }
+        if (dto.bundle !== undefined) {
+            formData.append('bundle', dto.bundle);
+        }
+        if (dto.bundleType !== undefined) {
+            formData.append('bundleType', dto.bundleType);
+        }
+
+        return this.request<ResourceResponseDto>(`/manifest/${id}/file`, {
+            method: 'PUT',
+            body: formData,
+            headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
     async migrateResourceToCos(id: number): Promise<ResourceResponseDto> {
         return this.request<ResourceResponseDto>(`/manifest/${id}/migrate-to-cos`, {
             method: 'POST',
+        });
+    }
+
+    async updateBundle(
+        bundleName: string,
+        newBundleName?: string,
+        newBundleType?: 'common' | 'chapter',
+    ): Promise<{ updatedCount: number }> {
+        return this.request<{ updatedCount: number }>(`/manifest/bundles/${encodeURIComponent(bundleName)}`, {
+            method: 'PUT',
+            body: {
+                newBundleName,
+                newBundleType,
+            },
+        });
+    }
+
+    async getBundleList(query?: { bundleType?: string; search?: string; page?: number; limit?: number }): Promise<PaginatedResponse<any>> {
+        const queryString = query
+            ? '?' +
+              new URLSearchParams(
+                  Object.entries(query).reduce((acc, [key, value]) => {
+                      if (value !== undefined && value !== null) {
+                          acc[key] = String(value);
+                      }
+                      return acc;
+                  }, {} as Record<string, string>),
+              ).toString()
+            : '';
+        return this.request<PaginatedResponse<any>>(`/manifest/bundles${queryString}`, {
+            method: 'GET',
         });
     }
 

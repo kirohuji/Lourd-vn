@@ -50,6 +50,7 @@ export const endpoints = {
     delete: (id: number) => `/manifest/${id}`,
     migrateToCos: (id: number) => `/manifest/${id}/migrate-to-cos`,
     generate: '/manifest/generate',
+    bundles: '/manifest/bundles',
   },
   maps: {
     list: '/game-config/maps',

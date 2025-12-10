@@ -19,14 +19,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } from '@/lib/hooks/use-projects';
+import { useAllResources } from '@/lib/hooks/use-resources';
 import { CreateProjectDto, UpdateProjectDto } from '@lourd-game/shared';
 import { Edit, ExternalLink, Loader2, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 
 export function ProjectsPage() {
     const navigate = useNavigate();
@@ -44,12 +46,26 @@ export function ProjectsPage() {
     } | null>(null);
     const [editName, setEditName] = useState('');
     const [editDescription, setEditDescription] = useState('');
+    const [editCommonBundle, setEditCommonBundle] = useState('');
 
     const { toast } = useToast();
     const { data, isLoading, refetch } = useProjects({ page, limit: 20, search: searchQuery || undefined });
     const createProject = useCreateProject();
     const updateProject = useUpdateProject();
     const deleteProject = useDeleteProject();
+
+    // 获取所有 common 类型的资源包
+    const { data: allResourcesData } = useAllResources();
+    const commonBundles = useMemo(() => {
+        if (!allResourcesData) return [];
+        const bundles = new Set<string>();
+        allResourcesData.data.forEach(resource => {
+            if (resource.bundleType === 'common' && resource.bundle) {
+                bundles.add(resource.bundle);
+            }
+        });
+        return Array.from(bundles).sort();
+    }, [allResourcesData]);
 
     const projects = data?.data || [];
     const totalPages = data?.totalPages || 1;
@@ -58,6 +74,7 @@ export function ProjectsPage() {
     const handleCreate = () => {
         setEditName('');
         setEditDescription('');
+        setEditCommonBundle('');
         setProjectToEdit(null);
         setCreateDialogOpen(true);
     };
@@ -72,10 +89,20 @@ export function ProjectsPage() {
             return;
         }
 
+        if (!editCommonBundle.trim()) {
+            toast({
+                title: '错误',
+                description: '请选择共通资源包',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         try {
             const dto: CreateProjectDto = {
                 name: editName.trim(),
                 description: editDescription.trim() || undefined,
+                commonBundle: editCommonBundle.trim(),
             };
             await createProject.mutateAsync(dto);
             toast({
@@ -83,6 +110,7 @@ export function ProjectsPage() {
                 description: '项目创建成功',
             });
             setCreateDialogOpen(false);
+            refetch();
         } catch (error: any) {
             toast({
                 title: '创建失败',
@@ -101,6 +129,7 @@ export function ProjectsPage() {
         });
         setEditName(project.name);
         setEditDescription(project.description || '');
+        setEditCommonBundle(project.commonBundle || undefined || '');
         setEditDialogOpen(true);
     };
 
@@ -114,10 +143,20 @@ export function ProjectsPage() {
             return;
         }
 
+        if (!editCommonBundle.trim()) {
+            toast({
+                title: '错误',
+                description: '请选择共通资源包',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         try {
             const dto: UpdateProjectDto = {
                 name: editName.trim(),
                 description: editDescription.trim() || undefined,
+                commonBundle: editCommonBundle.trim(),
             };
             await updateProject.mutateAsync({ id: projectToEdit.id, dto });
             toast({
@@ -126,6 +165,7 @@ export function ProjectsPage() {
             });
             setEditDialogOpen(false);
             setProjectToEdit(null);
+            refetch();
         } catch (error: any) {
             toast({
                 title: '更新失败',
@@ -320,6 +360,35 @@ export function ProjectsPage() {
                                 rows={3}
                             />
                         </div>
+                        <div className='space-y-2'>
+                            <Label htmlFor='edit-common-bundle'>共通资源包 *</Label>
+                            <Select
+                                value={editCommonBundle || undefined}
+                                onValueChange={value => setEditCommonBundle(value || '')}
+                            >
+                                <SelectTrigger id='edit-common-bundle'>
+                                    <SelectValue placeholder='请选择共通资源包' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {commonBundles.length === 0 ? (
+                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>
+                                            暂无共通资源包
+                                        </div>
+                                    ) : (
+                                        commonBundles.map(bundle => (
+                                            <SelectItem key={bundle} value={bundle}>
+                                                {bundle}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {commonBundles.length === 0 && (
+                                <p className='text-sm text-muted-foreground'>
+                                    请先在资源管理中创建共通资源包（bundleType 为 common）
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant='outline' onClick={() => setEditDialogOpen(false)}>
@@ -349,6 +418,35 @@ export function ProjectsPage() {
                                 onChange={e => setEditDescription(e.target.value)}
                                 rows={3}
                             />
+                        </div>
+                        <div className='space-y-2'>
+                            <Label htmlFor='create-common-bundle'>共通资源包 *</Label>
+                            <Select
+                                value={editCommonBundle || undefined}
+                                onValueChange={value => setEditCommonBundle(value || '')}
+                            >
+                                <SelectTrigger id='create-common-bundle'>
+                                    <SelectValue placeholder='请选择共通资源包' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {commonBundles.length === 0 ? (
+                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>
+                                            暂无共通资源包
+                                        </div>
+                                    ) : (
+                                        commonBundles.map(bundle => (
+                                            <SelectItem key={bundle} value={bundle}>
+                                                {bundle}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {commonBundles.length === 0 && (
+                                <p className='text-sm text-muted-foreground'>
+                                    请先在资源管理中创建共通资源包（bundleType 为 common）
+                                </p>
+                            )}
                         </div>
                     </div>
                     <DialogFooter>

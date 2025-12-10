@@ -18,6 +18,7 @@ export class ProjectsService {
         name: dto.name,
         description: dto.description,
         enabled: dto.enabled ?? true,
+        commonBundle: dto.commonBundle,
       },
     });
 
@@ -95,9 +96,10 @@ export class ProjectsService {
     const updated = await this.prisma.project.update({
       where: { id },
       data: {
-        name: dto.name,
-        description: dto.description,
-        enabled: dto.enabled,
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.enabled !== undefined && { enabled: dto.enabled }),
+        ...(dto.commonBundle !== undefined && { commonBundle: dto.commonBundle }),
       },
     });
 
@@ -124,6 +126,7 @@ export class ProjectsService {
       name: project.name,
       description: project.description ?? undefined,
       enabled: project.enabled,
+      commonBundle: project.commonBundle ?? undefined,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     };

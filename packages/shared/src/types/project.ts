@@ -6,6 +6,7 @@ export interface Project {
     name: string;
     description?: string;
     enabled: boolean;
+    commonBundle?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -17,6 +18,7 @@ export interface CreateProjectDto {
     name: string;
     description?: string;
     enabled?: boolean;
+    commonBundle: string;
 }
 
 /**
@@ -26,6 +28,7 @@ export interface UpdateProjectDto {
     name?: string;
     description?: string;
     enabled?: boolean;
+    commonBundle?: string;
 }
 
 /**
@@ -36,6 +39,7 @@ export interface ProjectResponseDto {
     name: string;
     description?: string;
     enabled: boolean;
+    commonBundle?: string;
     createdAt: Date;
     updatedAt: Date;
 }
