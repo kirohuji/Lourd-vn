@@ -2,7 +2,6 @@ import { RegisteredCharacters } from "@drincs/pixi-vn";
 import Character from "../models/Character";
 import { apiClient } from "./api-client";
 import { getProjectId } from "./project-config";
-import { CharacterConfig } from "@lourd-game/shared";
 
 /**
  * 从 API 加载角色并注册到 RegisteredCharacters
@@ -19,7 +18,10 @@ export async function loadCharactersFromAPI() {
         const response = await apiClient.getProjectCharacters(projectId);
         const characters = response.data;
 
-        // 注册每个角色
+        // 收集要注册的角色
+        const charactersToAdd: Character[] = [];
+
+        // 创建每个角色
         for (const charConfig of characters) {
             if (!charConfig.enabled) {
                 continue; // 跳过未启用的角色
@@ -30,7 +32,7 @@ export async function loadCharactersFromAPI() {
                 continue; // 已存在，跳过
             }
 
-            // 创建并注册角色
+            // 创建角色
             const character = new Character(charConfig.id, {
                 name: charConfig.name,
                 age: charConfig.age ?? undefined,
@@ -38,10 +40,14 @@ export async function loadCharactersFromAPI() {
                 color: charConfig.color ?? undefined,
             });
 
-            RegisteredCharacters.set(charConfig.id, character);
+            charactersToAdd.push(character);
         }
 
-        console.log(`Loaded ${characters.length} characters from API`);
+        // 批量注册角色
+        if (charactersToAdd.length > 0) {
+            RegisteredCharacters.add(charactersToAdd);
+            console.log(`Loaded ${charactersToAdd.length} characters from API`);
+        }
     } catch (error) {
         console.error('Failed to load characters from API:', error);
         // 不抛出错误，允许游戏继续运行

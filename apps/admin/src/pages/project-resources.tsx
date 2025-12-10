@@ -1,3 +1,5 @@
+import { BundleResourceGroup } from '@/components/features/bundle-resource-group';
+import { BundleInfo as BundleInfoType, BundleTable } from '@/components/features/bundle-table';
 import { Pagination } from '@/components/features/pagination';
 import { SearchBar } from '@/components/features/search-bar';
 import {
@@ -19,7 +21,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -29,15 +30,19 @@ import {
 } from '@/lib/hooks/use-project-resources';
 import { useResources } from '@/lib/hooks/use-resources';
 import { ResourceResponseDto } from '@lourd-game/shared';
-import { ExternalLink, Loader2, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Loader2, Plus, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+
+interface BundleInfo extends BundleInfoType {
+    resources: ResourceResponseDto[];
+}
 
 export function ProjectResourcesPage() {
     const { projectId } = useParams<{ projectId: string }>();
     const projectIdNum = projectId ? Number(projectId) : 0;
     const [searchQuery, setSearchQuery] = useState('');
-    const [bundleFilter, setBundleFilter] = useState<string>('all');
+    const [selectedBundle, setSelectedBundle] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
     const [resourceToRemove, setResourceToRemove] = useState<ResourceResponseDto | null>(null);
@@ -46,11 +51,22 @@ export function ProjectResourcesPage() {
 
     const { toast } = useToast();
 
-    // 获取项目使用的资源
-    const { data: projectResourcesData, isLoading: isLoadingProjectResources } = useProjectResources(projectIdNum, {
+    // 获取项目使用的所有资源（不分页，用于构建 Bundle 列表）
+    const { data: allProjectResourcesData, isLoading: isLoadingAllProjectResources } = useProjectResources(
+        projectIdNum,
+        {
+            page: 1,
+            limit: 1000, // 获取所有资源以构建 Bundle 列表
+            search: searchQuery || undefined,
+        },
+    );
+
+    // 获取项目使用的资源（分页，用于显示选中 Bundle 的资源）
+    const { data: projectResourcesData, isLoading: isLoadingProjectResources, refetch: refetchProjectResources } =
+        useProjectResources(projectIdNum, {
         page,
         limit: 20,
-        bundle: bundleFilter === 'all' ? undefined : bundleFilter,
+            bundle: selectedBundle || undefined,
         search: searchQuery || undefined,
     });
 
@@ -58,20 +74,96 @@ export function ProjectResourcesPage() {
     const { data: allResourcesData, isLoading: isLoadingAllResources } = useResources({
         page: availableResourcesPage,
         limit: 20,
-        bundle: bundleFilter === 'all' ? undefined : bundleFilter,
     });
 
     const addResourceMutation = useAddResourceToProject();
     const removeResourceMutation = useRemoveResourceFromProject();
 
+    // 构建 Bundle 信息
+    const bundleInfo: BundleInfo[] = useMemo(() => {
+        if (!allProjectResourcesData?.data) return [];
+
+        // 按 Bundle 分组
+        const bundleMap = new Map<string, ResourceResponseDto[]>();
+        allProjectResourcesData.data.forEach(resource => {
+            const bundleName = resource.bundle || '未分类';
+            if (!bundleMap.has(bundleName)) {
+                bundleMap.set(bundleName, []);
+            }
+            bundleMap.get(bundleName)!.push(resource);
+        });
+
+        // 转换为 BundleInfo 数组
+        return Array.from(bundleMap.entries())
+            .map(([name, resources]) => {
+                // 确定 Bundle 类型
+                const bundleTypes = new Set(resources.map(r => r.bundleType || 'chapter'));
+                let bundleType: 'common' | 'chapter' | 'mixed' = 'chapter';
+                if (bundleTypes.size === 1) {
+                    bundleType = (Array.from(bundleTypes)[0] as 'common' | 'chapter') || 'chapter';
+                } else if (bundleTypes.size > 1) {
+                    bundleType = 'mixed';
+                }
+
+                // 获取创建时间（使用最早资源的创建时间）
+                const createdAt = resources.reduce((earliest, r) => {
+                    const resourceDate = new Date(r.createdAt);
+                    return !earliest || resourceDate < earliest ? resourceDate : earliest;
+                }, null as Date | null) || new Date();
+
+                return {
+                    name,
+                    resourceCount: resources.length,
+                    bundleType,
+                    createdAt,
+                    resources: [], // Bundle 列表不包含资源详情
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [allProjectResourcesData]);
+
+    // 默认选中第一个 Bundle
+    useEffect(() => {
+        if (!selectedBundle && bundleInfo.length > 0) {
+            setSelectedBundle(bundleInfo[0].name);
+            setPage(1);
+        }
+    }, [bundleInfo, selectedBundle]);
+
+    // 当选中 Bundle 改变时，重置到第一页
+    useEffect(() => {
+        if (selectedBundle) {
+            setPage(1);
+        }
+    }, [selectedBundle]);
+
+
+    // 当前页的资源
+    const paginatedResources = projectResourcesData?.data || [];
+    const totalPages = projectResourcesData?.totalPages || 1;
+    const total = projectResourcesData?.total || 0;
+
     // 过滤出未添加到项目的资源
     const availableResources = useMemo(() => {
-        if (!allResourcesData?.data || !projectResourcesData?.data) {
+        if (!allResourcesData?.data || !allProjectResourcesData?.data) {
             return allResourcesData?.data || [];
         }
-        const projectResourceIds = new Set(projectResourcesData.data.map(r => r.id));
+        const projectResourceIds = new Set(allProjectResourcesData.data.map(r => r.id));
         return allResourcesData.data.filter(r => !projectResourceIds.has(r.id));
-    }, [allResourcesData, projectResourcesData]);
+    }, [allResourcesData, allProjectResourcesData]);
+
+    const getBundleTypeLabel = (type: 'common' | 'chapter' | 'mixed') => {
+        switch (type) {
+            case 'common':
+                return '共通资源包';
+            case 'chapter':
+                return '章节资源包';
+            case 'mixed':
+                return '混合';
+            default:
+                return '-';
+        }
+    };
 
     const handleAddResource = async (resource: ResourceResponseDto) => {
         try {
@@ -84,6 +176,7 @@ export function ProjectResourcesPage() {
                 description: `已将资源 "${resource.alias}" 添加到项目`,
             });
             setAddDialogOpen(false);
+            refetchProjectResources();
         } catch (error: any) {
             toast({
                 title: '错误',
@@ -106,6 +199,7 @@ export function ProjectResourcesPage() {
             });
             setRemoveConfirmOpen(false);
             setResourceToRemove(null);
+            refetchProjectResources();
         } catch (error: any) {
             toast({
                 title: '错误',
@@ -124,99 +218,126 @@ export function ProjectResourcesPage() {
     }
 
     return (
-        <div className='p-6'>
-            <div className='mb-6 flex items-center justify-between'>
-                <h1 className='text-2xl font-bold'>项目资源视图</h1>
+        <div className='flex flex-col h-full space-y-4'>
+            {/* 顶部操作栏 */}
+            <div className='flex items-center justify-between'>
+                <h1 className='text-3xl font-bold'>项目资源管理</h1>
+                <div className='flex gap-2'>
+                    <Button
+                        variant='outline'
+                        onClick={() => {
+                            refetchProjectResources();
+                        }}
+                    >
+                        <RefreshCw className='mr-2 h-4 w-4' />
+                        刷新
+                    </Button>
                 <Button onClick={() => setAddDialogOpen(true)}>
                     <Plus className='mr-2 h-4 w-4' />
                     添加资源
                 </Button>
+                </div>
             </div>
 
-            <div className='mb-4 flex gap-4'>
-                <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder='搜索资源...' className='flex-1' />
-                <Select value={bundleFilter} onValueChange={setBundleFilter}>
-                    <SelectTrigger className='w-48'>
-                        <SelectValue placeholder='选择 Bundle' />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value='all'>所有 Bundle</SelectItem>
-                        {Array.from(new Set(projectResourcesData?.data?.map(r => r.bundle) || [])).map(bundle => (
-                            <SelectItem key={bundle} value={bundle}>
-                                {bundle}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            {/* 搜索 */}
+            <div className='flex gap-2'>
+                <SearchBar
+                    placeholder='搜索资源别名...'
+                    value={searchQuery}
+                    onChange={value => {
+                        setSearchQuery(value);
+                        setPage(1);
+                    }}
+                    className='flex-1'
+                />
             </div>
 
-            {isLoadingProjectResources ? (
-                <div className='flex items-center justify-center py-12'>
-                    <Loader2 className='h-8 w-8 animate-spin' />
+            {/* Bundle 表格 */}
+            {isLoadingAllProjectResources ? (
+                <div className='flex justify-center p-8'>
+                    <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+                </div>
+            ) : bundleInfo.length === 0 ? (
+                <div className='flex flex-col items-center justify-center p-8 text-center'>
+                    <p className='text-muted-foreground'>项目暂无资源</p>
+                    <Button onClick={() => setAddDialogOpen(true)} className='mt-4'>
+                        <Plus className='mr-2 h-4 w-4' />
+                        添加第一个资源
+                    </Button>
                 </div>
             ) : (
                 <>
-                    <div className='rounded-md border'>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>别名</TableHead>
-                                    <TableHead>Bundle</TableHead>
-                                    <TableHead>文件大小</TableHead>
-                                    <TableHead>文件类型</TableHead>
-                                    <TableHead>操作</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {projectResourcesData?.data && projectResourcesData.data.length > 0 ? (
-                                    projectResourcesData.data.map(resource => (
-                                        <TableRow key={resource.id}>
-                                            <TableCell className='font-medium'>{resource.alias}</TableCell>
-                                            <TableCell>{resource.bundle}</TableCell>
-                                            <TableCell>{(resource.fileSize / 1024).toFixed(2)} KB</TableCell>
-                                            <TableCell>{resource.fileType || '-'}</TableCell>
-                                            <TableCell>
-                                                <div className='flex items-center gap-2'>
-                                                    <Button
-                                                        variant='ghost'
-                                                        size='sm'
-                                                        onClick={() => window.open(resource.src, '_blank')}
-                                                    >
-                                                        <ExternalLink className='h-4 w-4' />
-                                                    </Button>
-                                                    <Button
-                                                        variant='ghost'
-                                                        size='sm'
-                                                        onClick={() => {
+                    <div className='flex items-center justify-between mb-2'>
+                        <h2 className='text-lg font-semibold'>Bundle 列表</h2>
+                    </div>
+                    <BundleTable
+                        bundles={bundleInfo}
+                        selectedBundle={selectedBundle}
+                        onSelectBundle={setSelectedBundle}
+                        onUpload={() => {
+                            // 项目资源页面不支持上传，只支持添加已有资源
+                            toast({
+                                title: '提示',
+                                description: '请使用"添加资源"按钮从全局资源池添加资源到项目',
+                            });
+                        }}
+                        onEdit={() => {
+                            // 项目资源页面不支持编辑 Bundle
+                            toast({
+                                title: '提示',
+                                description: '项目资源页面不支持编辑 Bundle，请在资源管理页面编辑',
+                            });
+                        }}
+                        onMigrateToCos={() => {
+                            // 项目资源页面不支持迁移
+                            toast({
+                                title: '提示',
+                                description: '项目资源页面不支持迁移到 COS，请在资源管理页面操作',
+                            });
+                        }}
+                        migratingBundle={null}
+                        getBundleTypeLabel={getBundleTypeLabel}
+                    />
+
+                    {/* 资源预览 */}
+                    {selectedBundle && (
+                        <div className='border-t pt-4'>
+                            <div className='flex items-center justify-between mb-4'>
+                                <h3 className='text-lg font-semibold'>
+                                    {selectedBundle} 的资源 ({total} 个)
+                                </h3>
+                            </div>
+                            {isLoadingProjectResources ? (
+                                <div className='flex justify-center p-8'>
+                                    <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+                                </div>
+                            ) : paginatedResources.length > 0 ? (
+                                <>
+                                    <BundleResourceGroup
+                                        bundle={selectedBundle}
+                                        resources={paginatedResources}
+                                        onDelete={resource => {
                                                             setResourceToRemove(resource);
                                                             setRemoveConfirmOpen(true);
                                                         }}
-                                                    >
-                                                        <Trash2 className='h-4 w-4 text-destructive' />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className='text-center text-muted-foreground'>
-                                            暂无资源
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    {projectResourcesData && projectResourcesData.totalPages > 1 && (
+                                    />
+                                    {/* 分页 */}
+                                    {totalPages > 1 && (
                         <div className='mt-4'>
                             <Pagination
                                 page={page}
-                                totalPages={projectResourcesData.totalPages}
-                                total={projectResourcesData.total}
+                                                totalPages={totalPages}
+                                                total={total}
                                 onPageChange={setPage}
                             />
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className='text-center text-muted-foreground py-8'>
+                                    <p>该 Bundle 暂无资源</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

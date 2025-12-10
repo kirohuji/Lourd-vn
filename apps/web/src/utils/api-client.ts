@@ -106,7 +106,7 @@ class ApiClient {
     // Resource APIs
     async getProjectManifest(projectId: number): Promise<ManifestResponse> {
         return this.request<ManifestResponse>(
-            `/manifest/${projectId}/manifest/full`,
+            `/projects/${projectId}/manifest/full`,
             {
                 method: 'GET',
                 needAuth: false, // 这是公开端点
