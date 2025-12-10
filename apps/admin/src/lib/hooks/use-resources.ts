@@ -12,6 +12,17 @@ export function useResources(query?: ResourceQueryDto) {
   });
 }
 
+export function useAllResources(query?: Omit<ResourceQueryDto, 'page' | 'limit'>) {
+  return useQuery({
+    queryKey: ['resources', 'all', query],
+    queryFn: async () => {
+      // 获取所有资源，使用大 limit
+      const result = await apiClient.getResources({ ...query, limit: 1000, page: 1 });
+      return result;
+    },
+  });
+}
+
 export function useResource(id: number) {
   return useQuery({
     queryKey: ['resources', id],

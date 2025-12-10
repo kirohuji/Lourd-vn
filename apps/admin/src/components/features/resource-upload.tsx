@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,17 +13,25 @@ interface ResourceUploadProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     bundleOptions: string[];
+    defaultBundle?: string;
     onSuccess?: () => void;
 }
 
-export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }: ResourceUploadProps) {
+export function ResourceUpload({ open, onOpenChange, bundleOptions, defaultBundle, onSuccess }: ResourceUploadProps) {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [selectedBundle, setSelectedBundle] = useState('');
+    const [selectedBundle, setSelectedBundle] = useState(defaultBundle || '');
     const [selectedBundleType, setSelectedBundleType] = useState<string>('chapter');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const { toast } = useToast();
     const uploadResource = useUploadResource();
+
+    // 当 defaultBundle 变化时更新 selectedBundle
+    useEffect(() => {
+      if (defaultBundle) {
+        setSelectedBundle(defaultBundle);
+      }
+    }, [defaultBundle]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -85,7 +93,7 @@ export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }:
             });
 
             setSelectedFiles([]);
-            setSelectedBundle('');
+            setSelectedBundle(defaultBundle || '');
             setSelectedBundleType('chapter');
             onOpenChange(false);
             onSuccess?.();
