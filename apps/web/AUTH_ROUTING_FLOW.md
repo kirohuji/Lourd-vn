@@ -2,6 +2,22 @@
 
 本文档详细说明应用的认证检查、路由保护和游戏初始化流程。
 
+## 资源缓存机制
+
+应用实现了智能的资源缓存机制，避免重复加载已加载的资源：
+
+- **资源状态追踪**：使用 `ResourceCacheManager` 追踪每个资源的加载状态
+- **持久化存储**：资源状态保存在 localStorage 中，页面刷新后仍然有效
+- **内存验证**：检查内存中的实际状态（如 i18n.isInitialized、Assets.resolver）
+- **跳过已加载资源**：如果资源已加载，直接跳过，大幅提升启动速度
+
+**可缓存的资源类型**：
+1. 角色数据（从 API 加载）
+2. IndexedDB 初始化
+3. Assets 初始化和 bundle 加载
+4. i18n 初始化
+5. Ink labels 导入
+
 ## 架构概览
 
 应用采用分层架构，从顶层到底层：
@@ -361,6 +377,82 @@ sequenceDiagram
     Bootstrap->>User: 显示游戏界面
 ```
 
+## 资源缓存机制
+
+应用实现了智能的资源缓存机制，避免重复加载已加载的资源，大幅提升应用性能。
+
+### ResourceCacheManager (`src/utils/resource-cache.ts`)
+
+**职责**：统一管理所有游戏资源的加载状态
+
+**工作原理**：
+1. **状态存储**：
+   - 内存中维护当前加载状态
+   - localStorage 中持久化状态（key: `game_resource_cache_state`）
+   - 页面刷新后从 localStorage 恢复状态
+
+2. **资源检查**：
+   - 每个资源都有对应的检查方法（如 `isCharactersLoaded()`）
+   - 同时验证内存中的实际状态（如 `i18n.isInitialized`）
+   - 双重验证确保状态准确
+
+3. **资源标记**：
+   - 资源加载成功后调用对应的 `mark*()` 方法
+   - 自动保存到 localStorage
+
+### 可缓存的资源类型
+
+1. **角色数据** (`isCharactersLoaded`)
+   - 从 API 加载的角色列表
+   - 检查方式：缓存状态 + RegisteredCharacters 检查
+
+2. **IndexedDB** (`isIndexedDBInitialized`)
+   - 数据库初始化状态
+   - 检查方式：缓存状态
+
+3. **Assets** (`isAssetsInitialized`)
+   - Assets 系统初始化
+   - Bundle 加载状态（每个 bundle 单独追踪）
+   - 检查方式：缓存状态 + Assets 内部状态
+
+4. **i18n** (`isI18nInitialized`)
+   - 国际化系统初始化
+   - 检查方式：缓存状态 + `i18n.isInitialized`
+
+5. **Ink Labels** (`isInkLabelsImported`)
+   - Ink 文本标签导入
+   - 检查方式：缓存状态
+
+### 资源加载流程（带缓存）
+
+```
+initializeGame() 调用
+  ↓
+检查 isAllResourcesLoaded()
+  ├─ 是 → 直接返回（跳过所有初始化）
+  └─ 否 → 逐一检查每个资源
+      ├─ 角色 → 已加载？跳过 : 加载并标记
+      ├─ IndexedDB → 已初始化？跳过 : 初始化并标记
+      ├─ Assets → 已初始化？只更新 manifest : 初始化并标记
+      ├─ Bundle → 已加载？跳过 : 加载并标记
+      ├─ i18n → 已初始化？跳过 : 初始化并标记
+      └─ Ink Labels → 已导入？跳过 : 导入并标记
+  ↓
+所有资源加载完成
+```
+
+### 缓存生命周期
+
+- **首次加载**：正常加载所有资源，完成后标记到缓存
+- **页面刷新**：从 localStorage 恢复状态，仅加载未缓存的资源
+- **手动清除**：调用 `resourceCache.clearCache()` 或 `reinitializeGame()` 强制重新加载
+
+### 性能优化效果
+
+- **首次启动**：正常加载时间
+- **刷新页面**：仅加载未缓存资源，加载时间大幅减少
+- **资源更新**：可手动清除缓存，强制重新加载最新资源
+
 ## 常见问题
 
 ### Q1: 为什么初始化会被调用两次？
@@ -369,7 +461,9 @@ sequenceDiagram
 1. React 严格模式在开发环境下会故意执行两次（这是正常的）
 2. 组件重新挂载导致 useEffect 重新执行
 
-**解决方案**：使用模块级变量 `isInitializing` 和 `initializationPromise` 防止重复初始化。
+**解决方案**：
+- 使用模块级变量 `isInitializing` 和 `initializationPromise` 防止重复初始化
+- 使用 `ResourceCacheManager` 追踪资源状态，已加载的资源会自动跳过
 
 ### Q2: 为什么登录后先跳到登录页再跳回首页？
 
@@ -380,9 +474,33 @@ sequenceDiagram
 
 ### Q3: 刷新页面后需要重新初始化游戏吗？
 
-**A**: 是的，这是正常的。页面刷新会导致模块重新加载，需要重新初始化游戏资源。但这不应该影响用户体验，因为初始化是异步的，有加载屏幕显示。
+**A**: 不需要全部重新初始化。应用现在使用资源缓存机制：
+- 已加载的资源会从缓存中恢复，不会重复加载
+- 只有未缓存的资源才会重新加载
+- 这样可以大幅减少刷新后的加载时间
 
-### Q4: 如何添加新的受保护路由？
+### Q4: 如何强制重新加载所有资源？
+
+**A**: 调用 `reinitializeGame()` 函数，它会：
+1. 清除所有资源缓存状态
+2. 重新执行完整的初始化流程
+
+```typescript
+import { reinitializeGame } from './utils/game-initialization';
+
+// 强制重新加载所有资源
+await reinitializeGame();
+```
+
+或者手动清除缓存：
+```typescript
+import { resourceCache } from './utils/resource-cache';
+
+// 清除所有缓存
+resourceCache.clearCache();
+```
+
+### Q5: 如何添加新的受保护路由？
 
 **A**: 在 `AppRoutes.tsx` 中添加路由，并用 `ProtectedRoute` 包裹：
 ```tsx
@@ -406,4 +524,9 @@ sequenceDiagram
 - `src/stores/auth-store.ts` - 认证状态存储（zustand）
 - `src/AppRoutes.tsx` - 路由配置
 - `src/utils/game-initialization.ts` - 游戏初始化逻辑
+- `src/utils/resource-cache.ts` - 资源缓存管理器 ⭐
+- `src/utils/assets-utility.ts` - 资源加载工具（已集成缓存）
+- `src/utils/characters-utility.ts` - 角色加载工具（已集成缓存）
+- `src/utils/indexedDB-utility.ts` - IndexedDB 初始化（已集成缓存）
+- `src/utils/ink-utility.ts` - Ink labels 导入（已集成缓存）
 

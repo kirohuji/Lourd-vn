@@ -2,46 +2,63 @@ import { Assets } from '@drincs/pixi-vn';
 import manifest from '../assets/manifest';
 import { MAIN_MENU_ROUTE } from '../constans';
 import { generateManifestFromAPI } from './manifest-manager';
+import { resourceCache } from './resource-cache';
 
 /**
  * Define all the assets that will be used in the game.
  * This function will be called before the game starts.
  * You can read more about assets management in the documentation: https://pixi-vn.web.app/start/assets-management.html
  */
-// 全局标志，跟踪 Assets 是否已初始化
-let assetsInitialized = false;
-
 export async function defineAssets() {
+    // 检查是否已初始化
+    if (resourceCache.isAssetsInitialized()) {
+        console.log('Assets already initialized, updating manifest...');
+        // Assets 已初始化，只需要更新 manifest
+        try {
+            const dynamicManifest = await generateManifestFromAPI(manifest);
+            if (Assets.resolver) {
+                Assets.resolver.addManifest(dynamicManifest);
+            }
+            // 确保 bundle 已加载
+            if (!resourceCache.isBundleLoaded(MAIN_MENU_ROUTE)) {
+                await Assets.loadBundle(MAIN_MENU_ROUTE);
+                resourceCache.markBundleLoaded(MAIN_MENU_ROUTE);
+            }
+        } catch (error) {
+            console.error('Failed to update manifest:', error);
+        }
+        return;
+    }
+
     try {
         // 从后端 API 获取 manifest 并合并基础 manifest
         const dynamicManifest = await generateManifestFromAPI(manifest);
 
-        // 检查 Assets 是否已初始化，避免重复初始化
-        if (!assetsInitialized) {
-            try {
-                Assets.init({ manifest: dynamicManifest });
-                assetsInitialized = true;
-            } catch (initError: any) {
-                // 如果初始化失败（可能已经初始化），尝试只更新 manifest
-                if (initError?.message?.includes('already initialized')) {
-                    console.warn('Assets already initialized, updating manifest only');
-                    assetsInitialized = true;
-                    if (Assets.resolver) {
-                        Assets.resolver.addManifest(dynamicManifest);
-                    }
-                } else {
-                    throw initError;
+        // 初始化 Assets
+        try {
+            Assets.init({ manifest: dynamicManifest });
+            resourceCache.markAssetsInitialized();
+        } catch (initError: any) {
+            // 如果初始化失败（可能已经初始化），尝试只更新 manifest
+            if (initError?.message?.includes('already initialized')) {
+                console.warn('Assets already initialized, updating manifest only');
+                resourceCache.markAssetsInitialized();
+                if (Assets.resolver) {
+                    Assets.resolver.addManifest(dynamicManifest);
                 }
-            }
-        } else {
-            // 如果已初始化，只更新 manifest
-            if (Assets.resolver) {
-                Assets.resolver.addManifest(dynamicManifest);
+            } else {
+                throw initError;
             }
         }
 
         // The game will not start until these asserts are loaded.
-        await Assets.loadBundle(MAIN_MENU_ROUTE);
+        // 检查 bundle 是否已加载
+        if (!resourceCache.isBundleLoaded(MAIN_MENU_ROUTE)) {
+            await Assets.loadBundle(MAIN_MENU_ROUTE);
+            resourceCache.markBundleLoaded(MAIN_MENU_ROUTE);
+        } else {
+            console.log(`Bundle ${MAIN_MENU_ROUTE} already loaded, skipping`);
+        }
 
         // The game will start immediately, but these asserts will be loaded in the background.
         // Assets.backgroundLoadBundle("main_menu");
@@ -49,32 +66,30 @@ export async function defineAssets() {
     } catch (error) {
         console.error('Failed to initialize assets with API resources:', error);
 
-        // 检查 Assets 是否已初始化
-        if (!assetsInitialized) {
-            try {
-                // 如果 API 调用失败，回退到原始 manifest
-                Assets.init({ manifest });
-                assetsInitialized = true;
-            } catch (initError: any) {
-                // 如果初始化失败（可能已经初始化），尝试只更新 manifest
-                if (initError?.message?.includes('already initialized')) {
-                    console.warn('Assets already initialized, updating manifest only');
-                    assetsInitialized = true;
-                    if (Assets.resolver) {
-                        Assets.resolver.addManifest(manifest);
-                    }
-                } else {
-                    throw initError;
+        // 如果 API 调用失败，回退到原始 manifest
+        try {
+            Assets.init({ manifest });
+            resourceCache.markAssetsInitialized();
+        } catch (initError: any) {
+            // 如果初始化失败（可能已经初始化），尝试只更新 manifest
+            if (initError?.message?.includes('already initialized')) {
+                console.warn('Assets already initialized, updating manifest only');
+                resourceCache.markAssetsInitialized();
+                if (Assets.resolver) {
+                    Assets.resolver.addManifest(manifest);
                 }
-            }
-        } else {
-            // 如果已初始化，只更新 manifest
-            if (Assets.resolver) {
-                Assets.resolver.addManifest(manifest);
+            } else {
+                throw initError;
             }
         }
 
-        await Assets.loadBundle(MAIN_MENU_ROUTE);
+        // 检查 bundle 是否已加载
+        if (!resourceCache.isBundleLoaded(MAIN_MENU_ROUTE)) {
+            await Assets.loadBundle(MAIN_MENU_ROUTE);
+            resourceCache.markBundleLoaded(MAIN_MENU_ROUTE);
+        } else {
+            console.log(`Bundle ${MAIN_MENU_ROUTE} already loaded, skipping`);
+        }
     }
 }
 

@@ -1,14 +1,21 @@
-import { RegisteredCharacters } from "@drincs/pixi-vn";
-import Character from "../models/Character";
-import { apiClient } from "./api-client";
-import { getProjectId } from "./project-config";
+import { RegisteredCharacters } from '@drincs/pixi-vn';
+import Character from '../models/Character';
+import { apiClient } from './api-client';
+import { getProjectId } from './project-config';
+import { resourceCache } from './resource-cache';
 
 /**
  * 从 API 加载角色并注册到 RegisteredCharacters
  */
 export async function loadCharactersFromAPI() {
+    // 检查是否已加载（通过缓存）
+    if (resourceCache.isCharactersLoaded()) {
+        console.log('Characters already loaded, skipping');
+        return;
+    }
+
     const projectId = await getProjectId();
-    
+
     if (!projectId) {
         console.warn('Project ID not found. Characters will not be loaded from API.');
         return;
@@ -48,9 +55,11 @@ export async function loadCharactersFromAPI() {
             RegisteredCharacters.add(charactersToAdd);
             console.log(`Loaded ${charactersToAdd.length} characters from API`);
         }
+
+        // 标记角色已加载（即使没有新增角色，也认为加载完成）
+        resourceCache.markCharactersLoaded();
     } catch (error) {
         console.error('Failed to load characters from API:', error);
         // 不抛出错误，允许游戏继续运行
     }
 }
-
