@@ -23,9 +23,9 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useChapters, useCreateChapter, useDeleteChapter, useUpdateChapter } from '@/lib/hooks/use-chapters';
-import { CreateChapterDto, UpdateChapterDto } from '@lourd-game/shared';
-import { Edit, ExternalLink, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { useChapters, useCreateChapter, useDeleteChapter, useGenerateChapterBundle, useUpdateChapter } from '@/lib/hooks/use-chapters';
+import { ChapterResponseDto, CreateChapterDto, UpdateChapterDto } from '@lourd-game/shared';
+import { Download, Edit, ExternalLink, Eye, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -51,12 +51,15 @@ export function ProjectChaptersPage() {
     const [editOrder, setEditOrder] = useState(0);
     const [editRequireAd, setEditRequireAd] = useState(false);
     const [editEnabled, setEditEnabled] = useState(true);
+    const [bundlePreviewOpen, setBundlePreviewOpen] = useState(false);
+    const [previewChapter, setPreviewChapter] = useState<ChapterResponseDto | null>(null);
 
     const { toast } = useToast();
     const { data: chapters, isLoading, refetch } = useChapters(projectIdNum);
     const createChapter = useCreateChapter();
     const updateChapter = useUpdateChapter();
     const deleteChapter = useDeleteChapter();
+    const generateBundle = useGenerateChapterBundle();
 
     if (!projectId || isNaN(projectIdNum)) {
         return <div className='p-4 text-center text-muted-foreground'>请先选择一个项目</div>;
@@ -201,6 +204,7 @@ export function ProjectChaptersPage() {
                                     <TableHead>名称</TableHead>
                                     <TableHead>描述</TableHead>
                                     <TableHead>顺序</TableHead>
+                                    <TableHead>ZIP 包版本</TableHead>
                                     <TableHead>需要广告</TableHead>
                                     <TableHead>启用</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
@@ -209,7 +213,7 @@ export function ProjectChaptersPage() {
                             <TableBody>
                                 {chapters?.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className='text-center py-8 text-muted-foreground'>
+                                        <TableCell colSpan={8} className='text-center py-8 text-muted-foreground'>
                                             暂无章节
                                         </TableCell>
                                     </TableRow>
@@ -220,6 +224,13 @@ export function ProjectChaptersPage() {
                                             <TableCell className='font-medium'>{chapter.name}</TableCell>
                                             <TableCell>{chapter.description || '-'}</TableCell>
                                             <TableCell>{chapter.order}</TableCell>
+                                            <TableCell>
+                                                {chapter.chapterBundleVersion ? (
+                                                    <span className='font-mono text-sm'>v{chapter.chapterBundleVersion}</span>
+                                                ) : (
+                                                    <span className='text-muted-foreground text-sm'>未生成</span>
+                                                )}
+                                            </TableCell>
                                             <TableCell>{chapter.requireAd ? '是' : '否'}</TableCell>
                                             <TableCell>{chapter.enabled ? '是' : '否'}</TableCell>
                                             <TableCell className='text-right'>
@@ -231,6 +242,46 @@ export function ProjectChaptersPage() {
                                                         title='查看资源'
                                                     >
                                                         <ExternalLink className='h-4 w-4' />
+                                                    </Button>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        onClick={() => {
+                                                            setPreviewChapter(chapter);
+                                                            setBundlePreviewOpen(true);
+                                                        }}
+                                                        title='预览 ZIP 包'
+                                                        disabled={!chapter.chapterBundleZipUrl}
+                                                    >
+                                                        <Eye className='h-4 w-4' />
+                                                    </Button>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        onClick={async () => {
+                                                            try {
+                                                                const result = await generateBundle.mutateAsync(chapter.id);
+                                                                toast({
+                                                                    title: '成功',
+                                                                    description: `ZIP 包生成成功！版本: v${result.version}`,
+                                                                });
+                                                                refetch();
+                                                            } catch (error: any) {
+                                                                toast({
+                                                                    title: '生成失败',
+                                                                    description: error.message || '生成 ZIP 包失败',
+                                                                    variant: 'destructive',
+                                                                });
+                                                            }
+                                                        }}
+                                                        title='生成 ZIP 包'
+                                                        disabled={generateBundle.isPending}
+                                                    >
+                                                        {generateBundle.isPending ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            <Download className='h-4 w-4' />
+                                                        )}
                                                     </Button>
                                                     <Button
                                                         variant='ghost'
@@ -431,6 +482,67 @@ export function ProjectChaptersPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* ZIP 包预览对话框 */}
+            <Dialog open={bundlePreviewOpen} onOpenChange={setBundlePreviewOpen}>
+                <DialogContent className='max-w-2xl'>
+                    <DialogHeader>
+                        <DialogTitle>ZIP 包详情</DialogTitle>
+                        <DialogDescription>
+                            {previewChapter?.name} - 章节资源包信息
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4'>
+                        {previewChapter?.chapterBundleZipUrl ? (
+                            <>
+                                <div className='space-y-2'>
+                                    <Label>版本号</Label>
+                                    <div className='text-sm font-mono bg-muted p-2 rounded'>
+                                        v{previewChapter.chapterBundleVersion || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className='space-y-2'>
+                                    <Label>下载链接</Label>
+                                    <div className='flex items-center gap-2'>
+                                        <Input
+                                            value={previewChapter.chapterBundleZipUrl}
+                                            readOnly
+                                            className='font-mono text-xs'
+                                        />
+                                        <Button
+                                            variant='outline'
+                                            size='sm'
+                                            onClick={() => {
+                                                window.open(previewChapter.chapterBundleZipUrl, '_blank');
+                                            }}
+                                        >
+                                            <ExternalLink className='h-4 w-4 mr-1' />
+                                            打开
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className='space-y-2'>
+                                    <Label>章节信息</Label>
+                                    <div className='text-sm space-y-1'>
+                                        <div>章节名称: {previewChapter.name}</div>
+                                        <div>章节顺序: {previewChapter.order}</div>
+                                        <div>启用状态: {previewChapter.enabled ? '已启用' : '未启用'}</div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className='text-center py-8 text-muted-foreground'>
+                                尚未生成 ZIP 包，请先点击"生成 ZIP 包"按钮
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant='outline' onClick={() => setBundlePreviewOpen(false)}>
+                            关闭
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

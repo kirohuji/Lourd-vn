@@ -20,14 +20,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { BundleZipInfo } from '@lourd-game/shared';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { BundleGeneratorService } from '../manifest/bundle-generator.service';
 import { ProjectsService } from './projects.service';
 
 @ApiTags('projects')
 @Controller('projects')
 @Roles(UserRole.ADMIN)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly bundleGeneratorService: BundleGeneratorService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: '创建项目' })
@@ -69,5 +74,14 @@ export class ProjectsController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.projectsService.remove(id);
+  }
+
+  @Post(':id/generate-bundle')
+  @ApiOperation({ summary: '生成项目共通资源包 ZIP' })
+  @ApiResponse({ status: 200, description: 'ZIP 包生成成功' })
+  async generateBundle(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<BundleZipInfo> {
+    return this.bundleGeneratorService.generateCommonBundle(id);
   }
 }

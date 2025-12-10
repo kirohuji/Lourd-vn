@@ -316,6 +316,8 @@ export class ChaptersService {
       order: chapter.order,
       enabled: chapter.enabled,
       requireAd: chapter.requireAd,
+      chapterBundleZipUrl: chapter.chapterBundleZipUrl ?? undefined,
+      chapterBundleVersion: chapter.chapterBundleVersion ?? undefined,
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
     };

@@ -1,4 +1,5 @@
 import {
+    BundleZipInfo,
     ChapterQueryDto,
     ChapterResponseDto,
     CharacterConfig,
@@ -475,6 +476,12 @@ class ApiClient {
         });
     }
 
+    async generateProjectBundle(id: number): Promise<BundleZipInfo> {
+        return this.request<BundleZipInfo>(`/projects/${id}/generate-bundle`, {
+            method: 'POST',
+        });
+    }
+
     // Project Resource Management
     async getProjectResources(
         projectId: number,
@@ -640,6 +647,12 @@ class ApiClient {
     async getChapterManifest(chapterId: number): Promise<ManifestResponse> {
         return this.request<ManifestResponse>(endpoints.chapters.manifest(chapterId), {
             method: 'GET',
+        });
+    }
+
+    async generateChapterBundle(chapterId: number): Promise<BundleZipInfo> {
+        return this.request<BundleZipInfo>(`/chapters/${chapterId}/generate-bundle`, {
+            method: 'POST',
         });
     }
 }

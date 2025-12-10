@@ -23,10 +23,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } from '@/lib/hooks/use-projects';
+import {
+    useCreateProject,
+    useDeleteProject,
+    useGenerateProjectBundle,
+    useProjects,
+    useUpdateProject,
+} from '@/lib/hooks/use-projects';
 import { useAllResources } from '@/lib/hooks/use-resources';
-import { CreateProjectDto, UpdateProjectDto } from '@lourd-game/shared';
-import { Edit, ExternalLink, Loader2, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { CreateProjectDto, ProjectResponseDto, UpdateProjectDto } from '@lourd-game/shared';
+import { Download, Edit, ExternalLink, Eye, Loader2, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,12 +53,15 @@ export function ProjectsPage() {
     const [editName, setEditName] = useState('');
     const [editDescription, setEditDescription] = useState('');
     const [editCommonBundle, setEditCommonBundle] = useState('');
+    const [bundlePreviewOpen, setBundlePreviewOpen] = useState(false);
+    const [previewProject, setPreviewProject] = useState<ProjectResponseDto | null>(null);
 
     const { toast } = useToast();
     const { data, isLoading, refetch } = useProjects({ page, limit: 20, search: searchQuery || undefined });
     const createProject = useCreateProject();
     const updateProject = useUpdateProject();
     const deleteProject = useDeleteProject();
+    const generateBundle = useGenerateProjectBundle();
 
     // 获取所有 common 类型的资源包
     const { data: allResourcesData } = useAllResources();
@@ -239,6 +248,7 @@ export function ProjectsPage() {
                                     <TableHead>ID</TableHead>
                                     <TableHead>名称</TableHead>
                                     <TableHead>描述</TableHead>
+                                    <TableHead>ZIP 包版本</TableHead>
                                     <TableHead>创建时间</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
                                 </TableRow>
@@ -246,7 +256,7 @@ export function ProjectsPage() {
                             <TableBody>
                                 {projects.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className='text-center py-8 text-muted-foreground'>
+                                        <TableCell colSpan={6} className='text-center py-8 text-muted-foreground'>
                                             暂无项目
                                         </TableCell>
                                     </TableRow>
@@ -256,16 +266,69 @@ export function ProjectsPage() {
                                             <TableCell>{project.id}</TableCell>
                                             <TableCell className='font-medium'>{project.name}</TableCell>
                                             <TableCell>{project.description || '-'}</TableCell>
+                                            <TableCell>
+                                                {project.commonBundleVersion ? (
+                                                    <span className='font-mono text-sm'>
+                                                        v{project.commonBundleVersion}
+                                                    </span>
+                                                ) : (
+                                                    <span className='text-muted-foreground text-sm'>未生成</span>
+                                                )}
+                                            </TableCell>
                                             <TableCell>{new Date(project.createdAt).toLocaleString('zh-CN')}</TableCell>
                                             <TableCell className='text-right'>
                                                 <div className='flex justify-end gap-2'>
                                                     <Button
                                                         variant='ghost'
                                                         size='icon'
-                                                        onClick={() => navigate(`/admin/projects/${project.id}/resources`)}
+                                                        onClick={() =>
+                                                            navigate(`/admin/projects/${project.id}/resources`)
+                                                        }
                                                         title='查看资源'
                                                     >
                                                         <ExternalLink className='h-4 w-4' />
+                                                    </Button>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        onClick={() => {
+                                                            setPreviewProject(project);
+                                                            setBundlePreviewOpen(true);
+                                                        }}
+                                                        title='预览 ZIP 包'
+                                                        disabled={!project.commonBundleZipUrl}
+                                                    >
+                                                        <Eye className='h-4 w-4' />
+                                                    </Button>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        onClick={async () => {
+                                                            try {
+                                                                const result = await generateBundle.mutateAsync(
+                                                                    project.id,
+                                                                );
+                                                                toast({
+                                                                    title: '成功',
+                                                                    description: `ZIP 包生成成功！版本: v${result.version}`,
+                                                                });
+                                                                refetch();
+                                                            } catch (error: any) {
+                                                                toast({
+                                                                    title: '生成失败',
+                                                                    description: error.message || '生成 ZIP 包失败',
+                                                                    variant: 'destructive',
+                                                                });
+                                                            }
+                                                        }}
+                                                        title='生成 ZIP 包'
+                                                        disabled={generateBundle.isPending || !project.commonBundle}
+                                                    >
+                                                        {generateBundle.isPending ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            <Download className='h-4 w-4' />
+                                                        )}
                                                     </Button>
                                                     <Button
                                                         variant='ghost'
@@ -371,9 +434,7 @@ export function ProjectsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {commonBundles.length === 0 ? (
-                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>
-                                            暂无共通资源包
-                                        </div>
+                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>暂无共通资源包</div>
                                     ) : (
                                         commonBundles.map(bundle => (
                                             <SelectItem key={bundle} value={bundle}>
@@ -430,9 +491,7 @@ export function ProjectsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {commonBundles.length === 0 ? (
-                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>
-                                            暂无共通资源包
-                                        </div>
+                                        <div className='px-2 py-1.5 text-sm text-muted-foreground'>暂无共通资源包</div>
                                     ) : (
                                         commonBundles.map(bundle => (
                                             <SelectItem key={bundle} value={bundle}>
@@ -454,6 +513,65 @@ export function ProjectsPage() {
                             取消
                         </Button>
                         <Button onClick={handleSaveCreate}>创建</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ZIP 包预览对话框 */}
+            <Dialog open={bundlePreviewOpen} onOpenChange={setBundlePreviewOpen}>
+                <DialogContent className='max-w-2xl'>
+                    <DialogHeader>
+                        <DialogTitle>ZIP 包详情</DialogTitle>
+                        <DialogDescription>{previewProject?.name} - 共通资源包信息</DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4'>
+                        {previewProject?.commonBundleZipUrl ? (
+                            <>
+                                <div className='space-y-2'>
+                                    <Label>版本号</Label>
+                                    <div className='text-sm font-mono bg-muted p-2 rounded'>
+                                        v{previewProject.commonBundleVersion || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className='space-y-2'>
+                                    <Label>下载链接</Label>
+                                    <div className='flex items-center gap-2'>
+                                        <Input
+                                            value={previewProject.commonBundleZipUrl}
+                                            readOnly
+                                            className='font-mono text-xs'
+                                        />
+                                        <Button
+                                            variant='outline'
+                                            size='sm'
+                                            onClick={() => {
+                                                if (previewProject.commonBundleZipUrl) {
+                                                    window.open(previewProject.commonBundleZipUrl, '_blank');
+                                                }
+                                            }}
+                                        >
+                                            <ExternalLink className='h-4 w-4 mr-1' />
+                                            打开
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className='space-y-2'>
+                                    <Label>共通资源包名称</Label>
+                                    <div className='text-sm bg-muted p-2 rounded'>
+                                        {previewProject.commonBundle || '未设置'}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className='text-center py-8 text-muted-foreground'>
+                                尚未生成 ZIP 包，请先点击"生成 ZIP 包"按钮
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant='outline' onClick={() => setBundlePreviewOpen(false)}>
+                            关闭
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

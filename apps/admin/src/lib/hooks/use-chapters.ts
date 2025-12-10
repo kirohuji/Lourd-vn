@@ -54,3 +54,15 @@ export function useDeleteChapter() {
     });
 }
 
+export function useGenerateChapterBundle() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.generateChapterBundle(id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: ['chapters'] });
+            queryClient.invalidateQueries({ queryKey: ['chapters', id] });
+        },
+    });
+}
+

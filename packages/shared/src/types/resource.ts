@@ -97,6 +97,14 @@ export interface BundleInfo {
 }
 
 /**
+ * 资源包 ZIP 信息
+ */
+export interface BundleZipInfo {
+    zipUrl: string;
+    version: number;
+}
+
+/**
  * Bundle 列表响应（使用分页响应格式）
  */
 export type BundleListResponse = PaginatedResponse<BundleInfo>;

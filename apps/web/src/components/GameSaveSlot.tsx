@@ -26,7 +26,8 @@ export default function GameSaveSlot({
 }) {
     const { t } = useTranslation(["ui"]);
     const { isLoading, data: saveData, isError } = useQuerySaves({ id: saveId });
-    let location = useLocation();
+    const location = useLocation();
+    const theme = useTheme();
 
     if (isLoading) {
         return (
@@ -103,7 +104,7 @@ export default function GameSaveSlot({
                     <DownloadIcon
                         fontSize={"large"}
                         sx={{
-                            color: useTheme().palette.neutral[300],
+                            color: theme.palette.neutral[300],
                         }}
                     />
                 </IconButton>
@@ -112,7 +113,7 @@ export default function GameSaveSlot({
                         <SaveAsIcon
                             fontSize={"large"}
                             sx={{
-                                color: useTheme().palette.neutral[300],
+                                color: theme.palette.neutral[300],
                             }}
                         />
                     </IconButton>
@@ -125,7 +126,7 @@ export default function GameSaveSlot({
                     <UnarchiveIcon
                         fontSize={"large"}
                         sx={{
-                            color: useTheme().palette.neutral[300],
+                            color: theme.palette.neutral[300],
                         }}
                     />
                 </IconButton>

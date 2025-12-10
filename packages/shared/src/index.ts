@@ -34,6 +34,7 @@ export type {
 export type {
     BundleInfo,
     BundleListResponse,
+    BundleZipInfo,
     CreateResourceDto,
     ManifestResponse,
     PaginatedResponse,

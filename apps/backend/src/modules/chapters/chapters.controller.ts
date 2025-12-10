@@ -23,10 +23,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { BundleZipInfo } from '@lourd-game/shared';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { BundleGeneratorService } from '../manifest/bundle-generator.service';
 import { ChaptersService } from './chapters.service';
 
 @ApiTags('chapters')
@@ -35,7 +37,10 @@ import { ChaptersService } from './chapters.service';
 @Roles(UserRole.ADMIN)
 @Controller()
 export class ChaptersController {
-  constructor(private readonly chaptersService: ChaptersService) {}
+  constructor(
+    private readonly chaptersService: ChaptersService,
+    private readonly bundleGeneratorService: BundleGeneratorService,
+  ) {}
 
   @Get('projects/:projectId/chapters')
   @ApiOperation({ summary: '获取项目的章节列表' })
@@ -114,6 +119,15 @@ export class ChaptersController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ManifestResponse> {
     return this.chaptersService.generateChapterManifest(id);
+  }
+
+  @Post('chapters/:id/generate-bundle')
+  @ApiOperation({ summary: '生成章节资源包 ZIP' })
+  @ApiResponse({ status: 200, description: 'ZIP 包生成成功' })
+  async generateBundle(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<BundleZipInfo> {
+    return this.bundleGeneratorService.generateChapterBundle(id);
   }
 }
 

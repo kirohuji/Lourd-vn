@@ -21,6 +21,8 @@ model Project {
   description String?
   enabled     Boolean  @default(true)
   commonBundle String? // 共通资源包名称
+  commonBundleZipUrl String? // 共通资源包 ZIP 下载地址
+  commonBundleVersion Int? // 共通资源包版本号
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -88,6 +90,8 @@ model Chapter {
   order       Int      @default(0)
   enabled     Boolean  @default(true)
   requireAd   Boolean  @default(false)
+  chapterBundleZipUrl String? // 章节资源包 ZIP 下载地址
+  chapterBundleVersion Int? // 章节资源包版本号
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

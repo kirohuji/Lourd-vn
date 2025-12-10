@@ -127,6 +127,8 @@ export class ProjectsService {
       description: project.description ?? undefined,
       enabled: project.enabled,
       commonBundle: project.commonBundle ?? undefined,
+      commonBundleZipUrl: project.commonBundleZipUrl ?? undefined,
+      commonBundleVersion: project.commonBundleVersion ?? undefined,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     };

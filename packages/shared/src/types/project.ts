@@ -40,6 +40,8 @@ export interface ProjectResponseDto {
     description?: string;
     enabled: boolean;
     commonBundle?: string;
+    commonBundleZipUrl?: string;
+    commonBundleVersion?: number;
     createdAt: Date;
     updatedAt: Date;
 }

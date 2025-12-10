@@ -50,3 +50,15 @@ export function useDeleteProject() {
         },
     });
 }
+
+export function useGenerateProjectBundle() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.generateProjectBundle(id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ['projects', id] });
+        },
+    });
+}

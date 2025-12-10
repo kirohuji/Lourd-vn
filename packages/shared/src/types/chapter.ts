@@ -45,6 +45,8 @@ export interface ChapterResponseDto {
   order: number;
   enabled: boolean;
   requireAd: boolean;
+  chapterBundleZipUrl?: string;
+  chapterBundleVersion?: number;
   createdAt: Date;
   updatedAt: Date;
 }
