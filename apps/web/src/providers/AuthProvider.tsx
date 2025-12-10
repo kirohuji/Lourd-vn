@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useAuthStore } from '../stores/auth-store';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import type { User } from '../stores/auth-store';
+import { useAuthStore } from '../stores/auth-store';
 
 type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
 
@@ -27,7 +27,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const { isAuthenticated, user, checkAuth } = useAuthStore();
-    
+
     // 初始化时立即确定状态（因为 zustand store 已经在创建时读取了 localStorage）
     const [status, setStatus] = useState<AuthStatus>(() => {
         // 由于 store 在创建时就初始化了，可以直接读取当前状态
@@ -52,4 +52,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-

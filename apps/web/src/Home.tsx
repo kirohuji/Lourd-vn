@@ -1,7 +1,9 @@
 import { Box } from '@mui/joy';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Routes from './AppRoutes';
+import { LOGIN_ROUTE } from './constans';
 import useClosePageDetector from './hooks/useClosePageDetector';
 import useInkInitialization from './hooks/useInkInitialization';
 import useKeyboardDetector from './hooks/useKeyboardDetector';
@@ -20,6 +22,8 @@ import Settings from './screens/Settings';
  */
 function AppBootstrap() {
     const { status } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [gameInitialized, setGameInitialized] = useState(false);
 
     // 当认证状态变化时，重置游戏初始化状态
@@ -28,6 +32,19 @@ function AppBootstrap() {
             setGameInitialized(false);
         }
     }, [status]);
+
+    // 处理未认证时的重定向
+    useEffect(() => {
+        // 如果正在检查认证状态，等待完成
+        if (status === 'checking') {
+            return;
+        }
+
+        // 如果未认证且不在登录页面，重定向到登录页
+        if (status === 'unauthenticated' && location.pathname !== LOGIN_ROUTE) {
+            navigate(LOGIN_ROUTE, { replace: true });
+        }
+    }, [status, location.pathname, navigate]);
 
     // 如果正在检查认证状态，显示加载屏幕
     if (status === 'checking') {
@@ -46,6 +63,16 @@ function AppBootstrap() {
         );
     }
 
+    // 如果未认证，显示路由系统（会显示登录页或等待重定向到登录页）
+    if (status === 'unauthenticated') {
+        // 如果在登录页面，直接显示路由
+        if (location.pathname === LOGIN_ROUTE) {
+            return <Routes />;
+        }
+        // 否则等待重定向（显示空白或加载）
+        return null;
+    }
+
     // 如果已认证但游戏未初始化，显示加载屏幕并初始化游戏
     if (status === 'authenticated' && !gameInitialized) {
         return (
@@ -61,7 +88,7 @@ function AppBootstrap() {
         );
     }
 
-    // 其他情况（未认证或已初始化），显示路由系统
+    // 已认证且游戏已初始化，显示游戏路由
     return <GameRoutes />;
 }
 

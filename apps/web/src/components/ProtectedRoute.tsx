@@ -32,7 +32,7 @@ export function ProtectedRoute({
             return;
         }
 
-        // 如果需要认证但未认证，重定向到登录页
+        // 如果需要认证但未认证，立即重定向到登录页
         if (requireAuth && !isAuthenticated) {
             navigate(redirectTo, { replace: true });
         }
