@@ -19,6 +19,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -157,6 +159,7 @@ export class ProjectGameConfigController {
   }
 
   @Post(':projectId/maps/:mapId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '将地图添加到项目' })
   async addMapToProject(
     @Param('projectId', ParseIntPipe) projectId: number,
@@ -166,6 +169,7 @@ export class ProjectGameConfigController {
   }
 
   @Delete(':projectId/maps/:mapId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '从项目移除地图' })
   async removeMapFromProject(
     @Param('projectId', ParseIntPipe) projectId: number,
@@ -184,6 +188,7 @@ export class ProjectGameConfigController {
   }
 
   @Post(':projectId/characters/:characterId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '将角色添加到项目' })
   async addCharacterToProject(
     @Param('projectId', ParseIntPipe) projectId: number,
@@ -193,6 +198,7 @@ export class ProjectGameConfigController {
   }
 
   @Delete(':projectId/characters/:characterId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '从项目移除角色' })
   async removeCharacterFromProject(
     @Param('projectId', ParseIntPipe) projectId: number,

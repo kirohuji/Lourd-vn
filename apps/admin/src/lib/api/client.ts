@@ -105,12 +105,48 @@ class ApiClient {
             }
 
             if (!response.ok) {
-                const errorText = await response.text();
+                let errorText = '';
+                try {
+                    errorText = await response.text();
+                } catch (e) {
+                    errorText = response.statusText || 'Unknown error';
+                }
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
 
-            const data = await response.json();
-            return data as T;
+            // 处理空响应（204 No Content 或 void 返回）
+            if (response.status === 204) {
+                return undefined as T;
+            }
+
+            // 检查响应是否有内容
+            const contentType = response.headers.get('content-type');
+            const contentLength = response.headers.get('content-length');
+
+            // 先读取响应文本，避免多次调用 response.text() 或 response.json()
+            // 注意：response.text() 只能调用一次，之后响应体就被消费了
+            const text = await response.text();
+
+            // 如果响应为空，返回 undefined（对于 void 类型）
+            // NestJS 返回 void 时，可能是 200 状态码但响应体为空
+            if (!text || text.trim() === '' || contentLength === '0') {
+                return undefined as T;
+            }
+
+            // 尝试解析 JSON
+            try {
+                const data = JSON.parse(text);
+                return data as T;
+            } catch (e) {
+                // 如果解析失败，检查是否是预期的空响应
+                if (contentType && contentType.includes('application/json')) {
+                    // 如果声明是 JSON 但解析失败，可能是格式错误
+                    console.warn('Failed to parse JSON response:', text);
+                    throw new Error('Invalid JSON response from server');
+                }
+                // 如果不是 JSON 类型，返回 undefined（可能是 void 返回）
+                return undefined as T;
+            }
         } catch (error) {
             console.error('API Request Error:', error);
             throw error;

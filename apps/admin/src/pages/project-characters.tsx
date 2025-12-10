@@ -9,10 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useCharacters } from '@/lib/hooks/use-characters';
 import { apiClient } from '@/lib/api/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCharacters } from '@/lib/hooks/use-characters';
 import { CharacterConfig } from '@lourd-game/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -41,13 +41,12 @@ export function ProjectCharactersPage() {
     const allCharacters = allCharactersData?.data || [];
 
     // 过滤出未添加到项目的角色
-    const availableCharacters = allCharacters.filter(
-        char => !projectCharacters.some(pc => pc.id === char.id)
-    );
+    const availableCharacters = allCharacters.filter(char => !projectCharacters.some(pc => pc.id === char.id));
 
     const addCharacterMutation = useMutation({
         mutationFn: (characterId: string) => apiClient.addCharacterToProject(projectIdNum, characterId),
         onSuccess: () => {
+            // 立即刷新数据
             queryClient.invalidateQueries({ queryKey: ['project-characters', projectIdNum] });
             queryClient.invalidateQueries({ queryKey: ['characters'] });
             toast({
@@ -57,9 +56,24 @@ export function ProjectCharactersPage() {
             setAddDialogOpen(false);
         },
         onError: (error: any) => {
+            // 解析错误消息
+            let errorMessage = '添加角色失败';
+            if (error.message) {
+                try {
+                    const errorMatch = error.message.match(/\{.*\}/);
+                    if (errorMatch) {
+                        const errorObj = JSON.parse(errorMatch[0]);
+                        errorMessage = errorObj.message || errorMessage;
+                    } else {
+                        errorMessage = error.message;
+                    }
+                } catch {
+                    errorMessage = error.message;
+                }
+            }
             toast({
                 title: '错误',
-                description: error.message || '添加角色失败',
+                description: errorMessage,
                 variant: 'destructive',
             });
         },
@@ -68,6 +82,7 @@ export function ProjectCharactersPage() {
     const removeCharacterMutation = useMutation({
         mutationFn: (characterId: string) => apiClient.removeCharacterFromProject(projectIdNum, characterId),
         onSuccess: () => {
+            // 立即刷新数据
             queryClient.invalidateQueries({ queryKey: ['project-characters', projectIdNum] });
             queryClient.invalidateQueries({ queryKey: ['characters'] });
             toast({
@@ -78,9 +93,24 @@ export function ProjectCharactersPage() {
             setCharacterToRemove(null);
         },
         onError: (error: any) => {
+            // 解析错误消息
+            let errorMessage = '移除角色失败';
+            if (error.message) {
+                try {
+                    const errorMatch = error.message.match(/\{.*\}/);
+                    if (errorMatch) {
+                        const errorObj = JSON.parse(errorMatch[0]);
+                        errorMessage = errorObj.message || errorMessage;
+                    } else {
+                        errorMessage = error.message;
+                    }
+                } catch {
+                    errorMessage = error.message;
+                }
+            }
             toast({
                 title: '错误',
-                description: error.message || '移除角色失败',
+                description: errorMessage,
                 variant: 'destructive',
             });
         },
@@ -88,28 +118,28 @@ export function ProjectCharactersPage() {
 
     if (!projectIdNum) {
         return (
-            <div className="p-6">
-                <p className="text-muted-foreground">无效的项目 ID</p>
+            <div className='p-6'>
+                <p className='text-muted-foreground'>无效的项目 ID</p>
             </div>
         );
     }
 
     return (
-        <div className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl font-bold">项目角色视图</h1>
+        <div className='p-6'>
+            <div className='mb-6 flex items-center justify-between'>
+                <h1 className='text-2xl font-bold'>项目角色视图</h1>
                 <Button onClick={() => setAddDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className='mr-2 h-4 w-4' />
                     添加角色
                 </Button>
             </div>
 
             {isLoadingProjectCharacters ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                <div className='flex items-center justify-center py-12'>
+                    <Loader2 className='h-8 w-8 animate-spin' />
                 </div>
             ) : (
-                <div className="rounded-md border">
+                <div className='rounded-md border'>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -122,29 +152,29 @@ export function ProjectCharactersPage() {
                         </TableHeader>
                         <TableBody>
                             {projectCharacters.length > 0 ? (
-                                projectCharacters.map((character) => (
+                                projectCharacters.map(character => (
                                     <TableRow key={character.id}>
-                                        <TableCell className="font-medium">{character.id}</TableCell>
+                                        <TableCell className='font-medium'>{character.id}</TableCell>
                                         <TableCell>{character.name}</TableCell>
                                         <TableCell>{character.age || '-'}</TableCell>
                                         <TableCell>{character.enabled ? '是' : '否'}</TableCell>
                                         <TableCell>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant='ghost'
+                                                size='sm'
                                                 onClick={() => {
                                                     setCharacterToRemove(character);
                                                     setRemoveConfirmOpen(true);
                                                 }}
                                             >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                <Trash2 className='h-4 w-4 text-destructive' />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                    <TableCell colSpan={5} className='text-center text-muted-foreground'>
                                         暂无角色
                                     </TableCell>
                                 </TableRow>
@@ -156,15 +186,15 @@ export function ProjectCharactersPage() {
 
             {/* 添加角色对话框 */}
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className='max-w-2xl'>
                     <DialogHeader>
                         <DialogTitle>添加角色到项目</DialogTitle>
                         <DialogDescription>从全局角色池中选择角色添加到当前项目</DialogDescription>
                     </DialogHeader>
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className='max-h-96 overflow-y-auto'>
                         {isLoadingAllCharacters ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="h-8 w-8 animate-spin" />
+                            <div className='flex items-center justify-center py-12'>
+                                <Loader2 className='h-8 w-8 animate-spin' />
                             </div>
                         ) : (
                             <Table>
@@ -178,21 +208,21 @@ export function ProjectCharactersPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {availableCharacters.length > 0 ? (
-                                        availableCharacters.map((character) => (
+                                        availableCharacters.map(character => (
                                             <TableRow key={character.id}>
-                                                <TableCell className="font-medium">{character.id}</TableCell>
+                                                <TableCell className='font-medium'>{character.id}</TableCell>
                                                 <TableCell>{character.name}</TableCell>
                                                 <TableCell>{character.age || '-'}</TableCell>
                                                 <TableCell>
                                                     <Button
-                                                        size="sm"
+                                                        size='sm'
                                                         onClick={() => addCharacterMutation.mutate(character.id)}
                                                         disabled={addCharacterMutation.isPending}
                                                     >
                                                         {addCharacterMutation.isPending ? (
-                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                                                         ) : (
-                                                            <Plus className="mr-2 h-4 w-4" />
+                                                            <Plus className='mr-2 h-4 w-4' />
                                                         )}
                                                         添加
                                                     </Button>
@@ -201,7 +231,7 @@ export function ProjectCharactersPage() {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                                            <TableCell colSpan={4} className='text-center text-muted-foreground'>
                                                 所有角色已添加到项目
                                             </TableCell>
                                         </TableRow>
@@ -211,7 +241,7 @@ export function ProjectCharactersPage() {
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                        <Button variant='outline' onClick={() => setAddDialogOpen(false)}>
                             关闭
                         </Button>
                     </DialogFooter>
@@ -225,20 +255,21 @@ export function ProjectCharactersPage() {
                         <DialogHeader>
                             <DialogTitle>确认移除</DialogTitle>
                             <DialogDescription>
-                                确定要从项目中移除角色 "{characterToRemove.name}" 吗？这不会删除角色本身，只是移除项目与角色的关联。
+                                确定要从项目中移除角色 "{characterToRemove.name}"
+                                吗？这不会删除角色本身，只是移除项目与角色的关联。
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setRemoveConfirmOpen(false)}>
+                            <Button variant='outline' onClick={() => setRemoveConfirmOpen(false)}>
                                 取消
                             </Button>
                             <Button
-                                variant="destructive"
+                                variant='destructive'
                                 onClick={() => removeCharacterMutation.mutate(characterToRemove.id)}
                                 disabled={removeCharacterMutation.isPending}
                             >
                                 {removeCharacterMutation.isPending ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                                 ) : null}
                                 确认移除
                             </Button>
@@ -249,4 +280,3 @@ export function ProjectCharactersPage() {
         </div>
     );
 }
-

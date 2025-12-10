@@ -12,6 +12,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -219,10 +221,11 @@ export class ProjectResourceController {
   }
 
   @Post(':projectId/resources/:resourceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '将资源添加到项目（仅管理员）' })
-  @ApiResponse({ status: 201, description: '资源已添加到项目' })
+  @ApiResponse({ status: 204, description: '资源已添加到项目' })
   async addResourceToProject(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('resourceId', ParseIntPipe) resourceId: number,
@@ -231,10 +234,11 @@ export class ProjectResourceController {
   }
 
   @Delete(':projectId/resources/:resourceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: '从项目移除资源（仅管理员）' })
-  @ApiResponse({ status: 200, description: '资源已从项目移除' })
+  @ApiResponse({ status: 204, description: '资源已从项目移除' })
   async removeResourceFromProject(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('resourceId', ParseIntPipe) resourceId: number,
