@@ -28,11 +28,13 @@ export function useUploadResource() {
       file,
       alias,
       bundle,
+      bundleType,
     }: {
       file: File;
       alias: string;
       bundle: string;
-    }) => apiClient.uploadResource(file, alias, bundle),
+      bundleType?: string;
+    }) => apiClient.uploadResource(file, alias, bundle, bundleType),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
     },

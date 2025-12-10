@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ChaptersModule } from './modules/chapters/chapters.module';
 import { GameConfigModule } from './modules/game-config/game-config.module';
 import { ManifestModule } from './modules/manifest/manifest.module';
 import { ProjectsModule } from './modules/projects/projects.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     GameConfigModule,
     ProjectsModule,
+    ChaptersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

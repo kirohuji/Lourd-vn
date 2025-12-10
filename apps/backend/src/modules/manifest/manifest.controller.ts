@@ -99,8 +99,10 @@ export class ManifestController {
   @Public()
   @ApiOperation({ summary: '生成 Manifest（公开接口）' })
   @ApiResponse({ status: 200, description: 'Manifest' })
-  async generateManifest(): Promise<ManifestResponse> {
-    return this.manifestService.generateManifest();
+  async generateManifest(
+    @Query('bundleType') bundleType?: string,
+  ): Promise<ManifestResponse> {
+    return this.manifestService.generateManifest(bundleType);
   }
 
   @Get(':id')
@@ -247,5 +249,25 @@ export class ProjectResourceController {
       projectId,
       resourceId,
     );
+  }
+
+  @Get(':projectId/manifest/common')
+  @Public()
+  @ApiOperation({ summary: '生成项目的共通资源 manifest（公开）' })
+  @ApiResponse({ status: 200, description: '共通资源 Manifest' })
+  async getCommonManifest(
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<ManifestResponse> {
+    return this.manifestService.generateCommonManifest(projectId);
+  }
+
+  @Get(':projectId/manifest/full')
+  @Public()
+  @ApiOperation({ summary: '生成项目的完整 manifest（公开）' })
+  @ApiResponse({ status: 200, description: '完整 Manifest' })
+  async getFullManifest(
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<ManifestResponse> {
+    return this.manifestService.generateFullManifest(projectId);
   }
 }

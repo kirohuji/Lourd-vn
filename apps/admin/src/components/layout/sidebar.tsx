@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { useProjects } from '@/lib/hooks/use-projects';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Folder, HardDrive, Map, Settings, User, Users } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronRight, Folder, HardDrive, Map, Settings, User, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -81,6 +81,7 @@ export function Sidebar() {
                       { title: '资源视图', href: `/admin/projects/${currentProjectId}/resources`, icon: HardDrive },
                       { title: '地图视图', href: `/admin/projects/${currentProjectId}/maps`, icon: Map },
                       { title: '角色视图', href: `/admin/projects/${currentProjectId}/characters`, icon: User },
+                      { title: '章节管理', href: `/admin/projects/${currentProjectId}/chapters`, icon: BookOpen },
                   ]
                 : undefined,
         },

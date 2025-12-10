@@ -40,6 +40,7 @@ export function ResourcesPage() {
     const [resourceToEdit, setResourceToEdit] = useState<ResourceResponseDto | null>(null);
     const [editAlias, setEditAlias] = useState('');
     const [editBundle, setEditBundle] = useState('');
+    const [editBundleType, setEditBundleType] = useState<string>('chapter');
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [migratingId, setMigratingId] = useState<number | null>(null);
 
@@ -70,6 +71,7 @@ export function ResourcesPage() {
         setResourceToEdit(resource);
         setEditAlias(resource.alias);
         setEditBundle(resource.bundle || '');
+        setEditBundleType(resource.bundleType || 'chapter');
         setEditDialogOpen(true);
     };
 
@@ -87,6 +89,7 @@ export function ResourcesPage() {
             const dto: UpdateResourceDto = {
                 alias: editAlias.trim(),
                 bundle: editBundle.trim() || undefined,
+                bundleType: editBundleType,
             };
             await updateResource.mutateAsync({ id: resourceToEdit.id, dto });
             toast({
@@ -203,6 +206,7 @@ export function ResourcesPage() {
                                     <TableHead>ID</TableHead>
                                     <TableHead>别名</TableHead>
                                     <TableHead>Bundle</TableHead>
+                                    <TableHead>类型</TableHead>
                                     <TableHead>文件类型</TableHead>
                                     <TableHead>URL</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
@@ -211,7 +215,7 @@ export function ResourcesPage() {
                             <TableBody>
                                 {resources.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className='text-center py-8 text-muted-foreground'>
+                                        <TableCell colSpan={7} className='text-center py-8 text-muted-foreground'>
                                             暂无资源
                                         </TableCell>
                                     </TableRow>
@@ -221,6 +225,7 @@ export function ResourcesPage() {
                                             <TableCell>{resource.id}</TableCell>
                                             <TableCell className='font-medium'>{resource.alias}</TableCell>
                                             <TableCell>{resource.bundle || '-'}</TableCell>
+                                            <TableCell>{resource.bundleType || 'chapter'}</TableCell>
                                             <TableCell>{resource.fileType || '-'}</TableCell>
                                             <TableCell>
                                                 <a
@@ -308,6 +313,18 @@ export function ResourcesPage() {
                         <div className='space-y-2'>
                             <Label htmlFor='edit-bundle'>Bundle</Label>
                             <Input id='edit-bundle' value={editBundle} onChange={e => setEditBundle(e.target.value)} />
+                        </div>
+                        <div className='space-y-2'>
+                            <Label htmlFor='edit-bundle-type'>资源包类型</Label>
+                            <Select value={editBundleType} onValueChange={setEditBundleType}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder='选择资源包类型' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value='common'>共通资源包</SelectItem>
+                                    <SelectItem value='chapter'>章节资源包</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <DialogFooter>

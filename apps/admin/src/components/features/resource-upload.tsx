@@ -19,6 +19,7 @@ interface ResourceUploadProps {
 export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }: ResourceUploadProps) {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [selectedBundle, setSelectedBundle] = useState('');
+    const [selectedBundleType, setSelectedBundleType] = useState<string>('chapter');
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const { toast } = useToast();
@@ -68,6 +69,7 @@ export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }:
                         file,
                         alias,
                         bundle: selectedBundle,
+                        bundleType: selectedBundleType,
                     });
                     successCount++;
                 } catch (error: any) {
@@ -84,6 +86,7 @@ export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }:
 
             setSelectedFiles([]);
             setSelectedBundle('');
+            setSelectedBundleType('chapter');
             onOpenChange(false);
             onSuccess?.();
         } catch (error: any) {
@@ -106,6 +109,18 @@ export function ResourceUpload({ open, onOpenChange, bundleOptions, onSuccess }:
                     <DialogDescription>选择文件并指定 bundle</DialogDescription>
                 </DialogHeader>
                 <div className='space-y-4'>
+                    <div className='space-y-2'>
+                        <Label htmlFor='bundle-type'>资源包类型</Label>
+                        <Select value={selectedBundleType} onValueChange={setSelectedBundleType}>
+                            <SelectTrigger>
+                                <SelectValue placeholder='选择资源包类型' />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value='common'>共通资源包</SelectItem>
+                                <SelectItem value='chapter'>章节资源包</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className='space-y-2'>
                         <Label htmlFor='bundle'>Bundle</Label>
                         <Select value={selectedBundle} onValueChange={setSelectedBundle}>

@@ -23,6 +23,24 @@ export const endpoints = {
     characters: (projectId: number) => `/projects/${projectId}/characters`,
     addCharacter: (projectId: number, characterId: string) => `/projects/${projectId}/characters/${characterId}`,
     removeCharacter: (projectId: number, characterId: string) => `/projects/${projectId}/characters/${characterId}`,
+    // 项目 Manifest
+    manifest: {
+      common: (projectId: number) => `/projects/${projectId}/manifest/common`,
+      full: (projectId: number) => `/projects/${projectId}/manifest/full`,
+    },
+  },
+  chapters: {
+    list: (projectId: number) => `/projects/${projectId}/chapters`,
+    detail: (id: number) => `/chapters/${id}`,
+    create: (projectId: number) => `/projects/${projectId}/chapters`,
+    update: (id: number) => `/chapters/${id}`,
+    delete: (id: number) => `/chapters/${id}`,
+    resources: {
+      list: (chapterId: number) => `/chapters/${chapterId}/resources`,
+      add: (chapterId: number, resourceId: number) => `/chapters/${chapterId}/resources/${resourceId}`,
+      remove: (chapterId: number, resourceId: number) => `/chapters/${chapterId}/resources/${resourceId}`,
+    },
+    manifest: (chapterId: number) => `/chapters/${chapterId}/manifest`,
   },
   resources: {
     list: '/manifest',

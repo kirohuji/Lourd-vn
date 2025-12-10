@@ -1,5 +1,8 @@
 import {
+    ChapterQueryDto,
+    ChapterResponseDto,
     CharacterConfig,
+    CreateChapterDto,
     CreateCharacterDto,
     CreateLocationDto,
     CreateMapDto,
@@ -16,6 +19,7 @@ import {
     ResourceQueryDto,
     ResourceResponseDto,
     RoomConfig,
+    UpdateChapterDto,
     UpdateCharacterDto,
     UpdateLocationDto,
     UpdateMapDto,
@@ -28,7 +32,7 @@ import {
     WechatLoginDto,
 } from '@lourd-game/shared';
 
-import { API_BASE_URL } from './endpoints';
+import { API_BASE_URL, endpoints } from './endpoints';
 
 class ApiClient {
     private getToken(): string | null {
@@ -214,11 +218,14 @@ class ApiClient {
         });
     }
 
-    async uploadResource(file: File, alias: string, bundle: string): Promise<ResourceResponseDto> {
+    async uploadResource(file: File, alias: string, bundle: string, bundleType?: string): Promise<ResourceResponseDto> {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('alias', alias);
         formData.append('bundle', bundle);
+        if (bundleType) {
+            formData.append('bundleType', bundleType);
+        }
 
         // 后端路由为 POST /manifest
         return this.request<ResourceResponseDto>('/manifest', {
@@ -481,6 +488,103 @@ class ApiClient {
     async removeCharacterFromProject(projectId: number, characterId: string): Promise<void> {
         return this.request<void>(`/projects/${projectId}/characters/${characterId}`, {
             method: 'DELETE',
+        });
+    }
+
+    // Project Manifest
+    async getCommonManifest(projectId: number): Promise<ManifestResponse> {
+        return this.request<ManifestResponse>(endpoints.projects.manifest.common(projectId), {
+            method: 'GET',
+        });
+    }
+
+    async getFullManifest(projectId: number): Promise<ManifestResponse> {
+        return this.request<ManifestResponse>(endpoints.projects.manifest.full(projectId), {
+            method: 'GET',
+        });
+    }
+
+    // Chapters
+    async getChapters(projectId: number, query?: ChapterQueryDto): Promise<ChapterResponseDto[]> {
+        const queryString = query
+            ? '?' +
+              new URLSearchParams(
+                  Object.entries(query).reduce((acc, [key, value]) => {
+                      if (value !== undefined && value !== null) {
+                          acc[key] = String(value);
+                      }
+                      return acc;
+                  }, {} as Record<string, string>),
+              ).toString()
+            : '';
+        return this.request<ChapterResponseDto[]>(`${endpoints.chapters.list(projectId)}${queryString}`, {
+            method: 'GET',
+        });
+    }
+
+    async getChapter(id: number): Promise<ChapterResponseDto> {
+        return this.request<ChapterResponseDto>(endpoints.chapters.detail(id), {
+            method: 'GET',
+        });
+    }
+
+    async createChapter(projectId: number, dto: CreateChapterDto): Promise<ChapterResponseDto> {
+        return this.request<ChapterResponseDto>(endpoints.chapters.create(projectId), {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updateChapter(id: number, dto: UpdateChapterDto): Promise<ChapterResponseDto> {
+        return this.request<ChapterResponseDto>(endpoints.chapters.update(id), {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteChapter(id: number): Promise<void> {
+        return this.request<void>(endpoints.chapters.delete(id), {
+            method: 'DELETE',
+        });
+    }
+
+    // Chapter Resources
+    async getChapterResources(chapterId: number, query?: ResourceQueryDto): Promise<PaginatedResponse<ResourceResponseDto>> {
+        const queryString = query
+            ? '?' +
+              new URLSearchParams(
+                  Object.entries(query).reduce((acc, [key, value]) => {
+                      if (value !== undefined && value !== null) {
+                          acc[key] = String(value);
+                      }
+                      return acc;
+                  }, {} as Record<string, string>),
+              ).toString()
+            : '';
+        return this.request<PaginatedResponse<ResourceResponseDto>>(
+            `${endpoints.chapters.resources.list(chapterId)}${queryString}`,
+            {
+                method: 'GET',
+            },
+        );
+    }
+
+    async addResourceToChapter(chapterId: number, resourceId: number): Promise<void> {
+        return this.request<void>(endpoints.chapters.resources.add(chapterId, resourceId), {
+            method: 'POST',
+        });
+    }
+
+    async removeResourceFromChapter(chapterId: number, resourceId: number): Promise<void> {
+        return this.request<void>(endpoints.chapters.resources.remove(chapterId, resourceId), {
+            method: 'DELETE',
+        });
+    }
+
+    // Chapter Manifest
+    async getChapterManifest(chapterId: number): Promise<ManifestResponse> {
+        return this.request<ManifestResponse>(endpoints.chapters.manifest(chapterId), {
+            method: 'GET',
         });
     }
 }

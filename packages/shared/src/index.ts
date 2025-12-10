@@ -1,5 +1,6 @@
 // 导出所有类型
 export * from './types/auth.js';
+export * from './types/chapter.js';
 export * from './types/game-config.js';
 export * from './types/project.js';
 export * from './types/resource.js';
@@ -31,9 +32,7 @@ export type {
 } from './types/game-config.js';
 
 export type {
-    CreateBundleDto,
     CreateResourceDto,
-    ManifestBundle,
     ManifestResponse,
     PaginatedResponse,
     Resource,
@@ -41,6 +40,14 @@ export type {
     ResourceResponseDto,
     UpdateResourceDto,
 } from './types/resource.js';
+
+export type {
+    Chapter,
+    ChapterQueryDto,
+    ChapterResponseDto,
+    CreateChapterDto,
+    UpdateChapterDto,
+} from './types/chapter.js';
 
 export type {
     CreateProjectDto,

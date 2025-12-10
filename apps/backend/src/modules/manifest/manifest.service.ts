@@ -38,6 +38,8 @@ export class ManifestService {
     dto: CreateResourceDto,
     userId: number,
   ): Promise<ResourceResponseDto> {
+    // 处理 bundleType，默认为 "chapter"
+    const bundleType = dto.bundleType || 'chapter';
     // 验证文件
     const validation = validateFile(file, {
       maxSize: MAX_FILE_SIZE,
@@ -83,6 +85,7 @@ export class ManifestService {
         alias: dto.alias,
         src: fileUrl,
         bundle: dto.bundle,
+        bundleType: bundleType,
         hash,
         fileSize: file.size,
         fileType:
@@ -139,6 +142,10 @@ export class ManifestService {
       where.bundle = query.bundle;
     }
 
+    if (query.bundleType) {
+      where.bundleType = query.bundleType;
+    }
+
     if (query.search) {
       where.OR = [
         { alias: { contains: query.search, mode: 'insensitive' } },
@@ -152,6 +159,15 @@ export class ManifestService {
       where.usedByProjects = {
         some: {
           projectId: Number(query.usedByProjectId),
+        },
+      };
+    }
+
+    // 如果指定了 usedByChapterId，只查询该章节使用的资源
+    if (query.usedByChapterId) {
+      where.usedByChapters = {
+        some: {
+          chapterId: Number(query.usedByChapterId),
         },
       };
     }
@@ -172,6 +188,7 @@ export class ManifestService {
         alias: resource.alias,
         src: resource.src,
         bundle: resource.bundle,
+        bundleType: (resource as any).bundleType || undefined,
         hash: resource.hash,
         fileSize: resource.fileSize,
         fileType: resource.fileType || undefined,
@@ -201,6 +218,7 @@ export class ManifestService {
       alias: resource.alias,
       src: resource.src,
       bundle: resource.bundle,
+      bundleType: (resource as any).bundleType || undefined,
       hash: resource.hash,
       fileSize: resource.fileSize,
       fileType: resource.fileType || undefined,
@@ -231,11 +249,12 @@ export class ManifestService {
       data: {
         ...(dto.alias !== undefined && { alias: dto.alias }),
         ...(dto.bundle !== undefined && { bundle: dto.bundle }),
+        ...(dto.bundleType !== undefined && { bundleType: dto.bundleType }),
         ...(dto.fileType !== undefined && { fileType: dto.fileType }),
         ...(dto.originalName !== undefined && {
           originalName: dto.originalName,
         }),
-      },
+      } as any,
     });
 
     return {
@@ -377,8 +396,91 @@ export class ManifestService {
     });
   }
 
-  async generateManifest(): Promise<ManifestResponse> {
+  async generateManifest(bundleType?: string): Promise<ManifestResponse> {
+    const where: any = {};
+    if (bundleType) {
+      where.bundleType = bundleType;
+    }
+
     const resources = await this.prisma.resource.findMany({
+      where,
+      orderBy: { bundle: 'asc' },
+    });
+
+    // 按 bundle 分组
+    const bundleMap = new Map<string, typeof resources>();
+    resources.forEach((resource) => {
+      if (!bundleMap.has(resource.bundle)) {
+        bundleMap.set(resource.bundle, []);
+      }
+      bundleMap.get(resource.bundle)!.push(resource);
+    });
+
+    // 生成 bundles 数组
+    const bundles = Array.from(bundleMap.entries()).map(
+      ([name, resources]) => ({
+        name,
+        assets: resources.map((resource) => ({
+          alias: resource.alias,
+          src: resource.src,
+        })),
+      }),
+    );
+
+    const manifest: AssetsManifest = { bundles };
+
+    return { manifest };
+  }
+
+  async generateCommonManifest(projectId: number): Promise<ManifestResponse> {
+    // 获取项目的共通资源
+    const resources = await this.prisma.resource.findMany({
+      where: {
+        usedByProjects: {
+          some: {
+            projectId: projectId,
+          },
+        },
+        bundleType: 'common',
+      },
+      orderBy: { bundle: 'asc' },
+    });
+
+    // 按 bundle 分组
+    const bundleMap = new Map<string, typeof resources>();
+    resources.forEach((resource) => {
+      if (!bundleMap.has(resource.bundle)) {
+        bundleMap.set(resource.bundle, []);
+      }
+      bundleMap.get(resource.bundle)!.push(resource);
+    });
+
+    // 生成 bundles 数组
+    const bundles = Array.from(bundleMap.entries()).map(
+      ([name, resources]) => ({
+        name,
+        assets: resources.map((resource) => ({
+          alias: resource.alias,
+          src: resource.src,
+        })),
+      }),
+    );
+
+    const manifest: AssetsManifest = { bundles };
+
+    return { manifest };
+  }
+
+  async generateFullManifest(projectId: number): Promise<ManifestResponse> {
+    // 获取项目的所有资源（共通 + 章节）
+    const resources = await this.prisma.resource.findMany({
+      where: {
+        usedByProjects: {
+          some: {
+            projectId: projectId,
+          },
+        },
+      },
       orderBy: { bundle: 'asc' },
     });
 

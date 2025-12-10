@@ -8,6 +8,7 @@ export interface Resource {
     alias: string;
     src: string;
     bundle: string;
+    bundleType?: string; // "common" | "chapter"
     hash: string;
     fileSize: number;
     fileType?: string;
@@ -24,6 +25,7 @@ export interface Resource {
 export interface CreateResourceDto {
     alias: string;
     bundle: string;
+    bundleType?: string; // "common" | "chapter"
     hash: string;
     fileSize: number;
     fileType?: string;
@@ -37,6 +39,7 @@ export interface CreateResourceDto {
 export interface UpdateResourceDto {
     alias?: string;
     bundle?: string;
+    bundleType?: string; // "common" | "chapter"
     fileType?: string;
     originalName?: string;
 }
@@ -49,6 +52,7 @@ export interface ResourceResponseDto {
     alias: string;
     src: string;
     bundle: string;
+    bundleType?: string; // "common" | "chapter"
     hash: string;
     fileSize: number;
     fileType?: string;
@@ -65,8 +69,10 @@ export interface ResourceQueryDto {
     page?: number;
     limit?: number;
     bundle?: string;
+    bundleType?: string; // "common" | "chapter"
     search?: string;
     usedByProjectId?: number; // 查询指定项目使用的资源
+    usedByChapterId?: number; // 查询指定章节使用的资源
 }
 
 /**
@@ -80,24 +86,6 @@ export interface PaginatedResponse<T> {
     totalPages: number;
 }
 
-/**
- * Manifest Bundle 实体类型
- */
-export interface ManifestBundle {
-    id: number;
-    name: string;
-    description?: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-/**
- * 创建 Bundle DTO
- */
-export interface CreateBundleDto {
-    name: string;
-    description?: string;
-}
 
 /**
  * Manifest 生成响应

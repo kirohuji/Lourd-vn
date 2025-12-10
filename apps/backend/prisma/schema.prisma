@@ -23,6 +23,9 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // 项目的章节
+  chapters Chapter[]
+
   // 项目使用的资源（多对多关系）
   usedResources  ProjectResourceUsage[]
   usedMaps       ProjectMapUsage[]
@@ -51,6 +54,7 @@ model Resource {
   alias        String
   src          String
   bundle       String
+  bundleType   String?  @default("chapter") // "common" | "chapter"
   hash         String   @unique
   fileSize     Int
   fileType     String?
@@ -65,21 +69,33 @@ model Resource {
   
   // 被哪些项目使用（多对多关系）
   usedByProjects ProjectResourceUsage[]
+  // 被哪些章节使用（多对多关系）
+  usedByChapters ChapterResourceUsage[]
 
   @@index([bundle])
+  @@index([bundleType])
   @@index([alias])
   @@index([hash])
   @@map("resources")
 }
 
-model ManifestBundle {
+model Chapter {
   id          Int      @id @default(autoincrement())
-  name        String   @unique
+  projectId   Int
+  name        String
   description String?
+  order       Int      @default(0)
+  enabled     Boolean  @default(true)
+  requireAd   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@map("manifest_bundles")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  usedResources ChapterResourceUsage[]
+
+  @@index([projectId])
+  @@index([order])
+  @@map("chapters")
 }
 
 model Map {
@@ -196,4 +212,20 @@ model ProjectCharacterUsage {
   @@index([projectId])
   @@index([characterId])
   @@map("project_character_usage")
+}
+
+// 章节使用资源的关联表
+model ChapterResourceUsage {
+  id         Int      @id @default(autoincrement())
+  chapterId  Int
+  resourceId Int
+  createdAt  DateTime @default(now())
+
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  resource  Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, resourceId])
+  @@index([chapterId])
+  @@index([resourceId])
+  @@map("chapter_resource_usage")
 }
