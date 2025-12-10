@@ -1,16 +1,8 @@
-import { resourceCache } from './resource-cache';
-
 const INDEXED_DB_VERSION = 2; // Increment this version number when you change the database schema
 const INDEXED_DB_NAME = 'game_db';
 export const INDEXED_DB_SAVE_TABLE = 'saves';
 
 export function initializeIndexedDB(): Promise<void> {
-    // 检查是否已初始化
-    if (resourceCache.isIndexedDBInitialized()) {
-        console.log('IndexedDB already initialized, skipping');
-        return Promise.resolve();
-    }
-
     return new Promise(resolve => {
         // Check if IndexedDB is available
         if (typeof indexedDB === 'undefined') {
@@ -35,7 +27,6 @@ export function initializeIndexedDB(): Promise<void> {
 
         request.onsuccess = function (_event) {
             // 标记为已初始化
-            resourceCache.markIndexedDBInitialized();
             resolve();
         };
         request.onerror = function (event) {

@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Typography } from '@mui/joy';
+import { Box, CircularProgress, LinearProgress, Typography } from '@mui/joy';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../stores/auth-store';
 import { initializeGame } from '../utils/game-initialization';
@@ -15,6 +15,7 @@ let initializationPromise: Promise<void> | null = null;
 export default function LoadingScreen({ onComplete, onError }: LoadingScreenProps = {}) {
     const { isAuthenticated } = useAuthStore();
     const [loadingStatus, setLoadingStatus] = useState<string>('正在初始化游戏...');
+    const [progress, setProgress] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -47,9 +48,13 @@ export default function LoadingScreen({ onComplete, onError }: LoadingScreenProp
         // 开始游戏初始化
         const init = async () => {
             try {
-                setLoadingStatus('正在加载角色...');
-                await initializeGame();
-                setLoadingStatus('初始化完成');
+                // 创建进度回调函数
+                const handleProgress = (status: string, progressValue: number) => {
+                    setLoadingStatus(status);
+                    setProgress(progressValue);
+                };
+
+                await initializeGame(handleProgress);
 
                 // 初始化成功，标记为已完成
                 isInitializing = false;
@@ -99,14 +104,39 @@ export default function LoadingScreen({ onComplete, onError }: LoadingScreenProp
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: 2,
+                px: 4,
             }}
         >
             <CircularProgress size='lg' />
-            <Typography level='body-lg' color={error ? 'danger' : 'neutral'}>
-                {error || loadingStatus}
-            </Typography>
+            <Box
+                sx={{
+                    width: '100%',
+                    maxWidth: 400,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                }}
+            >
+                <Typography level='body-lg' color={error ? 'danger' : 'neutral'} textAlign='center'>
+                    {error || loadingStatus}
+                </Typography>
+                {!error && (
+                    <>
+                        <LinearProgress
+                            determinate
+                            value={progress}
+                            sx={{
+                                width: '100%',
+                            }}
+                        />
+                        <Typography level='body-sm' color='neutral' textAlign='center'>
+                            {Math.round(progress)}%
+                        </Typography>
+                    </>
+                )}
+            </Box>
             {error && (
-                <Typography level='body-sm' color='neutral'>
+                <Typography level='body-sm' color='neutral' textAlign='center'>
                     如果问题持续存在，请尝试重新登录
                 </Typography>
             )}
