@@ -1,5 +1,6 @@
 import { AssetsManifest } from '@drincs/pixi-vn';
 import { apiClient } from './api-client';
+import { loadManifestFromLocal, replaceManifestPathsWithLocal } from './local-asset-loader';
 import { getProjectId } from './project-config';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -157,10 +158,15 @@ export function processManifest(manifest: AssetsManifest): AssetsManifest {
 
 /**
  * 从后端 API 获取 manifest 并合并基础 manifest
+ * 优先使用本地资源包中的资源
  * @param baseManifest 基础 manifest（本地 manifest）
+ * @param chapterId 可选的章节 ID
  * @returns 合并后的 manifest
  */
-export async function generateManifestFromAPI(baseManifest?: AssetsManifest): Promise<AssetsManifest> {
+export async function generateManifestFromAPI(
+    baseManifest?: AssetsManifest,
+    chapterId?: number,
+): Promise<AssetsManifest> {
     try {
         // 获取项目 ID
         const projectId = await getProjectId();
@@ -170,16 +176,87 @@ export async function generateManifestFromAPI(baseManifest?: AssetsManifest): Pr
             return baseManifest ? processManifest(baseManifest) : { bundles: [] };
         }
 
+        // 优先尝试从本地加载 manifest
+        let localManifest: AssetsManifest | null = null;
+        try {
+            localManifest = await loadManifestFromLocal(projectId, chapterId);
+            if (localManifest && localManifest.bundles && localManifest.bundles.length > 0) {
+                console.log('使用本地资源包的 manifest');
+            }
+        } catch (error) {
+            console.warn('从本地加载 manifest 失败，将使用 API manifest:', error);
+        }
+
         // 从后端 API 获取 manifest
         const response = await apiClient.getProjectManifest(projectId);
         const apiManifest = response.manifest;
 
+        // 如果本地有 manifest，尝试将 API manifest 中的资源路径替换为本地路径
+        let processedApiManifest = apiManifest;
+        if (localManifest) {
+            try {
+                processedApiManifest = await replaceManifestPathsWithLocal(apiManifest, projectId, 'common');
+                if (chapterId) {
+                    processedApiManifest = await replaceManifestPathsWithLocal(
+                        processedApiManifest,
+                        chapterId,
+                        'chapter',
+                    );
+                }
+            } catch (error) {
+                console.warn('替换 API manifest 路径为本地路径失败，使用原始路径:', error);
+            }
+        }
+
+        // 处理 API manifest（转换 COS URL 等）
+        processedApiManifest = processManifest(processedApiManifest);
+
+        // 如果本地有 manifest，优先使用本地资源，然后合并 API 中的新资源
+        if (localManifest && localManifest.bundles && localManifest.bundles.length > 0) {
+            // 合并本地和 API manifest
+            const bundleMap = new Map<string, Array<{ alias: string; src: string; format?: string }>>();
+
+            // 先添加本地 manifest 的 bundles（优先级更高）
+            localManifest.bundles.forEach(bundle => {
+                const assetsArray = Array.isArray(bundle.assets) ? bundle.assets : [];
+                bundleMap.set(bundle.name, assetsArray as any);
+            });
+
+            // 然后添加 API manifest 中的新资源（避免重复）
+            if (processedApiManifest.bundles) {
+                processedApiManifest.bundles.forEach((bundle: any) => {
+                    const existingAssets = bundleMap.get(bundle.name) || [];
+                    const assetsArray = Array.isArray(bundle.assets) ? bundle.assets : [];
+                    const newAssets = assetsArray.map(processAsset);
+
+                    // 避免重复的 alias
+                    const existingAliases = new Set(existingAssets.map((asset: any) => asset.alias));
+                    newAssets.forEach((asset: any) => {
+                        if (asset.alias && asset.src && !existingAliases.has(asset.alias)) {
+                            existingAssets.push(asset);
+                        }
+                    });
+
+                    bundleMap.set(bundle.name, existingAssets);
+                });
+            }
+
+            // 生成最终的 bundles 数组
+            const bundles = Array.from(bundleMap.entries()).map(([name, assets]) => ({
+                name,
+                assets,
+            }));
+
+            return { bundles };
+        }
+
+        // 如果没有本地 manifest，使用 API manifest
         // 如果没有基础 manifest，处理 API manifest
         if (!baseManifest?.bundles) {
-            if (apiManifest.bundles) {
-                return processManifest(apiManifest);
+            if (processedApiManifest.bundles) {
+                return processedApiManifest;
             }
-            return apiManifest;
+            return processedApiManifest;
         }
 
         // 合并基础 manifest 和 API manifest

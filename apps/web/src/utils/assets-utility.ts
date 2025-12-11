@@ -50,7 +50,7 @@ export async function defineAssets() {
                 throw initError;
             }
         }
-
+        console.log('dynamicManifest', dynamicManifest);
         // The game will not start until these asserts are loaded.
         // 检查 bundle 是否已加载
         if (!resourceCache.isBundleLoaded(MAIN_MENU_ROUTE)) {

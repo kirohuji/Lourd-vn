@@ -10,7 +10,7 @@ class ResourceCacheManager {
      * 页面刷新后总是返回 false，强制重新加载
      */
     isCharactersLoaded(): boolean {
-        return false;
+            return false;
     }
 
     /**

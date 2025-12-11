@@ -1,8 +1,10 @@
 import { initI18n } from '../i18n';
 import { defineAssets } from './assets-utility';
+import { downloadCommonBundleIfNeeded } from './bundle-downloader';
 import { loadCharactersFromAPI } from './characters-utility';
 import { initializeIndexedDB } from './indexedDB-utility';
 import { importAllInkLabels } from './ink-utility';
+import { getProjectId } from './project-config';
 import { resourceCache } from './resource-cache';
 
 /**
@@ -22,14 +24,30 @@ export async function initializeGame(onProgress?: ProgressCallback): Promise<voi
         // 步骤 1: 正在加载核心资源… (0% → 25%)
         onProgress?.('正在加载核心资源…', 0);
         await Promise.all([import('../values'), import('../labels')]);
-        onProgress?.('正在加载核心资源…', 12);
+        onProgress?.('正在加载核心资源…', 5);
 
         // 页面刷新后总是重新加载所有资源，不检查缓存
 
         console.log('Initializing game...');
 
-        // 步骤 1 继续: 加载资源 manifest（可能需要认证）
+        // 步骤 1.1: 检查并下载共通资源包（如果需要）
+        try {
+            const projectId = await getProjectId();
+            if (projectId) {
+                onProgress?.('正在检查共通资源包…', 8);
+                await downloadCommonBundleIfNeeded(projectId, (status, progress) => {
+                    // 将下载进度映射到 8% - 20% 的范围
+                    const mappedProgress = 8 + (progress * 12) / 100;
+                    onProgress?.(status, mappedProgress);
+                });
+            }
+        } catch (error) {
+            console.warn('下载共通资源包失败，将使用网络资源:', error);
+        }
+
+        // 步骤 1.2: 加载资源 manifest（可能需要认证）
         // defineAssets 内部已经检查缓存并标记，这里直接调用即可
+        onProgress?.('正在加载资源清单…', 20);
         await defineAssets();
         onProgress?.('正在加载核心资源…', 25);
 

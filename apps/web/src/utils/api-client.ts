@@ -1,9 +1,11 @@
 import { 
+    ChapterResponseDto,
     EmailLoginDto, 
     LoginResponseDto, 
     ManifestResponse, 
     PaginatedResponse, 
-    CharacterConfig 
+    CharacterConfig,
+    ProjectResponseDto
 } from '@lourd-game/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -120,6 +122,28 @@ class ApiClient {
             {
                 method: 'GET',
                 needAuth: true, // 需要认证
+            }
+        );
+    }
+
+    // Project Info APIs
+    async getProjectInfo(projectId: number): Promise<ProjectResponseDto> {
+        return this.request<ProjectResponseDto>(
+            `/projects/${projectId}`,
+            {
+                method: 'GET',
+                needAuth: false, // 公开端点
+            }
+        );
+    }
+
+    // Chapter Info APIs
+    async getChapterInfo(chapterId: number): Promise<ChapterResponseDto> {
+        return this.request<ChapterResponseDto>(
+            `/chapters/${chapterId}`,
+            {
+                method: 'GET',
+                needAuth: false, // 公开端点
             }
         );
     }
