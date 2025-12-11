@@ -67,6 +67,7 @@
         "*.md": "vscode.markdown.preview.editor"
     },
     "cSpell.words": [
+        "drincs",
         "errcode",
         "errmsg",
         "hotspot",
