@@ -1,10 +1,10 @@
 // 全局样式
-import { Game } from "@drincs/pixi-vn";
+import { canvas, Container, Game } from "@drincs/pixi-vn";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Canvas, Text, View } from "@tarojs/components";
 import { Suspense, useEffect, useRef, useState } from "react";
 import "./app.less";
-// console.log(Game);
+
 // 常量定义
 const CANVAS_UI_LAYER_NAME = "ui";
 
@@ -36,19 +36,17 @@ function App(props: { children: React.ReactNode }) {
     const initGame = async () => {
       try {
         const container = pixiCanvasRef.current;
-        // console.log(Container);
-        console.log(Game);
-        // console.log(canvas);
+
         if (container) {
-          // Game.init(container, {
-          //   height: 844,
-          //   width: 390,
-          //   backgroundColor: "#303030",
-          // }).then(() => {
-          //   canvas.addLayer(CANVAS_UI_LAYER_NAME, new Container());
-          //   setGameInitialized(true);
-          //   console.log("Game initialized", gameInitialized);
-          // });
+          Game.init(container, {
+            height: 844,
+            width: 390,
+            backgroundColor: "#303030",
+          }).then(() => {
+            canvas.addLayer(CANVAS_UI_LAYER_NAME, new Container());
+            setGameInitialized(true);
+            console.log("Game initialized", gameInitialized);
+          });
         } else {
           // 小程序环境，可能需要延迟初始化或使用其他方式
           console.log("容器未找到，将在页面级别初始化 Game");
