@@ -2,6 +2,7 @@
 export * from './types/auth.js';
 export * from './types/chapter.js';
 export * from './types/game-config.js';
+export * from './types/ink.js';
 export * from './types/project.js';
 export * from './types/resource.js';
 export * from './types/user.js';
@@ -49,8 +50,11 @@ export type {
     ChapterQueryDto,
     ChapterResponseDto,
     CreateChapterDto,
+    InkFileSummary,
     UpdateChapterDto,
 } from './types/chapter.js';
+
+export type { CompileInkResponse, CreateInkFileDto, InkFile, UpdateInkFileDto } from './types/ink.js';
 
 export type {
     CreateProjectDto,

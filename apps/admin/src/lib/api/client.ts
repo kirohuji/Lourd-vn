@@ -3,13 +3,16 @@ import {
     ChapterQueryDto,
     ChapterResponseDto,
     CharacterConfig,
+    CompileInkResponse,
     CreateChapterDto,
     CreateCharacterDto,
+    CreateInkFileDto,
     CreateLocationDto,
     CreateMapDto,
     CreateProjectDto,
     CreateRoomDto,
     EmailLoginDto,
+    InkFile,
     LocationConfig,
     LoginResponseDto,
     ManifestResponse,
@@ -22,6 +25,7 @@ import {
     RoomConfig,
     UpdateChapterDto,
     UpdateCharacterDto,
+    UpdateInkFileDto,
     UpdateLocationDto,
     UpdateMapDto,
     UpdateProjectDto,
@@ -250,11 +254,7 @@ class ApiClient {
         });
     }
 
-    async replaceResourceFile(
-        id: number,
-        file: File,
-        dto: UpdateResourceDto,
-    ): Promise<ResourceResponseDto> {
+    async replaceResourceFile(id: number, file: File, dto: UpdateResourceDto): Promise<ResourceResponseDto> {
         const formData = new FormData();
         formData.append('file', file);
         if (dto.alias !== undefined) {
@@ -294,7 +294,12 @@ class ApiClient {
         });
     }
 
-    async getBundleList(query?: { bundleType?: string; search?: string; page?: number; limit?: number }): Promise<PaginatedResponse<any>> {
+    async getBundleList(query?: {
+        bundleType?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<PaginatedResponse<any>> {
         const queryString = query
             ? '?' +
               new URLSearchParams(
@@ -611,7 +616,10 @@ class ApiClient {
     }
 
     // Chapter Resources
-    async getChapterResources(chapterId: number, query?: ResourceQueryDto): Promise<PaginatedResponse<ResourceResponseDto>> {
+    async getChapterResources(
+        chapterId: number,
+        query?: ResourceQueryDto,
+    ): Promise<PaginatedResponse<ResourceResponseDto>> {
         const queryString = query
             ? '?' +
               new URLSearchParams(
@@ -652,6 +660,45 @@ class ApiClient {
 
     async generateChapterBundle(chapterId: number): Promise<BundleZipInfo> {
         return this.request<BundleZipInfo>(`/chapters/${chapterId}/generate-bundle`, {
+            method: 'POST',
+        });
+    }
+
+    // Chapter Ink Files
+    async getInkFiles(chapterId: number): Promise<InkFile[]> {
+        return this.request<InkFile[]>(endpoints.chapters.inkFiles.list(chapterId), {
+            method: 'GET',
+        });
+    }
+
+    async getInkFile(chapterId: number, inkId: number): Promise<InkFile> {
+        return this.request<InkFile>(endpoints.chapters.inkFiles.detail(chapterId, inkId), {
+            method: 'GET',
+        });
+    }
+
+    async createInkFile(chapterId: number, dto: CreateInkFileDto): Promise<InkFile> {
+        return this.request<InkFile>(endpoints.chapters.inkFiles.create(chapterId), {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updateInkFile(chapterId: number, inkId: number, dto: UpdateInkFileDto): Promise<InkFile> {
+        return this.request<InkFile>(endpoints.chapters.inkFiles.update(chapterId, inkId), {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteInkFile(chapterId: number, inkId: number): Promise<void> {
+        return this.request<void>(endpoints.chapters.inkFiles.delete(chapterId, inkId), {
+            method: 'DELETE',
+        });
+    }
+
+    async compileInkFile(chapterId: number, inkId: number): Promise<CompileInkResponse> {
+        return this.request<CompileInkResponse>(endpoints.chapters.inkFiles.compile(chapterId, inkId), {
             method: 'POST',
         });
     }

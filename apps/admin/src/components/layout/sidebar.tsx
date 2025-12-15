@@ -96,6 +96,18 @@ export function Sidebar() {
                                         title: chapter.name,
                                         href: `/admin/chapters/${chapter.id}/resources`,
                                         icon: HardDrive,
+                                        children: [
+                                            {
+                                                title: '资源',
+                                                href: `/admin/chapters/${chapter.id}/resources`,
+                                                icon: HardDrive,
+                                            },
+                                            {
+                                                title: 'Ink 编辑',
+                                                href: `/admin/chapters/${chapter.id}/ink`,
+                                                icon: BookOpen,
+                                            },
+                                        ],
                                     }))
                                   : undefined,
                       },

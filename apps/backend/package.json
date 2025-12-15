@@ -44,6 +44,7 @@
     "class-validator": "^0.14.3",
     "cos-nodejs-sdk-v5": "^2.15.4",
     "crypto-js": "^4.2.0",
+    "inkjs": "^2.3.2",
     "jszip": "^3.10.1",
     "multer": "^2.0.2",
     "passport": "^0.7.0",

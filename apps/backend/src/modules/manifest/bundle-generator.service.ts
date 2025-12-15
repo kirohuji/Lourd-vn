@@ -117,11 +117,34 @@ export class BundleGeneratorService {
       );
     }
 
-    // 生成 manifest
+    // 查询章节 Ink 文件
+    const inkFiles = await this.prisma.inkFile.findMany({
+      where: { chapterId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // 生成 manifest（附带 ink 信息）
     const manifest = this.generateManifestFromResources(resources);
+    const manifestWithInk: any = {
+      ...manifest,
+      inkFiles: inkFiles.map((ink) => ({
+        id: ink.id,
+        filename: ink.filename,
+        displayName: ink.displayName ?? undefined,
+        path: `ink/${ink.filename}`,
+        compiledPath: ink.compiledPath ?? undefined,
+        isStart: chapter.startInkId ? chapter.startInkId === ink.id : undefined,
+      })),
+      startInkId: chapter.startInkId ?? null,
+      chapterId: chapter.id,
+    };
 
     // 创建 ZIP 包
-    const zipBuffer = await this.createBundleZip(resources, manifest);
+    const zipBuffer = await this.createBundleZip(
+      resources,
+      manifestWithInk,
+      inkFiles,
+    );
 
     // 生成新的版本号
     const newVersion = (chapter.chapterBundleVersion || 0) + 1;
@@ -135,12 +158,24 @@ export class BundleGeneratorService {
     // 上传 ZIP 包到 COS
     const zipUrl = await this.cosService.uploadFile(zipBuffer, cosKey);
 
+    // 生成目录树（仅记录路径）
+    const bundleDirTree = {
+      manifest: 'manifest.json',
+      assets: resources.map((resource) => {
+        const fileName = this.getFileNameFromUrl(resource.src, resource.alias);
+        return `assets/${resource.bundle}/${fileName}`;
+      }),
+      ink: inkFiles.map((ink) => `ink/${ink.filename}`),
+    };
+
     // 更新章节的 ZIP 包信息
     await this.prisma.chapter.update({
       where: { id: chapterId },
       data: {
         chapterBundleZipUrl: zipUrl,
         chapterBundleVersion: newVersion,
+        chapterBundleUrl: zipUrl,
+        bundleDirTree: bundleDirTree as any,
       },
     });
 
@@ -246,7 +281,8 @@ export class BundleGeneratorService {
    */
   private async createBundleZip(
     resources: any[],
-    manifest: AssetsManifest,
+    manifest: any,
+    inkFiles: any[] = [],
   ): Promise<Buffer> {
     const zip = new JSZip();
 
@@ -268,7 +304,9 @@ export class BundleGeneratorService {
           fileBuffer = await this.cosService.getFile(key);
         } else {
           // 非 COS URL，直接通过 HTTP 下载
-          console.log(`通过 HTTP 下载资源: ${resource.alias} (${resource.src})`);
+          console.log(
+            `通过 HTTP 下载资源: ${resource.alias} (${resource.src})`,
+          );
           fileBuffer = await this.downloadFileByHttp(resource.src);
         }
 
@@ -289,6 +327,16 @@ export class BundleGeneratorService {
 
     await Promise.all(downloadPromises);
 
+    // 添加 Ink 文件
+    inkFiles.forEach((ink) => {
+      const content = ink.content ?? '';
+      const zipPath = `ink/${ink.filename}`;
+      zip.file(zipPath, content);
+      if (ink.compiledPath && ink.compiledPath !== zipPath) {
+        zip.file(ink.compiledPath, content);
+      }
+    });
+
     // 生成 ZIP 文件
     const zipBuffer = await zip.generateAsync({
       type: 'nodebuffer',
@@ -301,4 +349,3 @@ export class BundleGeneratorService {
     return zipBuffer;
   }
 }
-

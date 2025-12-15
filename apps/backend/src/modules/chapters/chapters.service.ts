@@ -3,17 +3,26 @@ import {
   ChapterQueryDto,
   ChapterResponseDto,
   CreateChapterDto,
+  CreateInkFileDto,
+  InkFile,
+  InkFileSummary,
   ManifestResponse,
   PaginatedResponse,
   ResourceQueryDto,
   ResourceResponseDto,
   UpdateChapterDto,
+  UpdateInkFileDto,
 } from '@lourd-game/shared';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { readFile } from 'fs/promises';
+import path from 'path';
+// Use compiler subpath to access inkjs compiler (root build lacks constructor export)
+import { Compiler } from 'inkjs/compiler/Compiler';
+import { CompilerOptions } from 'inkjs/compiler/CompilerOptions';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
@@ -39,16 +48,18 @@ export class ChaptersService {
         description: dto.description,
         order: dto.order ?? 0,
         requireAd: dto.requireAd ?? false,
+        startInkId: dto.startInkId,
+        chapterBundleUrl: dto.chapterBundleUrl,
+        bundleDirTree: dto.bundleDirTree as any,
         enabled: true,
       },
+      include: { inkFiles: true },
     });
 
     return this.toResponseDto(chapter);
   }
 
-  async findAll(
-    query: ChapterQueryDto,
-  ): Promise<ChapterResponseDto[]> {
+  async findAll(query: ChapterQueryDto): Promise<ChapterResponseDto[]> {
     const where: any = {};
 
     if (query.projectId) {
@@ -62,6 +73,7 @@ export class ChaptersService {
     const chapters = await this.prisma.chapter.findMany({
       where,
       orderBy: { order: 'asc' },
+      include: { inkFiles: true, startInk: true },
     });
 
     return chapters.map((chapter) => this.toResponseDto(chapter));
@@ -70,6 +82,7 @@ export class ChaptersService {
   async findOne(id: number): Promise<ChapterResponseDto> {
     const chapter = await this.prisma.chapter.findUnique({
       where: { id },
+      include: { inkFiles: true, startInk: true },
     });
 
     if (!chapter) {
@@ -96,7 +109,11 @@ export class ChaptersService {
         order: dto.order,
         requireAd: dto.requireAd,
         enabled: dto.enabled,
+        startInkId: dto.startInkId,
+        chapterBundleUrl: dto.chapterBundleUrl,
+        bundleDirTree: dto.bundleDirTree as any,
       },
+      include: { inkFiles: true, startInk: true },
     });
 
     return this.toResponseDto(updated);
@@ -261,9 +278,7 @@ export class ChaptersService {
     };
   }
 
-  async generateChapterManifest(
-    chapterId: number,
-  ): Promise<ManifestResponse> {
+  async generateChapterManifest(chapterId: number): Promise<ManifestResponse> {
     const chapter = await this.prisma.chapter.findUnique({
       where: { id: chapterId },
     });
@@ -318,9 +333,264 @@ export class ChaptersService {
       requireAd: chapter.requireAd,
       chapterBundleZipUrl: chapter.chapterBundleZipUrl ?? undefined,
       chapterBundleVersion: chapter.chapterBundleVersion ?? undefined,
+      chapterBundleUrl: chapter.chapterBundleUrl ?? undefined,
+      bundleDirTree: chapter.bundleDirTree ?? undefined,
+      startInkId: chapter.startInkId ?? undefined,
+      inkFiles: (chapter.inkFiles || []).map((ink: any) =>
+        this.toInkFileSummary(ink, chapter.startInkId),
+      ),
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
     };
   }
-}
 
+  private toInkFileSummary(ink: any, startInkId?: number): InkFileSummary {
+    return {
+      id: ink.id,
+      filename: ink.filename,
+      displayName: ink.displayName ?? undefined,
+      isStart: startInkId ? startInkId === ink.id : undefined,
+      compiledPath: ink.compiledPath ?? undefined,
+    };
+  }
+
+  // Ink 文件 CRUD
+  async listInkFiles(chapterId: number): Promise<InkFile[]> {
+    const chapter = await this.prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
+    }
+    const files = await this.prisma.inkFile.findMany({
+      where: { chapterId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return files.map((f) =>
+      this.toInkFileDto(f, chapter.startInkId ?? undefined),
+    );
+  }
+
+  async getInkFile(chapterId: number, inkId: number): Promise<InkFile> {
+    const ink = await this.prisma.inkFile.findFirst({
+      where: { id: inkId, chapterId },
+    });
+    if (!ink) {
+      throw new NotFoundException('Ink file not found in this chapter');
+    }
+    const chapter = await this.prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+    return this.toInkFileDto(ink, chapter?.startInkId ?? undefined);
+  }
+
+  async createInkFile(
+    chapterId: number,
+    dto: CreateInkFileDto,
+  ): Promise<InkFile> {
+    const chapter = await this.prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
+    }
+    const exists = await this.prisma.inkFile.findFirst({
+      where: { chapterId, filename: dto.filename },
+    });
+    if (exists) {
+      throw new BadRequestException('Ink filename already exists in chapter');
+    }
+    const ink = await this.prisma.inkFile.create({
+      data: {
+        chapterId,
+        filename: dto.filename,
+        displayName: dto.displayName,
+        content: dto.content,
+      },
+    });
+    return this.toInkFileDto(ink, chapter.startInkId ?? undefined);
+  }
+
+  async updateInkFile(
+    chapterId: number,
+    inkId: number,
+    dto: UpdateInkFileDto,
+  ): Promise<InkFile> {
+    const ink = await this.prisma.inkFile.findFirst({
+      where: { id: inkId, chapterId },
+    });
+    if (!ink) {
+      throw new NotFoundException('Ink file not found in this chapter');
+    }
+    if (dto.filename) {
+      const dup = await this.prisma.inkFile.findFirst({
+        where: {
+          chapterId,
+          filename: dto.filename,
+          NOT: { id: inkId },
+        },
+      });
+      if (dup) {
+        throw new BadRequestException('Ink filename already exists in chapter');
+      }
+    }
+    const updated = await this.prisma.inkFile.update({
+      where: { id: inkId },
+      data: {
+        filename: dto.filename,
+        displayName: dto.displayName,
+        content: dto.content,
+        compiledPath: dto.compiledPath,
+      },
+    });
+
+    // 更新 startInkId
+    if (dto.isStart !== undefined) {
+      await this.prisma.chapter.update({
+        where: { id: chapterId },
+        data: { startInkId: dto.isStart ? inkId : null },
+      });
+    }
+
+    const chapter = await this.prisma.chapter.findUnique({
+      where: { id: chapterId },
+    });
+
+    return this.toInkFileDto(updated, chapter?.startInkId ?? undefined);
+  }
+
+  async deleteInkFile(chapterId: number, inkId: number): Promise<void> {
+    const ink = await this.prisma.inkFile.findFirst({
+      where: { id: inkId, chapterId },
+    });
+    if (!ink) {
+      throw new NotFoundException('Ink file not found in this chapter');
+    }
+    await this.prisma.inkFile.delete({ where: { id: inkId } });
+
+    // 如果删除的是 startInk，清空引用
+    await this.prisma.chapter.update({
+      where: { id: chapterId },
+      data: {
+        startInkId:
+          inkId ===
+          (
+            await this.prisma.chapter.findUnique({
+              where: { id: chapterId },
+              select: { startInkId: true },
+            })
+          )?.startInkId
+            ? null
+            : undefined,
+      },
+    });
+  }
+
+  private toInkFileDto(ink: any, startInkId?: number): InkFile {
+    return {
+      id: ink.id,
+      chapterId: ink.chapterId,
+      filename: ink.filename,
+      displayName: ink.displayName ?? undefined,
+      content: ink.content ?? undefined,
+      compiledPath: ink.compiledPath ?? undefined,
+      isStart: startInkId ? startInkId === ink.id : undefined,
+      createdAt: ink.createdAt,
+      updatedAt: ink.updatedAt,
+    };
+  }
+
+  async compileInkFile(
+    chapterId: number,
+    inkId: number,
+  ): Promise<{ compiledContent: string }> {
+    const [ink, allInkFiles] = await Promise.all([
+      this.prisma.inkFile.findFirst({
+        where: { id: inkId, chapterId },
+      }),
+      this.prisma.inkFile.findMany({ where: { chapterId } }),
+    ]);
+    if (!ink) {
+      throw new NotFoundException('Ink file not found in this chapter');
+    }
+
+    const source = ink.content ?? '';
+    // Preload other ink files so INCLUDE directives can resolve locally
+    const inkMap = new Map<string, string>();
+    allInkFiles.forEach((f) => {
+      if (!f.filename) {
+        return;
+      }
+      const withExt = f.filename.endsWith('.ink')
+        ? f.filename
+        : `${f.filename}.ink`;
+      inkMap.set(f.filename, f.content ?? '');
+      inkMap.set(withExt, f.content ?? '');
+    });
+    let compiler: Compiler | undefined;
+    try {
+      const fileHandler = {
+        ResolveInkFilename: (filename: string) => filename,
+        LoadInkFileContents: (filename: string) => {
+          const content = inkMap.get(filename);
+          if (content === undefined) {
+            throw new Error(`Included Ink file "${filename}" not found`);
+          }
+          return content;
+        },
+      };
+      let globalPrelude =
+        inkMap.get('globals.ink') ??
+        inkMap.get('global.ink') ??
+        inkMap.get('__globals__.ink') ??
+        null;
+      // Fallback: allow server-side global ink file that is not part of chapter bundle
+      if (!globalPrelude && process.env.INK_GLOBAL_FILE) {
+        try {
+          const abs = path.resolve(process.cwd(), process.env.INK_GLOBAL_FILE);
+          globalPrelude = await readFile(abs, 'utf8');
+        } catch {
+          // surface a clear message so caller knows why compile failed
+          throw new BadRequestException(
+            `Failed to load INK_GLOBAL_FILE: ${process.env.INK_GLOBAL_FILE}`,
+          );
+        }
+      }
+      const fullSource = [globalPrelude, source]
+        .filter((s): s is string => !!s && s.trim().length > 0)
+        .join('\n\n');
+
+      const options = new CompilerOptions(
+        ink.filename ?? null,
+        undefined,
+        undefined,
+        null,
+        fileHandler,
+      );
+      compiler = new Compiler(fullSource, options);
+      const story = compiler.Compile();
+      if (compiler.errors?.length) {
+        // Compiler sometimes aggregates errors without throwing; surface them
+        throw new Error(compiler.errors.join('\n'));
+      }
+      const compiledContent = JSON.stringify(story.ToJson(), null, 2);
+
+      const compiledPath = `ink/${ink.filename}.json`;
+      await this.prisma.inkFile.update({
+        where: { id: inkId },
+        data: { compiledPath },
+      });
+
+      return { compiledContent };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const errors = compiler?.errors ?? [];
+      const warnings = compiler?.warnings ?? [];
+      throw new BadRequestException({
+        message: `Ink compile failed: ${msg}`,
+        errors,
+        warnings,
+      });
+    }
+  }
+}

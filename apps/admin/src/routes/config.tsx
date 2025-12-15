@@ -22,6 +22,7 @@ const ProjectChaptersPage = lazy(() =>
 const ChapterResourcesPage = lazy(() =>
     import('@/pages/chapter-resources').then(m => ({ default: m.ChapterResourcesPage })),
 );
+const ChapterInkPage = lazy(() => import('@/pages/chapter-ink').then(m => ({ default: m.default })));
 const UsersPage = lazy(() => import('@/pages/users').then(m => ({ default: m.UsersPage })));
 
 // 路由配置类型
@@ -104,6 +105,10 @@ export const routeConfig: RouteConfigItem[] = [
             {
                 path: 'chapters/:chapterId/resources',
                 component: ChapterResourcesPage,
+            },
+            {
+                path: 'chapters/:chapterId/ink',
+                component: ChapterInkPage,
             },
             {
                 path: 'users',

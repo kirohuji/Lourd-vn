@@ -2,13 +2,16 @@ import type {
   ChapterQueryDto,
   ChapterResponseDto,
   CreateChapterDto,
+  CreateInkFileDto,
+  InkFile,
   ManifestResponse,
   PaginatedResponse,
   ResourceQueryDto,
   ResourceResponseDto,
   UpdateChapterDto,
+  UpdateInkFileDto,
 } from '@lourd-game/shared';
-import { UserRole } from '@lourd-game/shared';
+import { BundleZipInfo, UserRole } from '@lourd-game/shared';
 import {
   Body,
   Controller,
@@ -23,8 +26,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { BundleZipInfo } from '@lourd-game/shared';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -110,7 +117,10 @@ export class ChaptersController {
     @Param('id', ParseIntPipe) chapterId: number,
     @Param('resourceId', ParseIntPipe) resourceId: number,
   ): Promise<void> {
-    return this.chaptersService.removeResourceFromChapter(chapterId, resourceId);
+    return this.chaptersService.removeResourceFromChapter(
+      chapterId,
+      resourceId,
+    );
   }
 
   @Get('chapters/:id/manifest')
@@ -129,5 +139,59 @@ export class ChaptersController {
   ): Promise<BundleZipInfo> {
     return this.bundleGeneratorService.generateChapterBundle(id);
   }
-}
 
+  @Get('chapters/:id/ink-files')
+  @ApiOperation({ summary: '获取章节的 Ink 文件列表' })
+  async getInkFiles(
+    @Param('id', ParseIntPipe) chapterId: number,
+  ): Promise<InkFile[]> {
+    return this.chaptersService.listInkFiles(chapterId);
+  }
+
+  @Get('chapters/:id/ink-files/:inkId')
+  @ApiOperation({ summary: '获取单个 Ink 文件' })
+  async getInkFile(
+    @Param('id', ParseIntPipe) chapterId: number,
+    @Param('inkId', ParseIntPipe) inkId: number,
+  ): Promise<InkFile> {
+    return this.chaptersService.getInkFile(chapterId, inkId);
+  }
+
+  @Post('chapters/:id/ink-files')
+  @ApiOperation({ summary: '创建 Ink 文件' })
+  async createInkFile(
+    @Param('id', ParseIntPipe) chapterId: number,
+    @Body() dto: CreateInkFileDto,
+  ): Promise<InkFile> {
+    return this.chaptersService.createInkFile(chapterId, dto);
+  }
+
+  @Put('chapters/:id/ink-files/:inkId')
+  @ApiOperation({ summary: '更新 Ink 文件' })
+  async updateInkFile(
+    @Param('id', ParseIntPipe) chapterId: number,
+    @Param('inkId', ParseIntPipe) inkId: number,
+    @Body() dto: UpdateInkFileDto,
+  ): Promise<InkFile> {
+    return this.chaptersService.updateInkFile(chapterId, inkId, dto);
+  }
+
+  @Delete('chapters/:id/ink-files/:inkId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '删除 Ink 文件' })
+  async deleteInkFile(
+    @Param('id', ParseIntPipe) chapterId: number,
+    @Param('inkId', ParseIntPipe) inkId: number,
+  ): Promise<void> {
+    return this.chaptersService.deleteInkFile(chapterId, inkId);
+  }
+
+  @Post('chapters/:id/ink-files/:inkId/compile')
+  @ApiOperation({ summary: '编译 Ink 文件（占位实现）' })
+  async compileInkFile(
+    @Param('id', ParseIntPipe) chapterId: number,
+    @Param('inkId', ParseIntPipe) inkId: number,
+  ): Promise<{ compiledContent: string }> {
+    return this.chaptersService.compileInkFile(chapterId, inkId);
+  }
+}

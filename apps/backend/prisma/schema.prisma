@@ -92,15 +92,43 @@ model Chapter {
   requireAd   Boolean  @default(false)
   chapterBundleZipUrl String? // 章节资源包 ZIP 下载地址
   chapterBundleVersion Int? // 章节资源包版本号
+  // 章节资源包访问地址（非 ZIP），可为目录前缀
+  chapterBundleUrl String?
+  // 资源包目录树 JSON（可选）
+  bundleDirTree Json?
+  // 指定章节的起始 Ink 文件
+  startInkId Int? @unique
+  startInk   InkFile? @relation("ChapterStartInk", fields: [startInkId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   usedResources ChapterResourceUsage[]
+  inkFiles    InkFile[]
 
   @@index([projectId])
   @@index([order])
+  @@unique([projectId, order])
   @@map("chapters")
+}
+
+model InkFile {
+  id         Int      @id @default(autoincrement())
+  chapterId  Int
+  filename   String
+  displayName String?
+  content    String?
+  compiledPath String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  chapter    Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  // 与章节 startInk 的自关联
+  chapterStart Chapter? @relation("ChapterStartInk")
+
+  @@unique([chapterId, filename])
+  @@index([chapterId])
+  @@map("ink_files")
 }
 
 model Map {
