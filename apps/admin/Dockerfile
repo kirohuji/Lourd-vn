@@ -14,15 +14,15 @@ COPY apps/admin ./apps/admin
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build shared package first
-RUN pnpm --filter @lourd-game/shared build || true
+# Build shared package first (must succeed)
+RUN pnpm --filter @lourd-game/shared build
 
 # Set build args for Vite
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-# Build admin
-RUN pnpm --filter @lourd-game/admin build
+# Build admin (skip tsc, use vite only)
+RUN cd apps/admin && pnpm vite build
 
 # Production stage
 FROM nginx:alpine
