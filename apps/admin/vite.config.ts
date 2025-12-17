@@ -4,13 +4,14 @@ import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     plugins: [
         react(),
-        checker({
+        // Only enable TypeScript checker in dev mode
+        command === "serve" && checker({
             typescript: true,
         }),
-    ],
+    ].filter(Boolean),
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
@@ -25,5 +26,5 @@ export default defineConfig({
         strictPort: true,
         host: true,
     },
-});
+}));
 

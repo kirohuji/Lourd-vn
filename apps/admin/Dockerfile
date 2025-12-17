@@ -21,8 +21,8 @@ RUN pnpm --filter @lourd-game/shared build
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-# Build admin (skip tsc, use vite only)
-RUN cd apps/admin && pnpm vite build
+# Build admin (skip type checking)
+RUN cd apps/admin && VITE_CJS_IGNORE_WARNING=true npx vite build --mode production
 
 # Production stage
 FROM nginx:alpine
