@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { networkInterfaces } from 'os';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -32,8 +33,25 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
+
+  // 获取本机 IP 地址
+  const getLocalIP = () => {
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name] || []) {
+        if (net.family === 'IPv4' && !net.internal) {
+          return net.address;
+        }
+      }
+    }
+    return 'localhost';
+  };
+
+  const localIP = getLocalIP();
   console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Application is running on: http://${localIP}:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
+  console.log(`Swagger documentation: http://${localIP}:${port}/api`);
 }
 void bootstrap();

@@ -128,6 +128,7 @@ export class AuthService {
   }
 
   private async wechatMiniProgramLogin(code: string): Promise<any> {
+    // console.log('小程序登录', code);
     const appId = process.env.WECHAT_MINI_PROGRAM_APPID;
     const secret = process.env.WECHAT_MINI_PROGRAM_SECRET;
 
@@ -141,7 +142,7 @@ export class AuthService {
     const response = await fetch(
       `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${code}&grant_type=authorization_code`,
     );
-
+    // console.log('response', response);
     if (!response.ok) {
       throw new UnauthorizedException(
         'Failed to get WeChat MiniProgram session',
@@ -149,7 +150,7 @@ export class AuthService {
     }
 
     const data = await response.json();
-
+    // console.log('data', data);
     if (data.errcode) {
       throw new UnauthorizedException(`WeChat API error: ${data.errmsg}`);
     }

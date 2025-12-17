@@ -23,11 +23,18 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useChapters, useCreateChapter, useDeleteChapter, useGenerateChapterBundle, useUpdateChapter } from '@/lib/hooks/use-chapters';
-import { ChapterResponseDto, CreateChapterDto, UpdateChapterDto } from '@lourd-game/shared';
-import { Download, Edit, ExternalLink, Eye, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { apiClient } from '@/lib/api/client';
+import {
+    useChapters,
+    useCreateChapter,
+    useDeleteChapter,
+    useGenerateChapterBundle,
+    useUpdateChapter,
+} from '@/lib/hooks/use-chapters';
+import { ChapterResponseDto, CreateChapterDto, ProjectResponseDto, UpdateChapterDto } from '@lourd-game/shared';
+import { Download, Edit, ExternalLink, Eye, Info, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function ProjectChaptersPage() {
     const navigate = useNavigate();
@@ -53,6 +60,9 @@ export function ProjectChaptersPage() {
     const [editEnabled, setEditEnabled] = useState(true);
     const [bundlePreviewOpen, setBundlePreviewOpen] = useState(false);
     const [previewChapter, setPreviewChapter] = useState<ChapterResponseDto | null>(null);
+    const [projectDetail, setProjectDetail] = useState<ProjectResponseDto | null>(null);
+    const [projectDetailOpen, setProjectDetailOpen] = useState(false);
+    const [isLoadingProject, setIsLoadingProject] = useState(false);
 
     const { toast } = useToast();
     const { data: chapters, isLoading, refetch } = useChapters(projectIdNum);
@@ -64,6 +74,8 @@ export function ProjectChaptersPage() {
     if (!projectId || isNaN(projectIdNum)) {
         return <div className='p-4 text-center text-muted-foreground'>请先选择一个项目</div>;
     }
+
+    const startChapter = chapters && chapters.length > 0 ? chapters.find(ch => ch.startInkId != null) || null : null;
 
     const handleCreate = () => {
         setEditName('');
@@ -177,8 +189,39 @@ export function ProjectChaptersPage() {
     return (
         <div className='space-y-4'>
             <div className='flex items-center justify-between'>
-                <h2 className='text-2xl font-bold'>项目章节管理 (项目ID: {projectId})</h2>
+                <div className='space-y-1'>
+                    <h2 className='text-2xl font-bold'>项目章节管理 (项目ID: {projectId})</h2>
+                    <p className='text-xs text-muted-foreground'>
+                        当前开始章节：
+                        {startChapter
+                            ? `${startChapter.name} (ID: ${startChapter.id}, StartInkId: ${startChapter.startInkId})`
+                            : '未设置（请在章节 Ink 页面设置起始 Ink）'}
+                    </p>
+                </div>
                 <div className='flex gap-2'>
+                    <Button
+                        variant='outline'
+                        onClick={async () => {
+                            try {
+                                setIsLoadingProject(true);
+                                const detail = await apiClient.getProject(projectIdNum);
+                                setProjectDetail(detail);
+                                setProjectDetailOpen(true);
+                            } catch (error: any) {
+                                toast({
+                                    title: '获取项目详情失败',
+                                    description: error?.message || '无法获取项目详情',
+                                    variant: 'destructive',
+                                });
+                            } finally {
+                                setIsLoadingProject(false);
+                            }
+                        }}
+                        disabled={isLoadingProject}
+                    >
+                        <Info className={`mr-2 h-4 w-4 ${isLoadingProject ? 'animate-spin' : ''}`} />
+                        项目详情
+                    </Button>
                     <Button variant='outline' onClick={() => refetch()} disabled={isLoading}>
                         <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                         刷新
@@ -204,7 +247,9 @@ export function ProjectChaptersPage() {
                                     <TableHead>名称</TableHead>
                                     <TableHead>描述</TableHead>
                                     <TableHead>顺序</TableHead>
+                                    <TableHead>起始 Ink</TableHead>
                                     <TableHead>ZIP 包版本</TableHead>
+                                    <TableHead>Bundle 地址</TableHead>
                                     <TableHead>需要广告</TableHead>
                                     <TableHead>启用</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
@@ -225,10 +270,36 @@ export function ProjectChaptersPage() {
                                             <TableCell>{chapter.description || '-'}</TableCell>
                                             <TableCell>{chapter.order}</TableCell>
                                             <TableCell>
+                                                {chapter.inkFiles && chapter.inkFiles.length > 0
+                                                    ? (() => {
+                                                          const startInk =
+                                                              chapter.inkFiles.find(f => f.isStart) || null;
+                                                          return startInk
+                                                              ? `${startInk.filename} (ID: ${startInk.id})`
+                                                              : chapter.startInkId
+                                                              ? `ID: ${chapter.startInkId}`
+                                                              : '未设置';
+                                                      })()
+                                                    : chapter.startInkId
+                                                    ? `ID: ${chapter.startInkId}`
+                                                    : '未设置'}
+                                            </TableCell>
+                                            <TableCell>
                                                 {chapter.chapterBundleVersion ? (
-                                                    <span className='font-mono text-sm'>v{chapter.chapterBundleVersion}</span>
+                                                    <span className='font-mono text-sm'>
+                                                        v{chapter.chapterBundleVersion}
+                                                    </span>
                                                 ) : (
                                                     <span className='text-muted-foreground text-sm'>未生成</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className='max-w-xs'>
+                                                {chapter.chapterBundleUrl ? (
+                                                    <span className='block truncate text-xs font-mono'>
+                                                        {chapter.chapterBundleUrl}
+                                                    </span>
+                                                ) : (
+                                                    <span className='text-muted-foreground text-xs'>未生成</span>
                                                 )}
                                             </TableCell>
                                             <TableCell>{chapter.requireAd ? '是' : '否'}</TableCell>
@@ -238,7 +309,9 @@ export function ProjectChaptersPage() {
                                                     <Button
                                                         variant='ghost'
                                                         size='icon'
-                                                        onClick={() => navigate(`/admin/chapters/${chapter.id}/resources`)}
+                                                        onClick={() =>
+                                                            navigate(`/admin/chapters/${chapter.id}/resources`)
+                                                        }
                                                         title='查看资源'
                                                     >
                                                         <ExternalLink className='h-4 w-4' />
@@ -260,7 +333,9 @@ export function ProjectChaptersPage() {
                                                         size='icon'
                                                         onClick={async () => {
                                                             try {
-                                                                const result = await generateBundle.mutateAsync(chapter.id);
+                                                                const result = await generateBundle.mutateAsync(
+                                                                    chapter.id,
+                                                                );
                                                                 toast({
                                                                     title: '成功',
                                                                     description: `ZIP 包生成成功！版本: v${result.version}`,
@@ -483,14 +558,118 @@ export function ProjectChaptersPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
+            {/* 项目详情对话框 */}
+            <Dialog open={projectDetailOpen} onOpenChange={setProjectDetailOpen}>
+                <DialogContent className='max-w-xl'>
+                    <DialogHeader>
+                        <DialogTitle>项目详情</DialogTitle>
+                        <DialogDescription>项目 ID: {projectDetail?.id ?? projectId}</DialogDescription>
+                    </DialogHeader>
+                    {projectDetail ? (
+                        <div className='space-y-4 text-sm'>
+                            <div className='space-y-2'>
+                                <div>
+                                    <span className='font-medium'>名称：</span>
+                                    <span>{projectDetail.name}</span>
+                                </div>
+                                <div>
+                                    <span className='font-medium'>描述：</span>
+                                    <span>{projectDetail.description || '无'}</span>
+                                </div>
+                                <div>
+                                    <span className='font-medium'>启用：</span>
+                                    <span>{projectDetail.enabled ? '是' : '否'}</span>
+                                </div>
+                                <div>
+                                    <span className='font-medium'>共通资源包：</span>
+                                    <span>{projectDetail.commonBundle || '未设置'}</span>
+                                </div>
+                                <div className='space-y-1'>
+                                    <div className='font-medium'>共通资源包地址：</div>
+                                    <Input
+                                        value={projectDetail.commonBundleZipUrl || ''}
+                                        readOnly
+                                        className='font-mono text-xs'
+                                        placeholder='暂无'
+                                    />
+                                </div>
+                                <div className='text-xs text-muted-foreground'>
+                                    创建时间：{new Date(projectDetail.createdAt).toLocaleString('zh-CN')}
+                                </div>
+                                <div className='text-xs text-muted-foreground'>
+                                    更新时间：{new Date(projectDetail.updatedAt).toLocaleString('zh-CN')}
+                                </div>
+                            </div>
+
+                            <div className='border-t pt-3 space-y-2'>
+                                <div className='font-medium'>项目章节概览</div>
+                                {chapters && chapters.length > 0 ? (
+                                    <div className='max-h-56 overflow-auto rounded border'>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className='w-14'>ID</TableHead>
+                                                    <TableHead>名称</TableHead>
+                                                    <TableHead>起始 Ink</TableHead>
+                                                    <TableHead>版本</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {chapters.map(ch => (
+                                                    <TableRow key={ch.id}>
+                                                        <TableCell className='font-mono text-xs'>{ch.id}</TableCell>
+                                                        <TableCell className='text-xs'>{ch.name}</TableCell>
+                                                        <TableCell className='text-xs'>
+                                                            {ch.inkFiles && ch.inkFiles.length > 0
+                                                                ? (() => {
+                                                                      const startInk =
+                                                                          ch.inkFiles.find(f => f.isStart) || null;
+                                                                      return startInk
+                                                                          ? `${startInk.filename} (ID: ${startInk.id})`
+                                                                          : ch.startInkId
+                                                                          ? `ID: ${ch.startInkId}`
+                                                                          : '未设置';
+                                                                  })()
+                                                                : ch.startInkId
+                                                                ? `ID: ${ch.startInkId}`
+                                                                : '未设置'}
+                                                        </TableCell>
+                                                        <TableCell className='text-xs'>
+                                                            {ch.chapterBundleVersion ? (
+                                                                <span className='font-mono'>
+                                                                    v{ch.chapterBundleVersion}
+                                                                </span>
+                                                            ) : (
+                                                                <span className='text-muted-foreground'>未生成</span>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                ) : (
+                                    <div className='text-xs text-muted-foreground'>该项目暂无章节</div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className='py-4 text-center text-muted-foreground text-sm'>暂无项目数据</div>
+                    )}
+                    <DialogFooter>
+                        <Button variant='outline' onClick={() => setProjectDetailOpen(false)}>
+                            关闭
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* ZIP 包预览对话框 */}
             <Dialog open={bundlePreviewOpen} onOpenChange={setBundlePreviewOpen}>
                 <DialogContent className='max-w-2xl'>
                     <DialogHeader>
                         <DialogTitle>ZIP 包详情</DialogTitle>
-                        <DialogDescription>
-                            {previewChapter?.name} - 章节资源包信息
-                        </DialogDescription>
+                        <DialogDescription>{previewChapter?.name} - 章节资源包信息</DialogDescription>
                     </DialogHeader>
                     <div className='space-y-4'>
                         {previewChapter?.chapterBundleZipUrl ? (
@@ -546,4 +725,3 @@ export function ProjectChaptersPage() {
         </div>
     );
 }
-

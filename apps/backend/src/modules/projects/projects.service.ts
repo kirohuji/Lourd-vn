@@ -81,7 +81,38 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
 
-    return this.toResponseDto(project);
+    // 加载项目下的章节及资源 / Ink 数量统计
+    const chapters = await this.prisma.chapter.findMany({
+      where: { projectId: id },
+      orderBy: { order: 'asc' },
+      include: {
+        _count: {
+          select: {
+            usedResources: true,
+            inkFiles: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...this.toResponseDto(project),
+      // chapters 字段在当前运行时类型定义中可能尚未同步，这里通过断言绕过编译检查
+      chapters: chapters.map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        description: ch.description ?? undefined,
+        order: ch.order,
+        enabled: ch.enabled,
+        requireAd: ch.requireAd,
+        startInkId: ch.startInkId ?? undefined,
+        chapterBundleZipUrl: ch.chapterBundleZipUrl ?? undefined,
+        chapterBundleVersion: ch.chapterBundleVersion ?? undefined,
+        chapterBundleUrl: ch.chapterBundleUrl ?? undefined,
+        resourceCount: ch._count.usedResources,
+        inkFileCount: ch._count.inkFiles,
+      })),
+    } as ProjectResponseDto;
   }
 
   async update(id: number, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
@@ -99,7 +130,9 @@ export class ProjectsService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.enabled !== undefined && { enabled: dto.enabled }),
-        ...(dto.commonBundle !== undefined && { commonBundle: dto.commonBundle }),
+        ...(dto.commonBundle !== undefined && {
+          commonBundle: dto.commonBundle,
+        }),
       },
     });
 

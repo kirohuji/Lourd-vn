@@ -521,24 +521,86 @@ export class ChaptersService {
       if (!f.filename) {
         return;
       }
-      const withExt = f.filename.endsWith('.ink')
-        ? f.filename
-        : `${f.filename}.ink`;
-      inkMap.set(f.filename, f.content ?? '');
+      const normalized = f.filename.trim();
+      const withExt = normalized.endsWith('.ink')
+        ? normalized
+        : `${normalized}.ink`;
+      const withoutExt = normalized.endsWith('.ink')
+        ? normalized.slice(0, -4)
+        : normalized;
+      inkMap.set(normalized, f.content ?? '');
       inkMap.set(withExt, f.content ?? '');
+      inkMap.set(withoutExt, f.content ?? '');
     });
+    const availableKnots = Array.from(inkMap.entries()).flatMap(
+      ([fileName, content]) => {
+        if (!content) return [];
+        const matches = Array.from(
+          content.matchAll(/^={2,3}\s*([^\s=][^=]*)\s*=*\s*$/gm),
+        );
+        return matches.map((m) => `${fileName}:${m[1].trim()}`);
+      },
+    );
+    // fullSource will be built below (after expanding INCLUDEs and loading optional globals)
+    let fullSource = '';
     let compiler: Compiler | undefined;
     try {
-      const fileHandler = {
-        ResolveInkFilename: (filename: string) => filename,
-        LoadInkFileContents: (filename: string) => {
-          const content = inkMap.get(filename);
-          if (content === undefined) {
-            throw new Error(`Included Ink file "${filename}" not found`);
-          }
-          return content;
-        },
+      const normalizeFilename = (filename: string) => {
+        const trimmed = filename.trim();
+        if (trimmed.startsWith('./')) {
+          return trimmed.slice(2);
+        }
+        return trimmed;
       };
+
+      const loadInkContent = (filename: string): string => {
+        const key = normalizeFilename(filename);
+        const direct = inkMap.get(key);
+        if (direct !== undefined) return direct;
+        const withExt = key.endsWith('.ink') ? key : `${key}.ink`;
+        const withoutExt = key.endsWith('.ink') ? key.slice(0, -4) : key;
+        const byWithExt = inkMap.get(withExt);
+        if (byWithExt !== undefined) return byWithExt;
+        const byWithoutExt = inkMap.get(withoutExt);
+        if (byWithoutExt !== undefined) return byWithoutExt;
+        const available = Array.from(inkMap.keys()).join(', ');
+        throw new Error(
+          `Included Ink file "${filename}" not found. Available: [${available}]`,
+        );
+      };
+
+      // Manually expand INCLUDE directives so we don't rely on inkjs FileHandler semantics
+      const expandIncludes = (content: string, seen: Set<string>): string => {
+        const lines = content.split(/\r?\n/);
+        const expandedLines: string[] = [];
+        for (const line of lines) {
+          const match = line.match(/^\s*INCLUDE\s+(.+?)\s*$/);
+          if (match) {
+            let includeName = match[1].trim();
+            // strip optional quotes
+            if (
+              (includeName.startsWith('"') && includeName.endsWith('"')) ||
+              (includeName.startsWith("'") && includeName.endsWith("'"))
+            ) {
+              includeName = includeName.slice(1, -1);
+            }
+            const key = normalizeFilename(includeName);
+            if (seen.has(key)) {
+              // prevent infinite recursion on circular includes
+              continue;
+            }
+            seen.add(key);
+            const includedContent = loadInkContent(includeName);
+            expandedLines.push(expandIncludes(includedContent, seen));
+          } else {
+            expandedLines.push(line);
+          }
+        }
+        return expandedLines.join('\n');
+      };
+      // Expand INCLUDEs starting from current ink source
+      const expandedSource = expandIncludes(source, new Set<string>());
+
       let globalPrelude =
         inkMap.get('globals.ink') ??
         inkMap.get('global.ink') ??
@@ -556,9 +618,16 @@ export class ChaptersService {
           );
         }
       }
-      const fullSource = [globalPrelude, source]
+      fullSource = [globalPrelude, expandedSource]
         .filter((s): s is string => !!s && s.trim().length > 0)
         .join('\n\n');
+
+      // Provide a minimal fileHandler; in theory INCLUDEs are already expanded,
+      // but this keeps inkjs from complaining when it encounters filenames.
+      const fileHandler = {
+        ResolveInkFilename: (filename: string) => normalizeFilename(filename),
+        LoadInkFileContents: (filename: string) => loadInkContent(filename),
+      };
 
       const options = new CompilerOptions(
         ink.filename ?? null,
@@ -586,10 +655,27 @@ export class ChaptersService {
       const msg = e instanceof Error ? e.message : String(e);
       const errors = compiler?.errors ?? [];
       const warnings = compiler?.warnings ?? [];
+      const availableInkFiles = Array.from(inkMap.keys());
+      const includeDebug = {
+        inkId,
+        filename: ink.filename,
+        availableInkFiles,
+        availableKnots,
+        // fullSourcePreview: (() => {
+        //   try {
+        //     return fullSource.slice(0, 5000);
+        //   } catch {
+        //     return undefined;
+        //   }
+        // })(),
+      };
       throw new BadRequestException({
         message: `Ink compile failed: ${msg}`,
         errors,
         warnings,
+        availableInkFiles,
+        availableKnots,
+        includeDebug,
       });
     }
   }

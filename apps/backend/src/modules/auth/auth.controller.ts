@@ -16,6 +16,7 @@ export class AuthController {
   @ApiOperation({ summary: '微信登录' })
   @ApiResponse({ status: 200, description: '登录成功' })
   async wechatLogin(@Body() dto: WechatLoginDto): Promise<LoginResponseDto> {
+    console.log('dto', dto);
     return this.authService.wechatLogin(dto);
   }
 

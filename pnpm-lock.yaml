@@ -177,6 +177,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@andypf/json-viewer':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@lourd-game/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -364,9 +367,6 @@ importers:
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
-      injs:
-        specifier: ^0.0.0
-        version: 0.0.0
       inkjs:
         specifier: ^2.3.2
         version: 2.3.2
@@ -1044,6 +1044,9 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@andypf/json-viewer@2.2.0':
+    resolution: {integrity: sha512-eqSoevfyy+q/3WDkqT/Yz0hUKxOZ0+hgJHpHH98kU5P5zmaFKvH8q5XaNLSnKc8uTA8zYIPKeiH72zxse+zvtQ==}
 
   '@angular-devkit/core@19.2.17':
     resolution: {integrity: sha512-Ah008x2RJkd0F+NLKqIpA34/vUGwjlprRCkvddjDopAWRzYn6xCkz1Tqwuhn0nR1Dy47wTLKYD999TYl5ONOAQ==}
@@ -8221,9 +8224,6 @@ packages:
   ini@1.3.8:
     resolution: {integrity: sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==}
 
-  injs@0.0.0:
-    resolution: {integrity: sha512-TOFYzuxKPZMkJZZAw9FalD7k4l0ZAEG/MkakCJTxvJNBy4Rk8RP29HhtjzGdLytwnolPR1OBuuOQGIr3hva6zA==}
-
   inkjs@2.3.2:
     resolution: {integrity: sha512-iZjrY0lLeRiC+HtDzCfV9IEAP9ExCmBZUrxKkyLy1qIbbGbR1uTXNZ8LDIg8oVkMXZ9TeKKyEFQpQ/m5nQds8w==}
     hasBin: true
@@ -12462,6 +12462,8 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
+
+  '@andypf/json-viewer@2.2.0': {}
 
   '@angular-devkit/core@19.2.17(chokidar@4.0.3)':
     dependencies:
@@ -21133,8 +21135,6 @@ snapshots:
   inherits@2.0.4: {}
 
   ini@1.3.8: {}
-
-  injs@0.0.0: {}
 
   inkjs@2.3.2: {}
 

@@ -11,6 +11,7 @@ import {
     useUpdateInkFile,
 } from '@/lib/hooks/use-ink-files';
 import Editor from '@monaco-editor/react';
+// import JsonViewer from '@andypf/json-viewer';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -114,7 +115,11 @@ export default function ChapterInkPage() {
             setCompiled(res.compiledContent);
             toast({ title: '编译成功' });
         } catch (e: any) {
-            toast({ title: '编译失败', description: String(e) });
+            // 尝试从后端错误对象中提取 message/errors
+            const msg =
+                e?.response?.data?.message ||
+                (Array.isArray(e?.response?.data?.errors) ? e.response.data.errors.join('\n') : String(e));
+            toast({ title: '编译失败', description: msg });
         }
     };
 
@@ -190,9 +195,17 @@ export default function ChapterInkPage() {
                             编译
                         </Button>
                     </div>
-                    <div>
-                        <p className='text-sm text-gray-600 mb-2'>编译结果</p>
-                        <Textarea value={compiled} readOnly rows={6} />
+                    <div className='space-y-2'>
+                        <p className='text-sm text-gray-600'>编译结果</p>
+                        <div className='grid grid-cols-2 gap-4'>
+                            <Textarea
+                                className='font-mono text-xs'
+                                value={compiled}
+                                readOnly
+                                rows={10}
+                                placeholder='JSON 文本'
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

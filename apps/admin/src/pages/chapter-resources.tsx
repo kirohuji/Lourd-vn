@@ -29,10 +29,11 @@ import {
     useRemoveResourceFromChapter,
 } from '@/lib/hooks/use-chapter-resources';
 import { useChapter } from '@/lib/hooks/use-chapters';
+import { apiClient } from '@/lib/api/client';
 import { useAllResources, useResources } from '@/lib/hooks/use-resources';
 import { cn } from '@/lib/utils';
 import { ResourceResponseDto } from '@lourd-game/shared';
-import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -49,9 +50,10 @@ export function ChapterResourcesPage() {
     const [availableResourcesSearch, setAvailableResourcesSearch] = useState('');
     const [selectedBundles, setSelectedBundles] = useState<Set<string>>(new Set());
     const [isAddingBundles, setIsAddingBundles] = useState(false);
+    const [isGeneratingBundle, setIsGeneratingBundle] = useState(false);
 
     const { toast } = useToast();
-    const { data: chapter } = useChapter(chapterIdNum);
+    const { data: chapter, refetch: refetchChapter } = useChapter(chapterIdNum);
 
     // 获取章节使用的资源
     const { data: chapterResourcesData, isLoading: isLoadingChapterResources } = useChapterResources(chapterIdNum, {
@@ -226,6 +228,27 @@ export function ChapterResourcesPage() {
         }
     };
 
+    const handleGenerateBundle = async () => {
+        if (!chapterIdNum) return;
+        try {
+            setIsGeneratingBundle(true);
+            await apiClient.generateChapterBundle(chapterIdNum);
+            await refetchChapter();
+            toast({
+                title: '打包成功',
+                description: `版本号：${chapter?.chapterBundleVersion ?? ''}`,
+            });
+        } catch (error: any) {
+            toast({
+                title: '打包失败',
+                description: error?.message || '生成章节资源包失败',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsGeneratingBundle(false);
+        }
+    };
+
     if (!chapterId || isNaN(chapterIdNum)) {
         return <div className='p-4 text-center text-muted-foreground'>请先选择一个章节</div>;
     }
@@ -249,13 +272,66 @@ export function ChapterResourcesPage() {
                         章节资源视图 {chapter ? `- ${chapter.name}` : `(章节ID: ${chapterId})`}
                     </h2>
                 </div>
-                <Button onClick={() => setAddDialogOpen(true)}>
-                    <Plus className='mr-2 h-4 w-4' />
-                    添加资源
-                </Button>
+                <div className='flex items-center gap-2'>
+                    <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={handleGenerateBundle}
+                        disabled={isGeneratingBundle}
+                    >
+                        {isGeneratingBundle ? (
+                            <>
+                                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                打包中...
+                            </>
+                        ) : (
+                            <>
+                                <Package className='mr-2 h-4 w-4' />
+                                生成章节资源包
+                            </>
+                        )}
+                    </Button>
+                    <Button onClick={() => setAddDialogOpen(true)}>
+                        <Plus className='mr-2 h-4 w-4' />
+                        添加资源
+                    </Button>
+                </div>
             </div>
 
             <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder='搜索资源...' />
+
+            {chapter?.bundleDirTree && (
+                <div className='rounded-md border bg-muted/30 p-4 space-y-2'>
+                    <div className='text-sm font-semibold'>打包目录预览</div>
+                    <div className='grid grid-cols-2 gap-4 text-xs'>
+                        <div>
+                            <div className='font-medium mb-1'>Ink 文件</div>
+                            {Array.isArray(chapter.bundleDirTree.ink) && chapter.bundleDirTree.ink.length > 0 ? (
+                                <ul className='list-disc pl-4 space-y-0.5'>
+                                    {chapter.bundleDirTree.ink.map((p: string) => (
+                                        <li key={p}>{p}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className='text-muted-foreground'>暂无</div>
+                            )}
+                        </div>
+                        <div>
+                            <div className='font-medium mb-1'>资源文件</div>
+                            {Array.isArray(chapter.bundleDirTree.assets) &&
+                            chapter.bundleDirTree.assets.length > 0 ? (
+                                <ul className='list-disc pl-4 space-y-0.5 max-h-40 overflow-auto'>
+                                    {chapter.bundleDirTree.assets.map((p: string) => (
+                                        <li key={p}>{p}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className='text-muted-foreground'>暂无</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isLoadingChapterResources ? (
                 <div className='flex items-center justify-center py-8'>

@@ -31,6 +31,21 @@ export interface UpdateProjectDto {
     commonBundle?: string;
 }
 
+export interface ProjectChapterSummary {
+    id: number;
+    name: string;
+    description?: string;
+    order: number;
+    enabled: boolean;
+    requireAd: boolean;
+    startInkId?: number;
+    chapterBundleZipUrl?: string;
+    chapterBundleVersion?: number;
+    chapterBundleUrl?: string;
+    resourceCount: number;
+    inkFileCount: number;
+}
+
 /**
  * 项目响应 DTO
  */
@@ -44,6 +59,10 @@ export interface ProjectResponseDto {
     commonBundleVersion?: number;
     createdAt: Date;
     updatedAt: Date;
+    /**
+     * 项目下的章节概览（仅在获取单个项目详情时返回）
+     */
+    chapters?: ProjectChapterSummary[];
 }
 
 /**
