@@ -11,8 +11,8 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared ./packages/shared
 COPY apps/backend ./apps/backend
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install all dependencies (not frozen to handle workspace)
+RUN pnpm install
 
 # Generate Prisma client
 RUN pnpm --filter @lourd-game/backend prisma:generate
@@ -23,21 +23,22 @@ RUN pnpm --filter @lourd-game/shared build || true
 # Build backend
 RUN pnpm --filter @lourd-game/backend build
 
-# Production stage
+# Production stage - keep full workspace structure
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm for running
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy built files
+# Copy the entire built workspace
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=builder /app/apps/backend/prisma ./prisma
-COPY --from=builder /app/apps/backend/package.json ./package.json
-COPY --from=builder /app/apps/backend/ink-globals.ink ./ink-globals.ink
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/apps/backend ./apps/backend
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+WORKDIR /app/apps/backend
 
 EXPOSE 3000
 
