@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: lourd-game-backend
+    env_file:
+      - .env.docker
+    environment:
+      INK_GLOBAL_FILE: /app/ink-globals.ink
+    volumes:
+      - ./apps/backend/ink-globals.ink:/app/ink-globals.ink:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_BASE_URL: https://hope.lourd.top:2600
+    container_name: lourd-game-admin
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: lourd-game-nginx
+    ports:
+      - "2600:2600"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - admin
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
