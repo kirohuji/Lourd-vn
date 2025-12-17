@@ -21,7 +21,7 @@ async function bootstrap() {
     origin: true,
     credentials: true,
   });
-
+  app.setGlobalPrefix('api');
   // Swagger 配置
   const config = new DocumentBuilder()
     .setTitle('Lourd Game API')

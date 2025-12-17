@@ -26,5 +26,5 @@ export default defineConfig(({ command }) => ({
         strictPort: true,
         host: true,
     },
-}));
+});
 
