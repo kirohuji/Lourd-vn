@@ -3,8 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm and set npm registry to China mirror
 RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN pnpm config set registry https://registry.npmmirror.com
 
 # Copy workspace files
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
