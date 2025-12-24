@@ -19,10 +19,7 @@ const ProjectCharactersPage = lazy(() =>
 const ProjectChaptersPage = lazy(() =>
     import('@/pages/project-chapters').then(m => ({ default: m.ProjectChaptersPage })),
 );
-const ChapterResourcesPage = lazy(() =>
-    import('@/pages/chapter-resources').then(m => ({ default: m.ChapterResourcesPage })),
-);
-const ChapterInkPage = lazy(() => import('@/pages/chapter-ink').then(m => ({ default: m.default })));
+const ChapterDetailPage = lazy(() => import('@/pages/chapter-detail').then(m => ({ default: m.ChapterDetailPage })));
 const UsersPage = lazy(() => import('@/pages/users').then(m => ({ default: m.UsersPage })));
 
 // 路由配置类型
@@ -65,7 +62,7 @@ export const routeConfig: RouteConfigItem[] = [
                 redirect: '/admin/projects',
                 index: true,
             },
-            // 全局资源管理
+            // 全局资源管理（未选择项目时）
             {
                 path: 'resources',
                 component: ResourcesPage,
@@ -83,7 +80,7 @@ export const routeConfig: RouteConfigItem[] = [
                 path: 'projects',
                 component: ProjectsPage,
             },
-            // 项目资源视图
+            // 项目资源视图（保留兼容性）
             {
                 path: 'projects/:projectId/resources',
                 component: ProjectResourcesPage,
@@ -96,19 +93,15 @@ export const routeConfig: RouteConfigItem[] = [
                 path: 'projects/:projectId/characters',
                 component: ProjectCharactersPage,
             },
-            // 项目章节管理
+            // 项目章节管理（保留兼容性）
             {
                 path: 'projects/:projectId/chapters',
                 component: ProjectChaptersPage,
             },
-            // 章节资源视图
+            // 章节详情（新设计：三栏布局，Tab切换资源/Ink编辑）
             {
-                path: 'chapters/:chapterId/resources',
-                component: ChapterResourcesPage,
-            },
-            {
-                path: 'chapters/:chapterId/ink',
-                component: ChapterInkPage,
+                path: 'projects/:projectId/chapters/:chapterId',
+                component: ChapterDetailPage,
             },
             {
                 path: 'users',
