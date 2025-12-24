@@ -36,7 +36,7 @@ import { useAllResources, useResources } from '@/lib/hooks/use-resources';
 import { cn } from '@/lib/utils';
 import { ResourceResponseDto } from '@lourd-game/shared';
 import { FileText, Folder, Loader2, Package, Plus, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface ChapterResourcesContentProps {
     chapterId: number;
@@ -58,6 +58,7 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
     const [isAddingBundles, setIsAddingBundles] = useState(false);
     const [isGeneratingBundle, setIsGeneratingBundle] = useState(false);
     const [bundleDirTreeDialogOpen, setBundleDirTreeDialogOpen] = useState(false);
+    const hasInitialized = useRef(false);
 
     const { toast } = useToast();
     const { data: chapter, refetch: refetchChapter } = useChapter(chapterIdNum);
@@ -139,13 +140,15 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
         return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
     }, [allChapterResources]);
 
-    // 默认选中第一个 Bundle
+    // 默认选中第一个 Bundle（仅在初始加载时）
     useEffect(() => {
-        if (!selectedBundle && bundleInfo.length > 0) {
+        if (!hasInitialized.current && bundleInfo.length > 0) {
+            hasInitialized.current = true;
             setSelectedBundle(bundleInfo[0].name);
             setPage(1);
         }
-    }, [bundleInfo, selectedBundle]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bundleInfo]);
 
     // 当选中 Bundle 改变时，重置到第一页
     useEffect(() => {
@@ -457,24 +460,22 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
                     <div className='flex items-center justify-between mb-2'>
                         <h2 className='text-lg font-semibold'>Bundle 列表</h2>
                     </div>
-                    <div className='flex-1 overflow-auto min-h-0'>
-                        <BundleTable
-                            bundles={bundleInfo}
-                            selectedBundle={selectedBundle}
-                            onSelectBundle={setSelectedBundle}
-                            getBundleTypeLabel={getBundleTypeLabel}
-                            showActions={false}
-                            showDelete={true}
-                            onDelete={bundleName => {
-                                setBundleToRemove(bundleName);
-                                setRemoveBundleConfirmOpen(true);
-                            }}
-                        />
-                    </div>
+                    <BundleTable
+                        bundles={bundleInfo}
+                        selectedBundle={selectedBundle}
+                        onSelectBundle={setSelectedBundle}
+                        getBundleTypeLabel={getBundleTypeLabel}
+                        showActions={false}
+                        showDelete={true}
+                        onDelete={bundleName => {
+                            setBundleToRemove(bundleName);
+                            setRemoveBundleConfirmOpen(true);
+                        }}
+                    />
 
                     {/* 资源卡片列表 */}
                     {selectedBundle && (
-                        <div className='border-t pt-4 flex-shrink-0'>
+                        <div className='border-t pt-4'>
                             <div className='flex items-center justify-between mb-4'>
                                 <h3 className='text-lg font-semibold'>
                                     {selectedBundle} 的资源 ({selectedBundleTotal} 个)

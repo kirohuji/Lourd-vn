@@ -31,7 +31,7 @@ import {
 import { useResources } from '@/lib/hooks/use-resources';
 import { ResourceResponseDto } from '@lourd-game/shared';
 import { Loader2, Plus, RefreshCw, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 interface BundleInfo extends BundleInfoType {
@@ -50,6 +50,7 @@ export function ProjectResourcesPage() {
     const [removeBundleConfirmOpen, setRemoveBundleConfirmOpen] = useState(false);
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [availableResourcesPage, setAvailableResourcesPage] = useState(1);
+    const hasInitialized = useRef(false);
 
     const { toast } = useToast();
 
@@ -128,13 +129,15 @@ export function ProjectResourcesPage() {
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [allProjectResourcesData]);
 
-    // 默认选中第一个 Bundle
+    // 默认选中第一个 Bundle（仅在初始加载时）
     useEffect(() => {
-        if (!selectedBundle && bundleInfo.length > 0) {
+        if (!hasInitialized.current && bundleInfo.length > 0) {
+            hasInitialized.current = true;
             setSelectedBundle(bundleInfo[0].name);
             setPage(1);
         }
-    }, [bundleInfo, selectedBundle]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bundleInfo]);
 
     // 当选中 Bundle 改变时，重置到第一页
     useEffect(() => {
@@ -329,24 +332,22 @@ export function ProjectResourcesPage() {
                     <div className='flex items-center justify-between mb-2'>
                         <h2 className='text-lg font-semibold'>Bundle 列表</h2>
                     </div>
-                    <div className='flex-1 overflow-auto min-h-0'>
-                        <BundleTable
-                            bundles={bundleInfo}
-                            selectedBundle={selectedBundle}
-                            onSelectBundle={setSelectedBundle}
-                            getBundleTypeLabel={getBundleTypeLabel}
-                            showActions={false}
-                            showDelete={true}
-                            onDelete={bundleName => {
-                                setBundleToRemove(bundleName);
-                                setRemoveBundleConfirmOpen(true);
-                            }}
-                        />
-                    </div>
+                    <BundleTable
+                        bundles={bundleInfo}
+                        selectedBundle={selectedBundle}
+                        onSelectBundle={setSelectedBundle}
+                        getBundleTypeLabel={getBundleTypeLabel}
+                        showActions={false}
+                        showDelete={true}
+                        onDelete={bundleName => {
+                            setBundleToRemove(bundleName);
+                            setRemoveBundleConfirmOpen(true);
+                        }}
+                    />
 
                     {/* 资源预览 */}
                     {selectedBundle && (
-                        <div className='border-t pt-4 flex-shrink-0'>
+                        <div className='border-t pt-4'>
                             <div className='flex items-center justify-between mb-4'>
                                 <h3 className='text-lg font-semibold'>
                                     {selectedBundle} 的资源 ({total} 个)

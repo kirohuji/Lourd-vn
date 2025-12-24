@@ -31,8 +31,12 @@ export function ChapterDetailPage() {
         <div className='flex flex-col h-full space-y-4'>
             <Tabs defaultValue='resources' className='w-full flex flex-col flex-1'>
                 <TabsList>
-                    <TabsTrigger value='resources'>资源</TabsTrigger>
-                    <TabsTrigger value='ink'>故事编辑</TabsTrigger>
+                    <TabsTrigger value='resources' className='w-[200px]'>
+                        资源
+                    </TabsTrigger>
+                    <TabsTrigger value='ink' className='w-[200px]'>
+                        故事编辑
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value='resources' className='mt-4 flex-1 overflow-auto'>
                     <ChapterResourcesContent chapterId={chapterIdNum} />
