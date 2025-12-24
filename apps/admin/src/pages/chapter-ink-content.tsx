@@ -593,6 +593,7 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                             onMount={handleEditorDidMount}
                             options={{
                                 minimap: { enabled: false },
+                                automaticLayout: true,
                             }}
                         />
                     </div>
