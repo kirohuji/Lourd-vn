@@ -14,6 +14,8 @@ export interface User {
   email?: string;
   wechatOpenId?: string;
   wechatUnionId?: string;
+  wechatNickname?: string;
+  wechatAvatar?: string;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +28,8 @@ export interface CreateUserDto {
   email?: string;
   wechatOpenId?: string;
   wechatUnionId?: string;
+  wechatNickname?: string;
+  wechatAvatar?: string;
   role?: UserRole;
 }
 
@@ -43,6 +47,8 @@ export interface UpdateUserDto {
 export interface UserResponseDto {
   id: number;
   email?: string;
+  wechatNickname?: string;
+  wechatAvatar?: string;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;

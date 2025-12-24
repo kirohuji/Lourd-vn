@@ -43,21 +43,31 @@ export class AuthService {
         data: {
           wechatOpenId: userInfo.openid,
           wechatUnionId: userInfo.unionid,
+          wechatNickname: userInfo.nickname,
+          wechatAvatar: userInfo.avatar,
           role: UserRole.USER,
         },
       });
     } else {
-      // 更新 openid 和 unionid（如果之前没有）
+      // 更新 openid、unionid、昵称和头像
+      const updateData: any = {};
       if (!user.wechatOpenId && userInfo.openid) {
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: { wechatOpenId: userInfo.openid },
-        });
+        updateData.wechatOpenId = userInfo.openid;
       }
       if (!user.wechatUnionId && userInfo.unionid) {
+        updateData.wechatUnionId = userInfo.unionid;
+      }
+      // 更新昵称和头像（每次登录都更新，因为用户可能修改了微信昵称或头像）
+      if (userInfo.nickname) {
+        updateData.wechatNickname = userInfo.nickname;
+      }
+      if (userInfo.avatar) {
+        updateData.wechatAvatar = userInfo.avatar;
+      }
+      if (Object.keys(updateData).length > 0) {
         user = await this.prisma.user.update({
           where: { id: user.id },
-          data: { wechatUnionId: userInfo.unionid },
+          data: updateData,
         });
       }
     }
@@ -124,6 +134,8 @@ export class AuthService {
     return {
       openid: tokenData.openid,
       unionid: tokenData.unionid || userInfo.unionid,
+      nickname: userInfo.nickname,
+      avatar: userInfo.headimgurl,
     };
   }
 
@@ -155,10 +167,15 @@ export class AuthService {
       throw new UnauthorizedException(`WeChat API error: ${data.errmsg}`);
     }
 
+    // 小程序登录只能获取 openid 和 unionid，无法直接获取用户信息
+    // 如果需要获取昵称和头像，需要用户授权后调用 wx.getUserInfo 或 wx.getUserProfile
+    // 这里返回空值，后续可以通过其他接口更新用户信息
     return {
       openid: data.openid,
       unionid: data.unionid,
       sessionKey: data.session_key,
+      nickname: undefined,
+      avatar: undefined,
     };
   }
 

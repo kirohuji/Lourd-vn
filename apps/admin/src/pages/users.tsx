@@ -1,11 +1,5 @@
-import { useState } from 'react';
-import { UpdateUserDto, UserRole } from '@lourd-game/shared';
-import { useUsers, useUpdateUser, useDeleteUser } from '@/lib/hooks/use-users';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination } from '@/components/features/pagination';
+import { SearchBar } from '@/components/features/search-bar';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,17 +10,34 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { SearchBar } from '@/components/features/search-bar';
-import { Pagination } from '@/components/features/pagination';
-import { RefreshCw, Edit, Trash2, Loader2 } from 'lucide-react';
+import { useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
+import { UpdateUserDto, UserResponseDto, UserRole } from '@lourd-game/shared';
+import { Edit, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 export function UsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [page, setPage] = useState(1);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<{ id: number; email?: string } | null>(null);
+    const [userToDelete, setUserToDelete] = useState<{
+        id: number;
+        email?: string;
+        wechatNickname?: string;
+    } | null>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<{ id: number; email?: string; role: UserRole } | null>(null);
     const [editRole, setEditRole] = useState<UserRole>(UserRole.USER);
@@ -41,11 +52,11 @@ export function UsersPage() {
     const updateUser = useUpdateUser();
     const deleteUser = useDeleteUser();
 
-    const users = data?.data || [];
+    const users: UserResponseDto[] = data?.data || [];
     const totalPages = data?.totalPages || 1;
     const total = data?.total || 0;
 
-    const handleEdit = (user: typeof users[0]) => {
+    const handleEdit = (user: (typeof users)[0]) => {
         setUserToEdit({
             id: user.id,
             email: user.email,
@@ -83,9 +94,10 @@ export function UsersPage() {
 
         try {
             await deleteUser.mutateAsync(userToDelete.id);
+            const userDisplayName = userToDelete.wechatNickname || userToDelete.email || `ID: ${userToDelete.id}`;
             toast({
                 title: '成功',
-                description: `已删除用户: ${userToDelete.email || `ID: ${userToDelete.id}`}`,
+                description: `已删除用户: ${userDisplayName}`,
             });
             setDeleteConfirmOpen(false);
             setUserToDelete(null);
@@ -121,7 +133,7 @@ export function UsersPage() {
 
             <div className='flex gap-2'>
                 <SearchBar
-                    placeholder='搜索用户邮箱...'
+                    placeholder='搜索用户邮箱或微信昵称...'
                     value={searchQuery}
                     onChange={value => {
                         setSearchQuery(value);
@@ -158,7 +170,9 @@ export function UsersPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ID</TableHead>
+                                    <TableHead>头像</TableHead>
                                     <TableHead>邮箱</TableHead>
+                                    <TableHead>微信昵称</TableHead>
                                     <TableHead>角色</TableHead>
                                     <TableHead>创建时间</TableHead>
                                     <TableHead className='text-right'>操作</TableHead>
@@ -167,7 +181,7 @@ export function UsersPage() {
                             <TableBody>
                                 {users.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className='text-center py-8 text-muted-foreground'>
+                                        <TableCell colSpan={7} className='text-center py-8 text-muted-foreground'>
                                             暂无用户
                                         </TableCell>
                                     </TableRow>
@@ -175,7 +189,21 @@ export function UsersPage() {
                                     users.map(user => (
                                         <TableRow key={user.id}>
                                             <TableCell>{user.id}</TableCell>
+                                            <TableCell>
+                                                {user.wechatAvatar ? (
+                                                    <img
+                                                        src={user.wechatAvatar}
+                                                        alt={user.wechatNickname || '用户头像'}
+                                                        className='h-8 w-8 rounded-full object-cover'
+                                                    />
+                                                ) : (
+                                                    <div className='h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground'>
+                                                        无
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                             <TableCell className='font-medium'>{user.email || '-'}</TableCell>
+                                            <TableCell>{user.wechatNickname || '-'}</TableCell>
                                             <TableCell>
                                                 <span
                                                     className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
@@ -190,14 +218,22 @@ export function UsersPage() {
                                             <TableCell>{new Date(user.createdAt).toLocaleString('zh-CN')}</TableCell>
                                             <TableCell className='text-right'>
                                                 <div className='flex justify-end gap-2'>
-                                                    <Button variant='ghost' size='icon' onClick={() => handleEdit(user)}>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        onClick={() => handleEdit(user)}
+                                                    >
                                                         <Edit className='h-4 w-4' />
                                                     </Button>
                                                     <Button
                                                         variant='ghost'
                                                         size='icon'
                                                         onClick={() => {
-                                                            setUserToDelete({ id: user.id, email: user.email });
+                                                            setUserToDelete({
+                                                                id: user.id,
+                                                                email: user.email,
+                                                                wechatNickname: user.wechatNickname,
+                                                            });
                                                             setDeleteConfirmOpen(true);
                                                         }}
                                                     >
@@ -221,7 +257,9 @@ export function UsersPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>确认删除</AlertDialogTitle>
                         <AlertDialogDescription>
-                            确定要删除用户 "{userToDelete?.email || `ID: ${userToDelete?.id}`}" 吗？此操作不可恢复。
+                            确定要删除用户 "
+                            {userToDelete?.wechatNickname || userToDelete?.email || `ID: ${userToDelete?.id}`}"
+                            吗？此操作不可恢复。
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -267,4 +305,3 @@ export function UsersPage() {
         </div>
     );
 }
-

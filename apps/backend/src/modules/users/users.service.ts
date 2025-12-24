@@ -39,7 +39,10 @@ export class UsersService {
     }
 
     if (query.search) {
-      where.OR = [{ email: { contains: query.search, mode: 'insensitive' } }];
+      where.OR = [
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { wechatNickname: { contains: query.search, mode: 'insensitive' } },
+      ];
     }
 
     const [data, total] = await Promise.all([
@@ -51,6 +54,8 @@ export class UsersService {
         select: {
           id: true,
           email: true,
+          wechatNickname: true,
+          wechatAvatar: true,
           role: true,
           createdAt: true,
           updatedAt: true,
@@ -63,6 +68,8 @@ export class UsersService {
       data: data.map((user) => ({
         id: user.id,
         email: user.email || undefined,
+        wechatNickname: user.wechatNickname || undefined,
+        wechatAvatar: user.wechatAvatar || undefined,
         role: user.role as UserRole,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -80,6 +87,8 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        wechatNickname: true,
+        wechatAvatar: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -93,6 +102,8 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email || undefined,
+      wechatNickname: user.wechatNickname || undefined,
+      wechatAvatar: user.wechatAvatar || undefined,
       role: user.role as UserRole,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -138,6 +149,8 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        wechatNickname: true,
+        wechatAvatar: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -147,6 +160,8 @@ export class UsersService {
     return {
       id: updatedUser.id,
       email: updatedUser.email || undefined,
+      wechatNickname: updatedUser.wechatNickname || undefined,
+      wechatAvatar: updatedUser.wechatAvatar || undefined,
       role: updatedUser.role as UserRole,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,

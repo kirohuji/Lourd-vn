@@ -43,6 +43,8 @@ model User {
   password     String?   // 密码哈希（仅用于管理员邮箱登录）
   wechatOpenId String?   @unique
   wechatUnionId String?  @unique
+  wechatNickname String? // 微信昵称
+  wechatAvatar String?   // 微信头像 URL
   role         UserRole  @default(USER)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
