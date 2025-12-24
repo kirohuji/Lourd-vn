@@ -399,8 +399,9 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                 </div>
             </div>
 
-            <div className='grid grid-cols-4 gap-4'>
-                <div className='col-span-1 border rounded p-2 h-[70vh] overflow-auto'>
+            <div className='grid grid-cols-12 gap-4 flex-1 min-h-0'>
+                {/* 左侧：文件列表 */}
+                <div className='col-span-2 border rounded p-2 overflow-auto'>
                     {isLoading ? (
                         <div>加载中...</div>
                     ) : (
@@ -424,7 +425,8 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                     )}
                 </div>
 
-                <div className='col-span-3 space-y-3'>
+                {/* 中间：编辑器区域 */}
+                <div className='col-span-7 flex flex-col space-y-3 min-h-0'>
                     <div className='grid grid-cols-2 gap-2'>
                         <Input placeholder='文件名' value={filename} onChange={e => setFilename(e.target.value)} />
                         <Input
@@ -433,9 +435,9 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                             onChange={e => setDisplayName(e.target.value)}
                         />
                     </div>
-                    <div className='border rounded'>
+                    <div className='border rounded flex-1 min-h-0'>
                         <Editor
-                            height='40vh'
+                            height='100%'
                             defaultLanguage='ink'
                             theme='ink-light'
                             value={content}
@@ -446,8 +448,32 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                             }}
                         />
                     </div>
-                    {(showPreviewPanel || isLoadingPreview) && (
-                        <div className='relative border rounded-lg p-4 bg-card shadow-lg'>
+                    <div className='space-x-2'>
+                        <Button onClick={handleSave} disabled={!selectedId}>
+                            保存
+                        </Button>
+                        <Button variant='secondary' onClick={handleCompile} disabled={!selectedId}>
+                            编译
+                        </Button>
+                    </div>
+                    {compiled && (
+                        <div className='space-y-2'>
+                            <p className='text-sm text-gray-600'>编译结果</p>
+                            <Textarea
+                                className='font-mono text-xs'
+                                value={compiled}
+                                readOnly
+                                rows={8}
+                                placeholder='JSON 文本'
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* 右侧：预览面板 */}
+                <div className='col-span-3 flex flex-col min-h-0'>
+                    {showPreviewPanel || isLoadingPreview ? (
+                        <div className='border rounded-lg p-4 bg-card shadow-lg h-full overflow-auto'>
                             {isLoadingPreview ? (
                                 <div className='flex items-center justify-center p-8'>
                                     <Loader2 className='h-6 w-6 animate-spin text-muted-foreground mr-2' />
@@ -466,27 +492,15 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                                 />
                             )}
                         </div>
-                    )}
-                    <div className='space-x-2'>
-                        <Button onClick={handleSave} disabled={!selectedId}>
-                            保存
-                        </Button>
-                        <Button variant='secondary' onClick={handleCompile} disabled={!selectedId}>
-                            编译
-                        </Button>
-                    </div>
-                    <div className='space-y-2'>
-                        <p className='text-sm text-gray-600'>编译结果</p>
-                        <div className='grid grid-cols-2 gap-4'>
-                            <Textarea
-                                className='font-mono text-xs'
-                                value={compiled}
-                                readOnly
-                                rows={10}
-                                placeholder='JSON 文本'
-                            />
+                    ) : (
+                        <div className='border rounded-lg p-4 bg-muted/30 h-full flex items-center justify-center'>
+                            <p className='text-sm text-muted-foreground text-center'>
+                                将光标移动到资源引用上
+                                <br />
+                                停留 2 秒查看预览
+                            </p>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
             <InkSyntaxHelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
