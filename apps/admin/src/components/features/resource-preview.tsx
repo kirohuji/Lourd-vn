@@ -48,10 +48,10 @@ export function ResourcePreview({
     <>
       <div
         className={cn(
-          'relative flex items-center justify-center rounded-lg border bg-muted/50 overflow-hidden cursor-pointer hover:bg-muted transition-colors',
-          size === 'thumbnail' && 'w-[200px] h-[200px]',
-          size === 'medium' && 'w-[400px] h-[400px]',
-          size === 'large' && 'w-[800px] h-[600px]',
+          'relative flex items-center justify-center rounded-lg border bg-muted/50 overflow-hidden cursor-pointer hover:bg-muted transition-colors w-full h-full',
+          size === 'thumbnail' && 'min-w-[200px] min-h-[200px]',
+          size === 'medium' && 'min-w-[400px] min-h-[400px]',
+          size === 'large' && 'min-w-[800px] min-h-[600px]',
         )}
         onClick={handleClick}
       >
@@ -59,7 +59,7 @@ export function ResourcePreview({
           <img
             src={resource.src}
             alt={resource.alias}
-            className={cn('object-contain', sizeClasses[size])}
+            className={cn('w-full h-full object-contain', sizeClasses[size])}
             onError={e => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';

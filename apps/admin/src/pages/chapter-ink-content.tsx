@@ -195,6 +195,8 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
         if (!editorRef.current) return;
         // 确保资源数据已加载
         if (isLoadingChapterResources || (projectId && isLoadingProjectResources)) return;
+        // 确保资源缓存已准备好
+        if (resourcesCache.size === 0 && bundleCache.size === 0) return;
 
         const editor = editorRef.current;
         let cursorChangeDisposable: IDisposable | null = null;
@@ -223,13 +225,14 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
             // 延迟2秒后触发预览（光标停止移动2秒后）
             hoverTimeoutRef.current = setTimeout(() => {
                 const model = editor.getModel();
-                if (model) {
+                if (model && editorRef.current) {
                     setIsLoadingPreview(true);
                     const parsed = parseResourceReference(model.getValue(), lineNumber, column);
                     if (parsed) {
                         handleResourceHover(parsed);
                     } else {
                         setIsLoadingPreview(false);
+                        setShowPreviewPanel(false);
                     }
                 }
                 hoverTimeoutRef.current = null;
@@ -244,7 +247,14 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
             }
             setIsLoadingPreview(false);
         };
-    }, [handleResourceHover, editorRef.current, isLoadingChapterResources, isLoadingProjectResources, projectId]);
+    }, [
+        handleResourceHover,
+        isLoadingChapterResources,
+        isLoadingProjectResources,
+        projectId,
+        resourcesCache.size,
+        bundleCache.size,
+    ]);
 
     // 编辑器加载完成回调
     const handleEditorDidMount = async (editorInstance: IStandaloneCodeEditor) => {
@@ -253,53 +263,106 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
         const monaco = await loader.init();
         monacoRef.current = monaco as MonacoEditor;
 
-        // 注册 Ink 语言
-        monaco.languages.register({ id: 'ink' });
+        // 注册 Ink 语言（如果还没注册）
+        const languages = monaco.languages.getLanguages();
+        if (!languages.find((lang: any) => lang.id === 'ink')) {
+            monaco.languages.register({ id: 'ink' });
+        }
 
-        // 设置语法高亮规则
+        // 设置语法高亮规则 - 不同关键字使用不同颜色
         monaco.languages.setMonarchTokensProvider('ink', {
             tokenizer: {
                 root: [
                     // 注释
                     [/\/\/.*$/, 'comment'],
-                    // 关键字
-                    [/#\s*(lazyload|show|remove|edit|pause|request)/, 'keyword'],
-                    [/(INCLUDE|->|===)/, 'keyword'],
-                    // 命令类型
-                    [/\b(bundle|image|imagecontainer|text|bg|input)\b/, 'type'],
                     // 标签定义
                     [/===.*===/, 'tag'],
                     // 跳转标签
                     [/->\s*\w+/, 'tag'],
-                    // 资源组合
-                    [/\[[^\]]+\]/, 'string'],
+                    // INCLUDE 关键字 - 深蓝色
+                    [/INCLUDE\s+/, 'include-keyword'],
+                    // # lazyload 关键字 - 蓝色
+                    [/#\s+lazyload\s+/, 'lazyload-keyword'],
+                    // # show 关键字 - 绿色
+                    [/#\s+show\s+/, 'show-keyword'],
+                    // # remove 关键字 - 红色
+                    [/#\s+remove\s+/, 'remove-keyword'],
+                    // # edit 关键字 - 橙色
+                    [/#\s+edit\s+/, 'edit-keyword'],
+                    // # pause 关键字 - 紫色
+                    [/#\s+pause/, 'pause-keyword'],
+                    // # request 关键字 - 青色
+                    [/#\s+request\s+/, 'request-keyword'],
+                    // bundle 命令 - 紫色
+                    [/\bbundle\b/, 'bundle-type'],
+                    // image 命令 - 粉色
+                    [/\bimage\b/, 'image-type'],
+                    // imagecontainer 命令 - 深粉色
+                    [/\bimagecontainer\b/, 'imagecontainer-type'],
+                    // text 命令 - 黄色
+                    [/\btext\b/, 'text-type'],
+                    // bg 命令 - 绿色
+                    [/\bbg\b/, 'bg-type'],
+                    // input 命令 - 青色
+                    [/\binput\b/, 'input-type'],
+                    // 资源组合 - 橙色加粗
+                    [/\[[^\]]+\]/, 'resource-group'],
                     // 字符串（对话内容）
                     [/"[^"]*"/, 'string'],
-                    // 角色对话
-                    [/^\s*\w+:/, 'variable'],
-                    // 资源名称（单词）
+                    // 角色对话 - 红色
+                    [/^\s*\w+:/, 'dialogue-character'],
+                    // 资源名称（单词）- 绿色
                     [/\b[a-zA-Z0-9_-]+\b/, 'identifier'],
                 ],
             },
         });
 
-        // 设置主题颜色
+        // 设置主题颜色 - 不同关键字使用不同颜色
         monaco.editor.defineTheme('ink-light', {
             base: 'vs',
             inherit: true,
             rules: [
-                { token: 'keyword', foreground: '0066CC', fontStyle: 'bold' },
-                { token: 'type', foreground: '7C3AED' },
-                { token: 'string', foreground: 'D97706' },
+                // 注释
                 { token: 'comment', foreground: '6B7280', fontStyle: 'italic' },
+                // 标签相关
                 { token: 'tag', foreground: '059669', fontStyle: 'bold' },
-                { token: 'variable', foreground: 'DC2626' },
+                // INCLUDE 关键字 - 深蓝色
+                { token: 'include-keyword', foreground: '1E40AF', fontStyle: 'bold' },
+                // lazyload 关键字 - 蓝色
+                { token: 'lazyload-keyword', foreground: '2563EB', fontStyle: 'bold' },
+                // show 关键字 - 绿色
+                { token: 'show-keyword', foreground: '16A34A', fontStyle: 'bold' },
+                // remove 关键字 - 红色
+                { token: 'remove-keyword', foreground: 'DC2626', fontStyle: 'bold' },
+                // edit 关键字 - 橙色
+                { token: 'edit-keyword', foreground: 'EA580C', fontStyle: 'bold' },
+                // pause 关键字 - 紫色
+                { token: 'pause-keyword', foreground: '9333EA', fontStyle: 'bold' },
+                // request 关键字 - 青色
+                { token: 'request-keyword', foreground: '0891B2', fontStyle: 'bold' },
+                // 命令类型
+                { token: 'bundle-type', foreground: '7C3AED', fontStyle: 'bold' },
+                { token: 'image-type', foreground: 'EC4899', fontStyle: 'bold' },
+                { token: 'imagecontainer-type', foreground: 'DB2777', fontStyle: 'bold' },
+                { token: 'text-type', foreground: 'F59E0B', fontStyle: 'bold' },
+                { token: 'bg-type', foreground: '10B981', fontStyle: 'bold' },
+                { token: 'input-type', foreground: '06B6D4', fontStyle: 'bold' },
+                // 资源组合
+                { token: 'resource-group', foreground: 'D97706', fontStyle: 'bold' },
+                // 字符串
+                { token: 'string', foreground: 'D97706' },
+                // 角色对话
+                { token: 'dialogue-character', foreground: 'DC2626', fontStyle: 'bold' },
+                // 资源名称
                 { token: 'identifier', foreground: '16A34A' },
             ],
             colors: {
                 'editor.background': '#ffffff',
             },
         });
+
+        // 应用主题
+        monaco.editor.setTheme('ink-light');
     };
 
     const handleCreate = async () => {
@@ -426,7 +489,7 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                 </div>
 
                 {/* 中间：编辑器区域 */}
-                <div className='col-span-7 flex flex-col space-y-3 min-h-0'>
+                <div className='col-span-6 flex flex-col space-y-3 min-h-0'>
                     <div className='grid grid-cols-2 gap-2'>
                         <Input placeholder='文件名' value={filename} onChange={e => setFilename(e.target.value)} />
                         <Input
@@ -471,7 +534,7 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                 </div>
 
                 {/* 右侧：预览面板 */}
-                <div className='col-span-3 flex flex-col min-h-0'>
+                <div className='col-span-4 flex flex-col min-h-0'>
                     {showPreviewPanel || isLoadingPreview ? (
                         <div className='border rounded-lg p-4 bg-card shadow-lg h-full overflow-auto'>
                             {isLoadingPreview ? (
