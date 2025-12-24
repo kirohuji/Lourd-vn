@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ChapterInkContent from './chapter-ink-content';
 import { ChapterResourcesContent } from './chapter-resources-content';
 
 export function ChapterDetailPage() {
     const { chapterId, projectId } = useParams<{ chapterId: string; projectId: string }>();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     if (!chapterId || !projectId) {
         return (
@@ -27,9 +28,26 @@ export function ChapterDetailPage() {
         );
     }
 
+    // 从 URL 查询参数获取当前 tab，默认为 'resources'
+    const currentTab = searchParams.get('tab') || 'resources';
+    const validTabs = ['resources', 'ink'];
+    const activeTab = validTabs.includes(currentTab) ? currentTab : 'resources';
+
+    // 处理 tab 切换
+    const handleTabChange = (value: string) => {
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (value === 'resources') {
+            // 如果切换到 resources，移除 tab 参数（使用默认值）
+            newSearchParams.delete('tab');
+        } else {
+            newSearchParams.set('tab', value);
+        }
+        setSearchParams(newSearchParams, { replace: true });
+    };
+
     return (
         <div className='flex flex-col h-full space-y-4'>
-            <Tabs defaultValue='resources' className='w-full flex flex-col flex-1'>
+            <Tabs value={activeTab} onValueChange={handleTabChange} className='w-full flex flex-col flex-1'>
                 <TabsList>
                     <TabsTrigger value='resources' className='w-[200px]'>
                         资源

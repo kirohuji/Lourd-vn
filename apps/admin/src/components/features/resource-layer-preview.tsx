@@ -1,5 +1,7 @@
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResourceResponseDto } from '@lourd-game/shared';
-import { Loader2 } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface ResourceLayerPreviewProps {
@@ -9,6 +11,7 @@ interface ResourceLayerPreviewProps {
 }
 
 export function ResourceLayerPreview({ resources, width = 400, height = 400 }: ResourceLayerPreviewProps) {
+    const [previewOpen, setPreviewOpen] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -65,26 +68,43 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
 
         Promise.all(imagePromises)
             .then(images => {
-                console.log(`[ResourceLayerPreview] 所有图片加载完成，共 ${images.length} 张`, {
-                    canvasWidth: canvas.width,
-                    canvasHeight: canvas.height,
-                });
+                console.log(`[ResourceLayerPreview] 所有图片加载完成，共 ${images.length} 张`);
                 setLoadedImages(images);
+
+                // 计算所有图片的最大尺寸（用于确定画布尺寸）
+                let maxWidth = 0;
+                let maxHeight = 0;
+                images.forEach(img => {
+                    if (img.naturalWidth > maxWidth) maxWidth = img.naturalWidth;
+                    if (img.naturalHeight > maxHeight) maxHeight = img.naturalHeight;
+                });
+
+                // 如果提供了 width 和 height，使用提供的尺寸；否则使用图片的最大尺寸
+                const canvasWidth = width || maxWidth;
+                const canvasHeight = height || maxHeight;
+
+                // 更新画布尺寸
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+
+                console.log(`[ResourceLayerPreview] 画布尺寸: ${canvasWidth} x ${canvasHeight}`, {
+                    maxImageSize: { width: maxWidth, height: maxHeight },
+                    providedSize: { width, height },
+                });
+
                 // 清空画布
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // 按顺序绘制所有图片（直接覆盖，模拟图层叠加效果）
-                // 注意：如果图片被 CORS 策略阻止，drawImage 会失败
-                // 但由于我们已经移除了 crossOrigin，应该可以正常绘制
+                // 按顺序绘制所有图片（保持原始尺寸，从 (0,0) 开始叠加）
                 images.forEach((img, index) => {
                     const resource = resources[index];
                     try {
-                        // 直接绘制到画布，覆盖之前的图层（模拟图层叠加）
-                        // 如果图片尺寸与画布不一致，直接拉伸填充（这是图层叠加的常见行为）
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // 按照图片的原始尺寸绘制，不拉伸
+                        // 图层叠加时，每张图片都从 (0,0) 开始绘制，后面的图片会覆盖前面的
+                        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
                         console.log(`[ResourceLayerPreview] 绘制图片 ${index + 1}: ${resource.alias}`, {
                             naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
-                            canvasSize: { width: canvas.width, height: canvas.height },
+                            position: { x: 0, y: 0 },
                         });
                     } catch (err) {
                         console.error(`[ResourceLayerPreview] 绘制图片失败: ${resource.alias}`, err);
@@ -110,30 +130,60 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
     }
 
     return (
-        <div className='space-y-2'>
-            <div className='text-sm text-muted-foreground'>图层预览（{resources.length} 个资源，按顺序叠加）</div>
-            <div className='relative border rounded-lg overflow-hidden bg-muted/30'>
-                {loading && (
-                    <div className='absolute inset-0 flex items-center justify-center bg-background/80'>
-                        <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+        <>
+            <div className='space-y-2'>
+                <div className='flex items-center justify-between'>
+                    <div className='text-sm text-muted-foreground'>
+                        图层预览（{resources.length} 个资源，按顺序叠加）
                     </div>
-                )}
-                {error && (
-                    <div className='absolute inset-0 flex items-center justify-center bg-background/80'>
-                        <p className='text-sm text-destructive'>{error}</p>
-                    </div>
-                )}
-                <canvas ref={canvasRef} width={width} height={height} className='w-full h-auto' />
+                    <Button variant='outline' size='sm' onClick={() => setPreviewOpen(true)}>
+                        <Eye className='h-4 w-4 mr-2' />
+                        查看预览
+                    </Button>
+                </div>
+                <div className='text-xs text-muted-foreground space-y-1'>
+                    {resources.map((resource, index) => (
+                        <div key={resource.id} className='flex items-center gap-2'>
+                            <span className='font-mono'>{index + 1}.</span>
+                            <span>{resource.alias}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
-            <div className='text-xs text-muted-foreground space-y-1'>
-                {resources.map((resource, index) => (
-                    <div key={resource.id} className='flex items-center gap-2'>
-                        <span className='font-mono'>{index + 1}.</span>
-                        <span>{resource.alias}</span>
-                        {loadedImages[index] && <span className='text-green-600'>✓</span>}
+
+            {/* 图层预览对话框 */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className='max-w-4xl max-h-[90vh] overflow-auto'>
+                    <DialogHeader>
+                        <DialogTitle>图层预览</DialogTitle>
+                        <DialogDescription>{resources.length} 个资源按顺序叠加显示</DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4'>
+                        <div className='relative border rounded-lg overflow-auto bg-muted/30 flex items-center justify-center min-h-[200px]'>
+                            {loading && (
+                                <div className='absolute inset-0 flex items-center justify-center bg-background/80 z-10'>
+                                    <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+                                </div>
+                            )}
+                            {error && (
+                                <div className='absolute inset-0 flex items-center justify-center bg-background/80 z-10'>
+                                    <p className='text-sm text-destructive'>{error}</p>
+                                </div>
+                            )}
+                            <canvas ref={canvasRef} className='max-w-full h-auto' />
+                        </div>
+                        <div className='text-xs text-muted-foreground space-y-1'>
+                            {resources.map((resource, index) => (
+                                <div key={resource.id} className='flex items-center gap-2'>
+                                    <span className='font-mono'>{index + 1}.</span>
+                                    <span>{resource.alias}</span>
+                                    {loadedImages[index] && <span className='text-green-600'>✓</span>}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                ))}
-            </div>
-        </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

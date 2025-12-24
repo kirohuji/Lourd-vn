@@ -47,7 +47,7 @@ export function InkResourcePreviewPanel({ type, bundleName, resources, onClose }
             <div className='flex-1 overflow-y-auto p-4 space-y-4'>
                 {type === 'resourceGroup' && resources.length > 0 && (
                     <div className='border rounded-lg p-4 bg-muted/30'>
-                        <ResourceLayerPreview resources={resources} width={400} height={400} />
+                        <ResourceLayerPreview resources={resources} />
                     </div>
                 )}
 
