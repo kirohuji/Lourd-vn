@@ -88,9 +88,18 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
                         if (img.naturalHeight > maxHeight) maxHeight = img.naturalHeight;
                     });
 
-                    // 如果提供了 width 和 height，使用提供的尺寸；否则使用图片的最大尺寸
-                    const canvasWidth = width || maxWidth;
-                    const canvasHeight = height || maxHeight;
+                    // 设置最大显示尺寸（dialog 中最大宽度约 800px，高度约 600px）
+                    const maxDisplayWidth = 800;
+                    const maxDisplayHeight = 600;
+
+                    // 计算缩放比例，保持宽高比
+                    const scaleX = maxDisplayWidth / maxWidth;
+                    const scaleY = maxDisplayHeight / maxHeight;
+                    const scale = Math.min(scaleX, scaleY, 1); // 不放大，只缩小
+
+                    // 计算缩放后的画布尺寸
+                    const canvasWidth = Math.round(maxWidth * scale);
+                    const canvasHeight = Math.round(maxHeight * scale);
 
                     // 更新画布尺寸
                     canvas.width = canvasWidth;
@@ -98,21 +107,28 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
 
                     console.log(`[ResourceLayerPreview] 画布尺寸: ${canvasWidth} x ${canvasHeight}`, {
                         maxImageSize: { width: maxWidth, height: maxHeight },
+                        scale,
                         providedSize: { width, height },
                     });
 
                     // 清空画布
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                    // 按顺序绘制所有图片（保持原始尺寸，从 (0,0) 开始叠加）
+                    // 按顺序绘制所有图片（按比例缩放，从 (0,0) 开始叠加）
                     images.forEach((img, index) => {
                         const resource = resources[index];
                         try {
-                            // 按照图片的原始尺寸绘制，不拉伸
+                            // 计算每张图片的缩放后尺寸
+                            const drawWidth = Math.round(img.naturalWidth * scale);
+                            const drawHeight = Math.round(img.naturalHeight * scale);
+
+                            // 按照缩放后的尺寸绘制，保持宽高比
                             // 图层叠加时，每张图片都从 (0,0) 开始绘制，后面的图片会覆盖前面的
-                            ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+                            ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
                             console.log(`[ResourceLayerPreview] 绘制图片 ${index + 1}: ${resource.alias}`, {
                                 naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
+                                drawSize: { width: drawWidth, height: drawHeight },
+                                scale,
                                 position: { x: 0, y: 0 },
                             });
                         } catch (err) {
