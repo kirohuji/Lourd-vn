@@ -103,16 +103,17 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
         return cache;
     }, [allAvailableResources]);
 
-    // Bundle缓存（从资源中提取）
+    // Bundle缓存（从资源中提取，直接存储资源数组）
     const bundleCache = useMemo(() => {
-        const cache = new Map<string, { name: string; resources: ResourceResponseDto[] }>();
+        const cache = new Map<string, ResourceResponseDto[]>();
         allAvailableResources.forEach(resource => {
-            const bundleName = resource.bundle || '未分类';
-            const bundleKey = bundleName.toLowerCase();
-            if (!cache.has(bundleKey)) {
-                cache.set(bundleKey, { name: bundleName, resources: [] });
+            const bundleName = resource.bundle?.toLowerCase();
+            if (bundleName) {
+                if (!cache.has(bundleName)) {
+                    cache.set(bundleName, []);
+                }
+                cache.get(bundleName)!.push(resource);
             }
-            cache.get(bundleKey)!.resources.push(resource);
         });
         return cache;
     }, [allAvailableResources]);
@@ -136,67 +137,105 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
     // 处理资源悬停
     const handleResourceHover = useMemo(
         () => (parsed: ReturnType<typeof parseResourceReference>) => {
+            console.log('[Preview] handleResourceHover called', {
+                parsed,
+                resourcesCache: resourcesCache.size,
+                bundleCache: bundleCache.size,
+            });
             if (!parsed) {
                 setIsLoadingPreview(false);
+                setShowPreviewPanel(false);
                 return;
             }
 
-            setIsLoadingPreview(true);
-
-            // 使用 setTimeout 确保状态更新在下一个事件循环
-            setTimeout(() => {
-                if (parsed.type === 'bundle') {
-                    // 查找Bundle信息
-                    const bundleInfo = bundleCache.get(parsed.value.toLowerCase());
-                    if (bundleInfo) {
-                        setPreviewType('bundle');
-                        setPreviewBundleName(parsed.value);
-                        setPreviewResources(bundleInfo.resources);
-                        setShowPreviewPanel(true);
-                    }
-                    setIsLoadingPreview(false);
-                } else if (parsed.type === 'resource') {
-                    // 查找单个资源
-                    const resources = resourcesCache.get(parsed.value.toLowerCase()) || [];
-                    if (resources.length > 0) {
-                        setPreviewType('resource');
-                        setPreviewBundleName(resources[0].bundle);
-                        setPreviewResources(resources);
-                        setShowPreviewPanel(true);
-                    }
-                    setIsLoadingPreview(false);
-                } else if (parsed.type === 'resourceGroup' && parsed.resources) {
-                    // 查找资源组合（保持顺序）
-                    const foundResources: ResourceResponseDto[] = [];
-                    parsed.resources.forEach(resourceName => {
-                        const resources = resourcesCache.get(resourceName.toLowerCase()) || [];
-                        // 只取第一个匹配的资源，保持顺序
-                        if (resources.length > 0) {
-                            foundResources.push(resources[0]);
-                        }
-                    });
-                    if (foundResources.length > 0) {
-                        setPreviewType('resourceGroup');
-                        setPreviewBundleName(foundResources[0]?.bundle);
-                        setPreviewResources(foundResources);
-                        setShowPreviewPanel(true);
-                    }
+            if (parsed.type === 'bundle') {
+                // 查找Bundle信息
+                const bundleInfo = bundleCache.get(parsed.value.toLowerCase());
+                console.log('[Preview] Bundle lookup', {
+                    value: parsed.value,
+                    found: !!bundleInfo,
+                    resources: bundleInfo?.length || 0,
+                });
+                if (bundleInfo && bundleInfo.length > 0) {
+                    setPreviewType('bundle');
+                    setPreviewBundleName(parsed.value);
+                    setPreviewResources(bundleInfo);
+                    setShowPreviewPanel(true);
                     setIsLoadingPreview(false);
                 } else {
                     setIsLoadingPreview(false);
+                    setShowPreviewPanel(false);
                 }
-            }, 0);
+            } else if (parsed.type === 'resource') {
+                // 查找单个资源
+                const resources = resourcesCache.get(parsed.value.toLowerCase()) || [];
+                console.log('[Preview] Resource lookup', { value: parsed.value, found: resources.length });
+                if (resources.length > 0) {
+                    setPreviewType('resource');
+                    setPreviewBundleName(resources[0].bundle);
+                    setPreviewResources(resources);
+                    setShowPreviewPanel(true);
+                    setIsLoadingPreview(false);
+                } else {
+                    setIsLoadingPreview(false);
+                    setShowPreviewPanel(false);
+                }
+            } else if (parsed.type === 'resourceGroup' && parsed.resources) {
+                // 查找资源组合（保持顺序）
+                const foundResources: ResourceResponseDto[] = [];
+                parsed.resources.forEach(resourceName => {
+                    const resources = resourcesCache.get(resourceName.toLowerCase()) || [];
+                    // 只取第一个匹配的资源，保持顺序
+                    if (resources.length > 0) {
+                        foundResources.push(resources[0]);
+                    }
+                });
+                console.log('[Preview] ResourceGroup lookup', {
+                    resources: parsed.resources,
+                    found: foundResources.length,
+                });
+                if (foundResources.length > 0) {
+                    setPreviewType('resourceGroup');
+                    setPreviewBundleName(foundResources[0]?.bundle);
+                    setPreviewResources(foundResources);
+                    setShowPreviewPanel(true);
+                    setIsLoadingPreview(false);
+                } else {
+                    setIsLoadingPreview(false);
+                    setShowPreviewPanel(false);
+                }
+            } else {
+                setIsLoadingPreview(false);
+                setShowPreviewPanel(false);
+            }
         },
         [resourcesCache, bundleCache],
     );
 
     // 监听光标位置变化，触发资源预览
     useEffect(() => {
-        if (!editorRef.current) return;
+        if (!editorRef.current) {
+            console.log('[Preview] Editor not ready');
+            return;
+        }
         // 确保资源数据已加载
-        if (isLoadingChapterResources || (projectId && isLoadingProjectResources)) return;
+        if (isLoadingChapterResources || (projectId && isLoadingProjectResources)) {
+            console.log('[Preview] Resources still loading');
+            return;
+        }
         // 确保资源缓存已准备好
-        if (resourcesCache.size === 0 && bundleCache.size === 0) return;
+        if (resourcesCache.size === 0 && bundleCache.size === 0) {
+            console.log('[Preview] Resource cache empty', {
+                resourcesCache: resourcesCache.size,
+                bundleCache: bundleCache.size,
+            });
+            return;
+        }
+
+        console.log('[Preview] Setting up cursor listener', {
+            resourcesCache: resourcesCache.size,
+            bundleCache: bundleCache.size,
+        });
 
         const editor = editorRef.current;
         let cursorChangeDisposable: IDisposable | null = null;
@@ -226,8 +265,15 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
             hoverTimeoutRef.current = setTimeout(() => {
                 const model = editor.getModel();
                 if (model && editorRef.current) {
+                    const text = model.getValue();
                     setIsLoadingPreview(true);
-                    const parsed = parseResourceReference(model.getValue(), lineNumber, column);
+                    const parsed = parseResourceReference(text, lineNumber, column);
+                    console.log('[Preview] Parsed result:', {
+                        parsed,
+                        lineNumber,
+                        column,
+                        text: text.split('\n')[lineNumber - 1],
+                    });
                     if (parsed) {
                         handleResourceHover(parsed);
                     } else {

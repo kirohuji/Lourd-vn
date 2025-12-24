@@ -1,8 +1,8 @@
-import { ResourceResponseDto } from '@lourd-game/shared';
 import { Button } from '@/components/ui/button';
-import { ResourcePreview } from './resource-preview';
+import { ResourceResponseDto } from '@lourd-game/shared';
+import { Image as ImageIcon, Package, X } from 'lucide-react';
 import { ResourceLayerPreview } from './resource-layer-preview';
-import { X, Package, Image as ImageIcon } from 'lucide-react';
+import { ResourcePreview } from './resource-preview';
 
 interface InkResourcePreviewPanelProps {
     type: 'bundle' | 'resource' | 'resourceGroup';
@@ -11,12 +11,7 @@ interface InkResourcePreviewPanelProps {
     onClose: () => void;
 }
 
-export function InkResourcePreviewPanel({
-    type,
-    bundleName,
-    resources,
-    onClose,
-}: InkResourcePreviewPanelProps) {
+export function InkResourcePreviewPanel({ type, bundleName, resources, onClose }: InkResourcePreviewPanelProps) {
     const getTitle = () => {
         switch (type) {
             case 'bundle':
@@ -59,18 +54,18 @@ export function InkResourcePreviewPanel({
                 {resources.length > 0 && (
                     <div className='space-y-2'>
                         <div className='text-sm font-medium'>资源列表 ({resources.length} 个)</div>
-                        <div className='grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3'>
+                        <div className='grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4'>
                             {resources.map(resource => (
                                 <div
                                     key={resource.id}
-                                    className='rounded-lg border bg-card p-2 space-y-1 hover:shadow-md transition-shadow'
+                                    className='group relative rounded-lg border bg-card p-3 space-y-2 hover:shadow-md transition-shadow'
                                 >
-                                    <div className='w-full aspect-square overflow-hidden rounded border bg-muted/50 flex items-center justify-center'>
-                                        <ResourcePreview resource={resource} size='thumbnail' />
+                                    <ResourcePreview resource={resource} size='thumbnail' />
+                                    <div className='space-y-1'>
+                                        <p className='text-sm font-medium truncate' title={resource.alias}>
+                                            {resource.alias}
+                                        </p>
                                     </div>
-                                    <p className='text-xs font-medium truncate' title={resource.alias}>
-                                        {resource.alias}
-                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -86,4 +81,3 @@ export function InkResourcePreviewPanel({
         </div>
     );
 }
-

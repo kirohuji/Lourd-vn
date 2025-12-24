@@ -1,6 +1,6 @@
 import { ResourceResponseDto } from '@lourd-game/shared';
-import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ResourceLayerPreviewProps {
     resources: ResourceResponseDto[];
@@ -72,9 +72,7 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
 
     return (
         <div className='space-y-2'>
-            <div className='text-sm text-muted-foreground'>
-                图层预览（{resources.length} 个资源，按顺序叠加）
-            </div>
+            <div className='text-sm text-muted-foreground'>图层预览（{resources.length} 个资源，按顺序叠加）</div>
             <div className='relative border rounded-lg overflow-hidden bg-muted/30'>
                 {loading && (
                     <div className='absolute inset-0 flex items-center justify-center bg-background/80'>
@@ -93,13 +91,10 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
                     <div key={resource.id} className='flex items-center gap-2'>
                         <span className='font-mono'>{index + 1}.</span>
                         <span>{resource.alias}</span>
-                        {loadedImages[index] && (
-                            <span className='text-green-600'>✓</span>
-                        )}
+                        {loadedImages[index] && <span className='text-green-600'>✓</span>}
                     </div>
                 ))}
             </div>
         </div>
     );
 }
-
