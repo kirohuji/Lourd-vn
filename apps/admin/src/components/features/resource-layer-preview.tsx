@@ -33,30 +33,84 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
 
         // 加载所有图片
         const imagePromises = resources.map(
-            resource =>
+            (resource, index) =>
                 new Promise<HTMLImageElement>((resolve, reject) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img);
-                    img.onerror = () => reject(new Error(`加载图片失败: ${resource.alias}`));
+                    img.onload = () => {
+                        console.log(
+                            `[ResourceLayerPreview] 图片加载成功: ${resource.alias} (${index + 1}/${resources.length})`,
+                            {
+                                alias: resource.alias,
+                                src: resource.src,
+                                naturalWidth: img.naturalWidth,
+                                naturalHeight: img.naturalHeight,
+                            },
+                        );
+                        resolve(img);
+                    };
+                    img.onerror = e => {
+                        console.error(`[ResourceLayerPreview] 图片加载失败: ${resource.alias}`, {
+                            alias: resource.alias,
+                            src: resource.src,
+                            error: e,
+                        });
+                        reject(new Error(`加载图片失败: ${resource.alias} (${resource.src})`));
+                    };
                     img.src = resource.src;
                 }),
         );
 
         Promise.all(imagePromises)
             .then(images => {
+                console.log(`[ResourceLayerPreview] 所有图片加载完成，共 ${images.length} 张`, {
+                    canvasWidth: canvas.width,
+                    canvasHeight: canvas.height,
+                });
                 setLoadedImages(images);
                 // 清空画布
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // 按顺序绘制所有图片
-                images.forEach(img => {
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // 按顺序绘制所有图片（保持原始尺寸比例，居中绘制）
+                images.forEach((img, index) => {
+                    const resource = resources[index];
+                    // 计算图片在画布中的尺寸（保持宽高比，适应画布）
+                    const imgAspect = img.naturalWidth / img.naturalHeight;
+                    const canvasAspect = canvas.width / canvas.height;
+
+                    let drawWidth: number;
+                    let drawHeight: number;
+                    let drawX: number;
+                    let drawY: number;
+
+                    if (imgAspect > canvasAspect) {
+                        // 图片更宽，以宽度为准
+                        drawWidth = canvas.width;
+                        drawHeight = canvas.width / imgAspect;
+                        drawX = 0;
+                        drawY = (canvas.height - drawHeight) / 2;
+                    } else {
+                        // 图片更高，以高度为准
+                        drawWidth = canvas.height * imgAspect;
+                        drawHeight = canvas.height;
+                        drawX = (canvas.width - drawWidth) / 2;
+                        drawY = 0;
+                    }
+
+                    console.log(`[ResourceLayerPreview] 绘制图片 ${index + 1}: ${resource.alias}`, {
+                        naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
+                        drawSize: { width: drawWidth, height: drawHeight },
+                        position: { x: drawX, y: drawY },
+                    });
+
+                    // 绘制图片
+                    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
                 });
 
                 setLoading(false);
             })
             .catch(err => {
+                console.error('[ResourceLayerPreview] 图片加载错误', err);
                 setError(err.message);
                 setLoading(false);
             });
