@@ -31,12 +31,14 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
         setLoading(true);
         setError(null);
 
-        // 加载所有图片
+        // 加载所有图片（不使用 crossOrigin，与 ResourcePreview 保持一致）
         const imagePromises = resources.map(
             (resource, index) =>
                 new Promise<HTMLImageElement>((resolve, reject) => {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous';
+                    // 移除 crossOrigin，因为资源列表的 <img> 标签也没有设置 crossOrigin
+                    // 如果服务器没有设置 CORS 头，设置 crossOrigin 会导致加载失败
+                    // img.crossOrigin = 'anonymous';
                     img.onload = () => {
                         console.log(
                             `[ResourceLayerPreview] 图片加载成功: ${resource.alias} (${index + 1}/${resources.length})`,
@@ -71,40 +73,23 @@ export function ResourceLayerPreview({ resources, width = 400, height = 400 }: R
                 // 清空画布
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // 按顺序绘制所有图片（保持原始尺寸比例，居中绘制）
+                // 按顺序绘制所有图片（直接覆盖，模拟图层叠加效果）
+                // 注意：如果图片被 CORS 策略阻止，drawImage 会失败
+                // 但由于我们已经移除了 crossOrigin，应该可以正常绘制
                 images.forEach((img, index) => {
                     const resource = resources[index];
-                    // 计算图片在画布中的尺寸（保持宽高比，适应画布）
-                    const imgAspect = img.naturalWidth / img.naturalHeight;
-                    const canvasAspect = canvas.width / canvas.height;
-
-                    let drawWidth: number;
-                    let drawHeight: number;
-                    let drawX: number;
-                    let drawY: number;
-
-                    if (imgAspect > canvasAspect) {
-                        // 图片更宽，以宽度为准
-                        drawWidth = canvas.width;
-                        drawHeight = canvas.width / imgAspect;
-                        drawX = 0;
-                        drawY = (canvas.height - drawHeight) / 2;
-                    } else {
-                        // 图片更高，以高度为准
-                        drawWidth = canvas.height * imgAspect;
-                        drawHeight = canvas.height;
-                        drawX = (canvas.width - drawWidth) / 2;
-                        drawY = 0;
+                    try {
+                        // 直接绘制到画布，覆盖之前的图层（模拟图层叠加）
+                        // 如果图片尺寸与画布不一致，直接拉伸填充（这是图层叠加的常见行为）
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        console.log(`[ResourceLayerPreview] 绘制图片 ${index + 1}: ${resource.alias}`, {
+                            naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
+                            canvasSize: { width: canvas.width, height: canvas.height },
+                        });
+                    } catch (err) {
+                        console.error(`[ResourceLayerPreview] 绘制图片失败: ${resource.alias}`, err);
+                        // 如果绘制失败，继续处理下一张图片
                     }
-
-                    console.log(`[ResourceLayerPreview] 绘制图片 ${index + 1}: ${resource.alias}`, {
-                        naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
-                        drawSize: { width: drawWidth, height: drawHeight },
-                        position: { x: drawX, y: drawY },
-                    });
-
-                    // 绘制图片
-                    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
                 });
 
                 setLoading(false);

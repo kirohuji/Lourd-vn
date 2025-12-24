@@ -143,6 +143,7 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                 bundleCache: bundleCache.size,
             });
             if (!parsed) {
+                console.log('[Preview] No parsed result, hiding preview');
                 setIsLoadingPreview(false);
                 setShowPreviewPanel(false);
                 return;
@@ -150,11 +151,14 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
 
             if (parsed.type === 'bundle') {
                 // 查找Bundle信息
-                const bundleInfo = bundleCache.get(parsed.value.toLowerCase());
+                const bundleKey = parsed.value.toLowerCase();
+                const bundleInfo = bundleCache.get(bundleKey);
                 console.log('[Preview] Bundle lookup', {
                     value: parsed.value,
+                    bundleKey,
                     found: !!bundleInfo,
                     resources: bundleInfo?.length || 0,
+                    availableBundles: Array.from(bundleCache.keys()),
                 });
                 if (bundleInfo && bundleInfo.length > 0) {
                     setPreviewType('bundle');
@@ -163,13 +167,21 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                     setShowPreviewPanel(true);
                     setIsLoadingPreview(false);
                 } else {
+                    console.log('[Preview] Bundle not found in cache');
                     setIsLoadingPreview(false);
-                    setShowPreviewPanel(false);
+                    setShowPreviewPanel(true); // 保持显示，显示"未找到"状态
+                    setPreviewResources([]);
                 }
             } else if (parsed.type === 'resource') {
                 // 查找单个资源
-                const resources = resourcesCache.get(parsed.value.toLowerCase()) || [];
-                console.log('[Preview] Resource lookup', { value: parsed.value, found: resources.length });
+                const resourceKey = parsed.value.toLowerCase();
+                const resources = resourcesCache.get(resourceKey) || [];
+                console.log('[Preview] Resource lookup', {
+                    value: parsed.value,
+                    resourceKey,
+                    found: resources.length,
+                    availableResources: Array.from(resourcesCache.keys()).slice(0, 10), // 只显示前10个
+                });
                 if (resources.length > 0) {
                     setPreviewType('resource');
                     setPreviewBundleName(resources[0].bundle);
@@ -177,22 +189,29 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                     setShowPreviewPanel(true);
                     setIsLoadingPreview(false);
                 } else {
+                    console.log('[Preview] Resource not found in cache');
                     setIsLoadingPreview(false);
-                    setShowPreviewPanel(false);
+                    setShowPreviewPanel(true); // 保持显示，显示"未找到"状态
+                    setPreviewResources([]);
                 }
             } else if (parsed.type === 'resourceGroup' && parsed.resources) {
                 // 查找资源组合（保持顺序）
                 const foundResources: ResourceResponseDto[] = [];
+                const missingResources: string[] = [];
                 parsed.resources.forEach(resourceName => {
-                    const resources = resourcesCache.get(resourceName.toLowerCase()) || [];
+                    const resourceKey = resourceName.toLowerCase();
+                    const resources = resourcesCache.get(resourceKey) || [];
                     // 只取第一个匹配的资源，保持顺序
                     if (resources.length > 0) {
                         foundResources.push(resources[0]);
+                    } else {
+                        missingResources.push(resourceName);
                     }
                 });
                 console.log('[Preview] ResourceGroup lookup', {
                     resources: parsed.resources,
                     found: foundResources.length,
+                    missing: missingResources,
                 });
                 if (foundResources.length > 0) {
                     setPreviewType('resourceGroup');
@@ -201,10 +220,13 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                     setShowPreviewPanel(true);
                     setIsLoadingPreview(false);
                 } else {
+                    console.log('[Preview] No resources found in group');
                     setIsLoadingPreview(false);
-                    setShowPreviewPanel(false);
+                    setShowPreviewPanel(true); // 保持显示，显示"未找到"状态
+                    setPreviewResources([]);
                 }
             } else {
+                console.log('[Preview] Unknown parsed type or missing resources');
                 setIsLoadingPreview(false);
                 setShowPreviewPanel(false);
             }
@@ -246,6 +268,8 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
                 hoverTimeoutRef.current = null;
+                setIsLoadingPreview(false);
+                setShowPreviewPanel(false);
             }
 
             const position = e.position;
@@ -261,25 +285,40 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
 
             lastHoverPositionRef.current = { line: lineNumber, column };
 
+            // 立即显示加载状态
+            setIsLoadingPreview(true);
+            setShowPreviewPanel(true);
+
             // 延迟2秒后触发预览（光标停止移动2秒后）
             hoverTimeoutRef.current = setTimeout(() => {
                 const model = editor.getModel();
-                if (model && editorRef.current) {
-                    const text = model.getValue();
-                    setIsLoadingPreview(true);
-                    const parsed = parseResourceReference(text, lineNumber, column);
-                    console.log('[Preview] Parsed result:', {
-                        parsed,
-                        lineNumber,
-                        column,
-                        text: text.split('\n')[lineNumber - 1],
-                    });
-                    if (parsed) {
-                        handleResourceHover(parsed);
-                    } else {
-                        setIsLoadingPreview(false);
-                        setShowPreviewPanel(false);
-                    }
+                if (!model || !editorRef.current) {
+                    console.log('[Preview] Model or editor not available');
+                    setIsLoadingPreview(false);
+                    setShowPreviewPanel(false);
+                    hoverTimeoutRef.current = null;
+                    return;
+                }
+
+                const text = model.getValue();
+                const currentLine = text.split('\n')[lineNumber - 1] || '';
+                const parsed = parseResourceReference(text, lineNumber, column);
+
+                console.log('[Preview] Parsed result:', {
+                    parsed,
+                    lineNumber,
+                    column,
+                    currentLine,
+                    cursorChar: currentLine[column - 1] || '',
+                });
+
+                if (parsed) {
+                    console.log('[Preview] Found resource reference:', parsed);
+                    handleResourceHover(parsed);
+                } else {
+                    console.log('[Preview] No resource reference found at position');
+                    setIsLoadingPreview(false);
+                    setShowPreviewPanel(false);
                 }
                 hoverTimeoutRef.current = null;
             }, 2000);
@@ -582,13 +621,25 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                 {/* 右侧：预览面板 */}
                 <div className='col-span-4 flex flex-col min-h-0'>
                     {showPreviewPanel || isLoadingPreview ? (
-                        <div className='border rounded-lg p-4 bg-card shadow-lg h-full overflow-auto'>
+                        <div className='border rounded-lg p-4 bg-card shadow-lg h-full overflow-auto flex flex-col'>
                             {isLoadingPreview ? (
-                                <div className='flex items-center justify-center p-8'>
-                                    <Loader2 className='h-6 w-6 animate-spin text-muted-foreground mr-2' />
-                                    <span className='text-sm text-muted-foreground'>正在加载资源预览...</span>
+                                <div className='flex flex-col items-center justify-center p-8 flex-1'>
+                                    <Loader2 className='h-8 w-8 animate-spin text-primary mb-4' />
+                                    <span className='text-sm font-medium text-foreground mb-2'>
+                                        正在解析资源引用...
+                                    </span>
+                                    <span className='text-xs text-muted-foreground text-center'>
+                                        请将光标停留在资源引用上 2 秒
+                                        <br />
+                                        {lastHoverPositionRef.current && (
+                                            <>
+                                                当前位置：第 {lastHoverPositionRef.current.line} 行，第{' '}
+                                                {lastHoverPositionRef.current.column} 列
+                                            </>
+                                        )}
+                                    </span>
                                 </div>
-                            ) : (
+                            ) : previewResources.length > 0 ? (
                                 <InkResourcePreviewPanel
                                     type={previewType}
                                     bundleName={previewBundleName}
@@ -599,15 +650,49 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                                         lastHoverPositionRef.current = null;
                                     }}
                                 />
+                            ) : (
+                                <div className='flex flex-col items-center justify-center p-8 flex-1'>
+                                    <div className='text-sm text-muted-foreground text-center space-y-2'>
+                                        <p className='font-medium'>未找到匹配的资源</p>
+                                        <p className='text-xs'>
+                                            {lastHoverPositionRef.current && (
+                                                <>
+                                                    位置：第 {lastHoverPositionRef.current.line} 行，第{' '}
+                                                    {lastHoverPositionRef.current.column} 列
+                                                    <br />
+                                                </>
+                                            )}
+                                            请确保资源已添加到章节或项目中
+                                        </p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     ) : (
-                        <div className='border rounded-lg p-4 bg-muted/30 h-full flex items-center justify-center'>
-                            <p className='text-sm text-muted-foreground text-center'>
-                                将光标移动到资源引用上
-                                <br />
-                                停留 2 秒查看预览
-                            </p>
+                        <div className='border rounded-lg p-4 bg-muted/30 h-full flex flex-col items-center justify-center'>
+                            <div className='text-sm text-muted-foreground text-center space-y-2'>
+                                <p className='font-medium'>资源预览</p>
+                                <p className='text-xs'>
+                                    将光标移动到资源引用上
+                                    <br />
+                                    停留 2 秒查看预览
+                                </p>
+                                <div className='mt-4 text-xs text-muted-foreground/70 space-y-1'>
+                                    <p>支持的资源引用：</p>
+                                    <ul className='list-disc list-inside space-y-1'>
+                                        <li>
+                                            Bundle: <code className='bg-muted px-1 rounded'>m01</code>
+                                        </li>
+                                        <li>
+                                            单个资源: <code className='bg-muted px-1 rounded'>bg01-hallway</code>
+                                        </li>
+                                        <li>
+                                            资源组合:{' '}
+                                            <code className='bg-muted px-1 rounded'>[m01-body m01-eyes-smile]</code>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
