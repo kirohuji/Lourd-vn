@@ -1,6 +1,6 @@
 import { EmailLoginDto } from '@lourd-game/shared';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { emailLogin, isAuthenticated, isAdmin, checkAuth } = useAuthStore();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -18,10 +19,14 @@ export function LoginPage() {
 
   useEffect(() => {
     checkAuth();
-    if (isAuthenticated && isAdmin()) {
+  }, [checkAuth]);
+
+  useEffect(() => {
+    // 只有在登录页面且已认证时才重定向
+    if (isAuthenticated && isAdmin() && location.pathname === '/login') {
       navigate('/admin/projects', { replace: true });
     }
-  }, [isAuthenticated, navigate, checkAuth, isAdmin]);
+  }, [isAuthenticated, navigate, isAdmin]);
 
   const handleLogin = async () => {
     if (!email.trim()) {

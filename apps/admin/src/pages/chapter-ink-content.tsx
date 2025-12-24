@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useChapterResources } from '@/lib/hooks/use-chapter-resources';
 import { useChapter } from '@/lib/hooks/use-chapters';
 import {
     useCompileInkFile,
@@ -12,18 +13,16 @@ import {
     useInkFiles,
     useUpdateInkFile,
 } from '@/lib/hooks/use-ink-files';
-import { useAllResources, useBundleList } from '@/lib/hooks/use-resources';
+import { useProjectResources } from '@/lib/hooks/use-project-resources';
 import { parseResourceReference } from '@/lib/utils/ink-parser';
 import { ResourceResponseDto } from '@lourd-game/shared';
 import Editor, { loader } from '@monaco-editor/react';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 // Monaco Editor 类型 - 使用 any 类型避免类型检查问题，运行时类型由 loader 提供
 type MonacoEditor = any;
 type IStandaloneCodeEditor = any;
-type ITextModel = any;
-type IPosition = { lineNumber: number; column: number };
 type IDisposable = { dispose: () => void };
 
 interface ChapterInkContentProps {
@@ -54,20 +53,47 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
     const [previewResources, setPreviewResources] = useState<ResourceResponseDto[]>([]);
     const [previewBundleName, setPreviewBundleName] = useState<string | undefined>();
     const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const editorRef = useRef<IStandaloneCodeEditor | null>(null);
     const monacoRef = useRef<MonacoEditor | null>(null);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastHoverPositionRef = useRef<{ line: number; column: number } | null>(null);
 
-    // 获取所有资源数据（用于搜索）
-    const { data: allResourcesData } = useAllResources();
-    const { data: bundleListData } = useBundleList({ limit: 1000 });
+    // 获取章节资源（包含章节资源和项目资源）
+    const { data: chapterResourcesData, isLoading: isLoadingChapterResources } = useChapterResources(cid, {
+        page: 1,
+        limit: 1000,
+    });
 
-    // 资源缓存
+    // 获取项目资源（如果章节有项目ID）
+    const projectId = chapter?.projectId;
+    const { data: projectResourcesData, isLoading: isLoadingProjectResources } = useProjectResources(projectId || 0, {
+        page: 1,
+        limit: 1000,
+    });
+
+    // 合并章节资源和项目资源
+    const allAvailableResources = useMemo(() => {
+        const resources: ResourceResponseDto[] = [];
+        if (chapterResourcesData?.data) {
+            resources.push(...chapterResourcesData.data);
+        }
+        if (projectResourcesData?.data) {
+            // 去重：如果资源已经在章节资源中，就不添加项目资源
+            const chapterResourceIds = new Set(chapterResourcesData?.data?.map((r: ResourceResponseDto) => r.id) || []);
+            projectResourcesData.data.forEach((resource: ResourceResponseDto) => {
+                if (!chapterResourceIds.has(resource.id)) {
+                    resources.push(resource);
+                }
+            });
+        }
+        return resources;
+    }, [chapterResourcesData, projectResourcesData]);
+
+    // 资源缓存（按别名索引）
     const resourcesCache = useMemo(() => {
-        if (!allResourcesData?.data) return new Map<string, ResourceResponseDto[]>();
         const cache = new Map<string, ResourceResponseDto[]>();
-        allResourcesData.data.forEach(resource => {
+        allAvailableResources.forEach(resource => {
             const alias = resource.alias.toLowerCase();
             if (!cache.has(alias)) {
                 cache.set(alias, []);
@@ -75,17 +101,21 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
             cache.get(alias)!.push(resource);
         });
         return cache;
-    }, [allResourcesData]);
+    }, [allAvailableResources]);
 
-    // Bundle缓存
+    // Bundle缓存（从资源中提取）
     const bundleCache = useMemo(() => {
-        if (!bundleListData?.data) return new Map<string, any>();
-        const cache = new Map<string, any>();
-        bundleListData.data.forEach((bundle: any) => {
-            cache.set(bundle.name.toLowerCase(), bundle);
+        const cache = new Map<string, { name: string; resources: ResourceResponseDto[] }>();
+        allAvailableResources.forEach(resource => {
+            const bundleName = resource.bundle || '未分类';
+            const bundleKey = bundleName.toLowerCase();
+            if (!cache.has(bundleKey)) {
+                cache.set(bundleKey, { name: bundleName, resources: [] });
+            }
+            cache.get(bundleKey)!.resources.push(resource);
         });
         return cache;
-    }, [bundleListData]);
+    }, [allAvailableResources]);
 
     useEffect(() => {
         if (!selectedId && inkFiles.length > 0) {
@@ -106,115 +136,115 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
     // 处理资源悬停
     const handleResourceHover = useMemo(
         () => (parsed: ReturnType<typeof parseResourceReference>) => {
-            if (!parsed) return;
-
-            if (parsed.type === 'bundle') {
-                // 查找Bundle信息
-                const bundleInfo = bundleCache.get(parsed.value.toLowerCase());
-                if (bundleInfo) {
-                    // 获取该Bundle的所有资源
-                    const bundleResources =
-                        allResourcesData?.data?.filter(r => r.bundle?.toLowerCase() === parsed.value.toLowerCase()) ||
-                        [];
-                    setPreviewType('bundle');
-                    setPreviewBundleName(parsed.value);
-                    setPreviewResources(bundleResources);
-                    setShowPreviewPanel(true);
-                }
-            } else if (parsed.type === 'resource') {
-                // 查找单个资源
-                const resources = resourcesCache.get(parsed.value.toLowerCase()) || [];
-                if (resources.length > 0) {
-                    setPreviewType('resource');
-                    setPreviewBundleName(resources[0].bundle);
-                    setPreviewResources(resources);
-                    setShowPreviewPanel(true);
-                }
-            } else if (parsed.type === 'resourceGroup' && parsed.resources) {
-                // 查找资源组合（保持顺序）
-                const foundResources: ResourceResponseDto[] = [];
-                parsed.resources.forEach(resourceName => {
-                    const resources = resourcesCache.get(resourceName.toLowerCase()) || [];
-                    // 只取第一个匹配的资源，保持顺序
-                    if (resources.length > 0) {
-                        foundResources.push(resources[0]);
-                    }
-                });
-                if (foundResources.length > 0) {
-                    setPreviewType('resourceGroup');
-                    setPreviewBundleName(foundResources[0]?.bundle);
-                    setPreviewResources(foundResources);
-                    setShowPreviewPanel(true);
-                }
+            if (!parsed) {
+                setIsLoadingPreview(false);
+                return;
             }
+
+            setIsLoadingPreview(true);
+
+            // 使用 setTimeout 确保状态更新在下一个事件循环
+            setTimeout(() => {
+                if (parsed.type === 'bundle') {
+                    // 查找Bundle信息
+                    const bundleInfo = bundleCache.get(parsed.value.toLowerCase());
+                    if (bundleInfo) {
+                        setPreviewType('bundle');
+                        setPreviewBundleName(parsed.value);
+                        setPreviewResources(bundleInfo.resources);
+                        setShowPreviewPanel(true);
+                    }
+                    setIsLoadingPreview(false);
+                } else if (parsed.type === 'resource') {
+                    // 查找单个资源
+                    const resources = resourcesCache.get(parsed.value.toLowerCase()) || [];
+                    if (resources.length > 0) {
+                        setPreviewType('resource');
+                        setPreviewBundleName(resources[0].bundle);
+                        setPreviewResources(resources);
+                        setShowPreviewPanel(true);
+                    }
+                    setIsLoadingPreview(false);
+                } else if (parsed.type === 'resourceGroup' && parsed.resources) {
+                    // 查找资源组合（保持顺序）
+                    const foundResources: ResourceResponseDto[] = [];
+                    parsed.resources.forEach(resourceName => {
+                        const resources = resourcesCache.get(resourceName.toLowerCase()) || [];
+                        // 只取第一个匹配的资源，保持顺序
+                        if (resources.length > 0) {
+                            foundResources.push(resources[0]);
+                        }
+                    });
+                    if (foundResources.length > 0) {
+                        setPreviewType('resourceGroup');
+                        setPreviewBundleName(foundResources[0]?.bundle);
+                        setPreviewResources(foundResources);
+                        setShowPreviewPanel(true);
+                    }
+                    setIsLoadingPreview(false);
+                } else {
+                    setIsLoadingPreview(false);
+                }
+            }, 0);
         },
-        [resourcesCache, bundleCache, allResourcesData],
+        [resourcesCache, bundleCache],
     );
 
-    // 注册Monaco Editor hover provider和鼠标移动监听
+    // 监听光标位置变化，触发资源预览
     useEffect(() => {
-        if (!editorRef.current || !monacoRef.current) return;
+        if (!editorRef.current) return;
+        // 确保资源数据已加载
+        if (isLoadingChapterResources || (projectId && isLoadingProjectResources)) return;
 
         const editor = editorRef.current;
-        const monaco = monacoRef.current;
-        if (!monaco) return;
+        let cursorChangeDisposable: IDisposable | null = null;
 
-        let hoverDisposable: IDisposable | null = null;
-        let mouseMoveDisposable: IDisposable | null = null;
+        // 监听光标位置变化
+        cursorChangeDisposable = editor.onDidChangeCursorPosition((e: any) => {
+            // 清除之前的定时器
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+            }
 
-        // 注册hover provider
-        hoverDisposable = monaco.languages.registerHoverProvider('ink', {
-            provideHover: (model: ITextModel, position: IPosition) => {
-                // 清除之前的定时器
-                if (hoverTimeoutRef.current) {
-                    clearTimeout(hoverTimeoutRef.current);
-                    hoverTimeoutRef.current = null;
-                }
+            const position = e.position;
+            if (!position) return;
 
-                const lineNumber = position.lineNumber;
-                const column = position.column;
+            const lineNumber = position.lineNumber;
+            const column = position.column;
 
-                // 检查是否在同一位置
-                if (
-                    lastHoverPositionRef.current?.line === lineNumber &&
-                    lastHoverPositionRef.current?.column === column
-                ) {
-                    return null;
-                }
+            // 检查是否在同一位置
+            if (lastHoverPositionRef.current?.line === lineNumber && lastHoverPositionRef.current?.column === column) {
+                return;
+            }
 
-                lastHoverPositionRef.current = { line: lineNumber, column };
+            lastHoverPositionRef.current = { line: lineNumber, column };
 
-                // 延迟2秒后触发预览
-                hoverTimeoutRef.current = setTimeout(() => {
+            // 延迟2秒后触发预览（光标停止移动2秒后）
+            hoverTimeoutRef.current = setTimeout(() => {
+                const model = editor.getModel();
+                if (model) {
+                    setIsLoadingPreview(true);
                     const parsed = parseResourceReference(model.getValue(), lineNumber, column);
                     if (parsed) {
                         handleResourceHover(parsed);
+                    } else {
+                        setIsLoadingPreview(false);
                     }
-                    hoverTimeoutRef.current = null;
-                }, 2000);
-
-                return null;
-            },
-        });
-
-        // 监听鼠标移动，清除定时器
-        mouseMoveDisposable = editor.onMouseMove(() => {
-            if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current);
+                }
                 hoverTimeoutRef.current = null;
-                lastHoverPositionRef.current = null;
-            }
+            }, 2000);
         });
 
         return () => {
-            hoverDisposable?.dispose();
-            mouseMoveDisposable?.dispose();
+            cursorChangeDisposable?.dispose();
             if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
                 hoverTimeoutRef.current = null;
             }
+            setIsLoadingPreview(false);
         };
-    }, [handleResourceHover, monacoRef.current]);
+    }, [handleResourceHover, editorRef.current, isLoadingChapterResources, isLoadingProjectResources, projectId]);
 
     // 编辑器加载完成回调
     const handleEditorDidMount = async (editorInstance: IStandaloneCodeEditor) => {
@@ -416,16 +446,26 @@ export default function ChapterInkContent({ chapterId }: ChapterInkContentProps)
                             }}
                         />
                     </div>
-                    {showPreviewPanel && (
-                        <InkResourcePreviewPanel
-                            type={previewType}
-                            bundleName={previewBundleName}
-                            resources={previewResources}
-                            onClose={() => {
-                                setShowPreviewPanel(false);
-                                lastHoverPositionRef.current = null;
-                            }}
-                        />
+                    {(showPreviewPanel || isLoadingPreview) && (
+                        <div className='relative border rounded-lg p-4 bg-card shadow-lg'>
+                            {isLoadingPreview ? (
+                                <div className='flex items-center justify-center p-8'>
+                                    <Loader2 className='h-6 w-6 animate-spin text-muted-foreground mr-2' />
+                                    <span className='text-sm text-muted-foreground'>正在加载资源预览...</span>
+                                </div>
+                            ) : (
+                                <InkResourcePreviewPanel
+                                    type={previewType}
+                                    bundleName={previewBundleName}
+                                    resources={previewResources}
+                                    onClose={() => {
+                                        setShowPreviewPanel(false);
+                                        setIsLoadingPreview(false);
+                                        lastHoverPositionRef.current = null;
+                                    }}
+                                />
+                            )}
+                        </div>
                     )}
                     <div className='space-x-2'>
                         <Button onClick={handleSave} disabled={!selectedId}>
