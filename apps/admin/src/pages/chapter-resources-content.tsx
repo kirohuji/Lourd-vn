@@ -49,6 +49,8 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
     const [selectedBundle, setSelectedBundle] = useState<string | null>(null);
     const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
     const [resourceToRemove, setResourceToRemove] = useState<ResourceResponseDto | null>(null);
+    const [bundleToRemove, setBundleToRemove] = useState<string | null>(null);
+    const [removeBundleConfirmOpen, setRemoveBundleConfirmOpen] = useState(false);
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [availableResourcesPage, setAvailableResourcesPage] = useState(1);
     const [availableResourcesSearch, setAvailableResourcesSearch] = useState('');
@@ -219,6 +221,58 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
         }
     };
 
+    const handleRemoveBundle = async () => {
+        if (!bundleToRemove) return;
+        try {
+            // 获取该 Bundle 下的所有资源
+            const bundleResources = allChapterResources.filter(r => (r.bundle || '未分类') === bundleToRemove);
+            if (bundleResources.length === 0) {
+                toast({ title: '提示', description: '该 Bundle 下没有资源' });
+                setRemoveBundleConfirmOpen(false);
+                setBundleToRemove(null);
+                return;
+            }
+
+            // 批量删除资源关联
+            let successCount = 0;
+            let failCount = 0;
+            const results = await Promise.allSettled(
+                bundleResources.map(resource =>
+                    removeResourceMutation.mutateAsync({ chapterId: chapterIdNum, resourceId: resource.id }),
+                ),
+            );
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    successCount++;
+                } else {
+                    failCount++;
+                    console.error(`移除资源 ${bundleResources[index].alias} 失败:`, result.reason);
+                }
+            });
+
+            toast({
+                title: '批量移除完成',
+                description: `成功: ${successCount}, 失败: ${failCount}`,
+                variant: successCount > 0 && failCount === 0 ? 'default' : 'destructive',
+            });
+
+            setRemoveBundleConfirmOpen(false);
+            setBundleToRemove(null);
+            if (selectedBundle === bundleToRemove) {
+                setSelectedBundle(null);
+            }
+            refetchAllResources();
+            refetchChapterResources();
+        } catch (error: any) {
+            toast({
+                title: '移除失败',
+                description: error.message || '移除 Bundle 失败',
+                variant: 'destructive',
+            });
+        }
+    };
+
     const handleToggleBundle = (bundleName: string) => {
         setSelectedBundles(prev => {
             const next = new Set(prev);
@@ -339,7 +393,7 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
     const selectedBundleTotalPages = chapterResourcesData?.totalPages || 1;
 
     return (
-        <div className='flex flex-col h-full space-y-4'>
+        <div className='flex flex-col space-y-4'>
             <div className='flex items-center justify-between'>
                 <h1 className='text-3xl font-bold'>章节资源管理</h1>
                 <div className='flex items-center gap-2'>
@@ -403,20 +457,24 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
                     <div className='flex items-center justify-between mb-2'>
                         <h2 className='text-lg font-semibold'>Bundle 列表</h2>
                     </div>
-                    <BundleTable
-                        bundles={bundleInfo}
-                        selectedBundle={selectedBundle}
-                        onSelectBundle={setSelectedBundle}
-                        onUpload={() => setAddDialogOpen(true)}
-                        onEdit={() => {}}
-                        onMigrateToCos={() => {}}
-                        migratingBundle={null}
-                        getBundleTypeLabel={getBundleTypeLabel}
-                    />
+                    <div className='flex-1 overflow-auto min-h-0'>
+                        <BundleTable
+                            bundles={bundleInfo}
+                            selectedBundle={selectedBundle}
+                            onSelectBundle={setSelectedBundle}
+                            getBundleTypeLabel={getBundleTypeLabel}
+                            showActions={false}
+                            showDelete={true}
+                            onDelete={bundleName => {
+                                setBundleToRemove(bundleName);
+                                setRemoveBundleConfirmOpen(true);
+                            }}
+                        />
+                    </div>
 
                     {/* 资源卡片列表 */}
                     {selectedBundle && (
-                        <div className='border-t pt-4'>
+                        <div className='border-t pt-4 flex-shrink-0'>
                             <div className='flex items-center justify-between mb-4'>
                                 <h3 className='text-lg font-semibold'>
                                     {selectedBundle} 的资源 ({selectedBundleTotal} 个)
@@ -443,14 +501,7 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
                                 </div>
                             ) : selectedBundleResources.length > 0 ? (
                                 <>
-                                    <BundleResourceGroup
-                                        bundle={selectedBundle}
-                                        resources={selectedBundleResources}
-                                        onDelete={resource => {
-                                            setResourceToRemove(resource);
-                                            setRemoveConfirmOpen(true);
-                                        }}
-                                    />
+                                    <BundleResourceGroup bundle={selectedBundle} resources={selectedBundleResources} />
                                     {/* 分页 */}
                                     {selectedBundleTotalPages > 1 && (
                                         <div className='mt-4'>
@@ -745,7 +796,7 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
                 </Dialog>
             )}
 
-            {/* 移除确认对话框 */}
+            {/* 移除资源确认对话框 */}
             <AlertDialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -762,6 +813,29 @@ export function ChapterResourcesContent({ chapterId }: ChapterResourcesContentPr
                             className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
                         >
                             移除
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* 移除 Bundle 确认对话框 */}
+            <AlertDialog open={removeBundleConfirmOpen} onOpenChange={setRemoveBundleConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>确认移除 Bundle</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            确定要从章节中移除 Bundle "{bundleToRemove}"
+                            下的所有资源吗？这不会删除资源本身，只是移除章节与这些资源的关联。
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleRemoveBundle}
+                            className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                            disabled={removeResourceMutation.isPending}
+                        >
+                            {removeResourceMutation.isPending ? '移除中...' : '确认移除'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

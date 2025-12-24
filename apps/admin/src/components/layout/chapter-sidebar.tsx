@@ -13,9 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useChapters, useCreateChapter } from '@/lib/hooks/use-chapters';
 import { cn } from '@/lib/utils';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, HardDrive, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 interface ChapterSidebarProps {
     projectId: number;
@@ -23,6 +23,7 @@ interface ChapterSidebarProps {
 
 export function ChapterSidebar({ projectId }: ChapterSidebarProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const params = useParams<{ chapterId?: string }>();
     const { toast } = useToast();
     const { data: chapters = [], isLoading, refetch } = useChapters(projectId);
@@ -88,6 +89,22 @@ export function ChapterSidebar({ projectId }: ChapterSidebarProps) {
                         <Plus className='h-4 w-4' />
                     </Button>
                 </div>
+            </div>
+
+            {/* 项目资源管理入口 */}
+            <div className='border-b p-2'>
+                <button
+                    onClick={() => navigate(`/admin/projects/${projectId}/resources`)}
+                    className={cn(
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                        location.pathname === `/admin/projects/${projectId}/resources`
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    )}
+                >
+                    <HardDrive className='h-4 w-4 shrink-0' />
+                    <span className='font-medium'>项目资源管理</span>
+                </button>
             </div>
 
             <div className='flex-1 overflow-y-auto p-2'>
