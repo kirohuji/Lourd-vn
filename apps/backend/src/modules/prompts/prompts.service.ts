@@ -606,6 +606,15 @@ export class PromptsService {
     const images = await this.prisma.promptImage.findMany({
       where: { characterPromptId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            mergedPrompt: true,
+          },
+        },
+      },
     });
 
     return images.map((img) => ({
@@ -629,6 +638,14 @@ export class PromptsService {
         basicPrompt: characterPrompt.basicPrompt,
         undesiredContent: characterPrompt.undesiredContent || undefined,
       },
+      variant:
+        img.variantId && img.variant
+          ? {
+              id: img.variant.id,
+              name: img.variant.name,
+              mergedPrompt: img.variant.mergedPrompt,
+            }
+          : undefined,
     }));
   }
 
@@ -864,6 +881,9 @@ export class PromptsService {
     let characterPromptInfo:
       | { basicPrompt: string; undesiredContent?: string }
       | undefined;
+    let variantInfo:
+      | { id: number; name: string; mergedPrompt: string }
+      | undefined;
 
     if (existing.basePromptId) {
       const bp = await this.prisma.basePrompt.findUnique({
@@ -905,6 +925,25 @@ export class PromptsService {
       }
     }
 
+    // 获取变体信息（如果图片属于某个变体）
+    if (updated.variantId) {
+      const variant = await this.prisma.promptVariant.findUnique({
+        where: { id: updated.variantId },
+        select: {
+          id: true,
+          name: true,
+          mergedPrompt: true,
+        },
+      });
+      if (variant) {
+        variantInfo = {
+          id: variant.id,
+          name: variant.name,
+          mergedPrompt: variant.mergedPrompt,
+        };
+      }
+    }
+
     return {
       id: updated.id,
       basePromptId: updated.basePromptId || undefined,
@@ -917,6 +956,7 @@ export class PromptsService {
       updatedAt: updated.updatedAt,
       basePrompt: basePromptInfo,
       characterPrompt: characterPromptInfo,
+      variant: variantInfo,
     };
   }
 
@@ -1461,7 +1501,7 @@ export class PromptsService {
       orderBy: [{ isDefault: 'desc' }, { order: 'asc' }, { name: 'asc' }],
     });
 
-    // 获取所有图片，同时获取关联的 Prompt 信息
+    // 获取所有图片，同时获取关联的 Prompt 信息和变体信息
     const allImages = await this.prisma.promptImage.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -1486,6 +1526,13 @@ export class PromptsService {
               },
             }
           : false,
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            mergedPrompt: true,
+          },
+        },
       },
     });
 
@@ -1531,6 +1578,15 @@ export class PromptsService {
               basicPrompt: (img as any).characterPrompt.basicPrompt,
               undesiredContent:
                 (img as any).characterPrompt.undesiredContent || undefined,
+            };
+          }
+
+          // 添加变体信息（如果图片属于某个变体）
+          if (img.variantId && (img as any).variant) {
+            result.variant = {
+              id: (img as any).variant.id,
+              name: (img as any).variant.name,
+              mergedPrompt: (img as any).variant.mergedPrompt,
             };
           }
 

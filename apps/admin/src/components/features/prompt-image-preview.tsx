@@ -176,6 +176,18 @@ export function PromptImagePreview({
                             </div>
                         )}
 
+                        {/* 变体合并 Prompt 组 */}
+                        {image.variant && (
+                            <div className='space-y-2'>
+                                <div className='text-sm font-semibold'>
+                                    变体合并 Prompt ({image.variant.name}):
+                                </div>
+                                <div className='p-3 bg-muted rounded-lg text-sm font-mono whitespace-pre-wrap break-words border-l-4 border-accent'>
+                                    {image.variant.mergedPrompt}
+                                </div>
+                            </div>
+                        )}
+
                         {/* 如果没有分组信息，显示生成的 Prompt */}
                         {!image.basePrompt && !image.characterPrompt && (
                             <div className='space-y-2'>

@@ -303,6 +303,12 @@ export interface PromptImageResponseDto {
         basicPrompt: string;
         undesiredContent?: string;
     };
+    // 新增：关联的变体信息（如果图片属于某个变体）
+    variant?: {
+        id: number;
+        name: string;
+        mergedPrompt: string; // 合并后的最终 Prompt
+    };
 }
 
 /**
