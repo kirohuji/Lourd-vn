@@ -2,7 +2,6 @@ import { BasePromptForm } from '@/components/features/base-prompt-form';
 import { CharacterPromptForm } from '@/components/features/character-prompt-form';
 import { PromptImagePreview } from '@/components/features/prompt-image-preview';
 import { PromptImageUpload } from '@/components/features/prompt-image-upload';
-import { Button } from '@/components/ui/button';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,8 +12,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
+    useBasePromptImages,
     useBasePrompts,
     useCharacterPrompts,
     useDeleteBasePrompt,
@@ -46,10 +47,20 @@ export function PromptsPage() {
         refetch: refetchCharacterPrompts,
     } = useCharacterPrompts(selectedBasePromptId || 0);
     const {
-        data: promptImages = [],
-        isLoading: isLoadingImages,
-        refetch: refetchImages,
+        data: characterPromptImages = [],
+        isLoading: isLoadingCharacterImages,
+        refetch: refetchCharacterImages,
     } = usePromptImages(selectedCharacterPromptId || 0);
+    const {
+        data: basePromptImages = [],
+        isLoading: isLoadingBaseImages,
+        refetch: refetchBaseImages,
+    } = useBasePromptImages(selectedBasePromptId || 0);
+
+    // 根据是否选中 CharacterPrompt 决定显示哪个图片集合
+    const promptImages = selectedCharacterPromptId ? characterPromptImages : basePromptImages;
+    const isLoadingImages = selectedCharacterPromptId ? isLoadingCharacterImages : isLoadingBaseImages;
+    const refetchImages = selectedCharacterPromptId ? refetchCharacterImages : refetchBaseImages;
 
     const deleteBasePrompt = useDeleteBasePrompt();
     const deleteCharacterPrompt = useDeleteCharacterPrompt();
@@ -191,6 +202,9 @@ export function PromptsPage() {
                                             <div className='font-medium truncate'>{bp.name}</div>
                                             <div className='text-xs text-muted-foreground mt-1'>
                                                 {bp.characterPrompts?.length || 0} 个 Character Prompts
+                                                {bp.imageCount !== undefined && bp.imageCount > 0 && (
+                                                    <> · {bp.imageCount} 张图片</>
+                                                )}
                                             </div>
                                         </div>
                                         <div className='flex gap-1 ml-2' onClick={e => e.stopPropagation()}>
@@ -293,18 +307,22 @@ export function PromptsPage() {
                     <div className='flex items-center justify-between mb-3'>
                         <div className='font-semibold'>
                             图片集合
-                            {selectedCharacterPrompt && ` - ${selectedCharacterPrompt.name}`}
+                            {selectedCharacterPrompt
+                                ? ` - ${selectedCharacterPrompt.name}`
+                                : selectedBasePrompt
+                                ? ` - ${selectedBasePrompt.name} (Base Prompt)`
+                                : ''}
                         </div>
-                        {selectedCharacterPromptId && (
+                        {(selectedCharacterPromptId || selectedBasePromptId) && (
                             <Button size='sm' onClick={() => setImageUploadOpen(true)}>
                                 <Upload className='mr-2 h-4 w-4' />
                                 上传图片
                             </Button>
                         )}
                     </div>
-                    {!selectedCharacterPromptId ? (
+                    {!selectedBasePromptId ? (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
-                            请先选择一个 Character Prompt
+                            请先选择一个 Base Prompt
                         </div>
                     ) : isLoadingImages ? (
                         <div className='flex items-center justify-center flex-1'>
@@ -355,14 +373,16 @@ export function PromptsPage() {
             )}
 
             {/* 图片上传对话框 */}
-            {selectedCharacterPromptId && (
+            {(selectedCharacterPromptId || selectedBasePromptId) && (
                 <PromptImageUpload
                     open={imageUploadOpen}
                     onOpenChange={setImageUploadOpen}
-                    characterPromptId={selectedCharacterPromptId}
+                    characterPromptId={selectedCharacterPromptId || 0}
+                    basePromptId={selectedBasePromptId || undefined}
                     onSuccess={() => {
                         refetchImages();
                         refetchCharacterPrompts();
+                        refetchBasePrompts();
                     }}
                 />
             )}
@@ -373,7 +393,12 @@ export function PromptsPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>确认删除</AlertDialogTitle>
                         <AlertDialogDescription>
-                            确定要删除 {deleteType === 'base' ? 'Base Prompt' : deleteType === 'character' ? 'Character Prompt' : '图片'}{' '}
+                            确定要删除{' '}
+                            {deleteType === 'base'
+                                ? 'Base Prompt'
+                                : deleteType === 'character'
+                                ? 'Character Prompt'
+                                : '图片'}{' '}
                             {itemToDelete?.name ? `"${itemToDelete.name}"` : ''} 吗？此操作无法撤销。
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -386,4 +411,3 @@ export function PromptsPage() {
         </div>
     );
 }
-

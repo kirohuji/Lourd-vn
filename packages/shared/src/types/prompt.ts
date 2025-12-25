@@ -6,6 +6,11 @@ export interface BasePrompt {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
     createdAt: Date;
     updatedAt: Date;
 }
@@ -19,6 +24,11 @@ export interface CharacterPrompt {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,7 +38,8 @@ export interface CharacterPrompt {
  */
 export interface PromptImage {
     id: number;
-    characterPromptId: number;
+    basePromptId?: number; // 可选：直接关联到 BasePrompt
+    characterPromptId?: number; // 可选：关联到 CharacterPrompt
     imageUrl: string;
     generatedPrompt: string;
     status: 'uploaded' | 'generated';
@@ -43,6 +54,11 @@ export interface CreateBasePromptDto {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
 }
 
 /**
@@ -52,6 +68,11 @@ export interface UpdateBasePromptDto {
     name?: string;
     prompt?: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
 }
 
 /**
@@ -61,6 +82,11 @@ export interface CreateCharacterPromptDto {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
 }
 
 /**
@@ -70,6 +96,11 @@ export interface UpdateCharacterPromptDto {
     name?: string;
     prompt?: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
 }
 
 /**
@@ -80,9 +111,15 @@ export interface BasePromptResponseDto {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
     createdAt: Date;
     updatedAt: Date;
     characterPrompts?: CharacterPromptResponseDto[];
+    imageCount?: number; // Base Prompt 直接关联的图片数量
 }
 
 /**
@@ -94,6 +131,11 @@ export interface CharacterPromptResponseDto {
     name: string;
     prompt: string;
     undesiredContent?: string;
+    // Vibe Transfer 参数
+    normalizeReferenceStrength?: boolean;
+    referenceStrength?: number; // 0-1
+    informationExtracted?: number; // 0-1
+    referenceImageUrl?: string; // 参考图 URL
     createdAt: Date;
     updatedAt: Date;
     imageCount?: number;
@@ -104,7 +146,8 @@ export interface CharacterPromptResponseDto {
  */
 export interface PromptImageResponseDto {
     id: number;
-    characterPromptId: number;
+    basePromptId?: number; // 可选：直接关联到 BasePrompt
+    characterPromptId?: number; // 可选：关联到 CharacterPrompt
     imageUrl: string;
     generatedPrompt: string;
     status: 'uploaded' | 'generated';

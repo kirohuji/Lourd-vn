@@ -42,6 +42,9 @@ export class PromptsService {
             },
           },
         },
+        _count: {
+          select: { images: true },
+        },
       },
     });
 
@@ -50,14 +53,23 @@ export class PromptsService {
       name: bp.name,
       prompt: bp.prompt,
       undesiredContent: bp.undesiredContent || undefined,
+      normalizeReferenceStrength: bp.normalizeReferenceStrength || undefined,
+      referenceStrength: bp.referenceStrength || undefined,
+      informationExtracted: bp.informationExtracted || undefined,
+      referenceImageUrl: bp.referenceImageUrl || undefined,
       createdAt: bp.createdAt,
       updatedAt: bp.updatedAt,
+      imageCount: bp._count.images,
       characterPrompts: bp.characterPrompts.map(cp => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
         prompt: cp.prompt,
         undesiredContent: cp.undesiredContent || undefined,
+        normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
+        referenceStrength: cp.referenceStrength || undefined,
+        informationExtracted: cp.informationExtracted || undefined,
+        referenceImageUrl: cp.referenceImageUrl || undefined,
         createdAt: cp.createdAt,
         updatedAt: cp.updatedAt,
         imageCount: cp._count.images,
@@ -76,6 +88,9 @@ export class PromptsService {
             },
           },
         },
+        _count: {
+          select: { images: true },
+        },
       },
     });
 
@@ -88,14 +103,23 @@ export class PromptsService {
       name: basePrompt.name,
       prompt: basePrompt.prompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: basePrompt.referenceStrength || undefined,
+      informationExtracted: basePrompt.informationExtracted || undefined,
+      referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
+      imageCount: basePrompt._count.images,
       characterPrompts: basePrompt.characterPrompts.map(cp => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
         prompt: cp.prompt,
         undesiredContent: cp.undesiredContent || undefined,
+        normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
+        referenceStrength: cp.referenceStrength || undefined,
+        informationExtracted: cp.informationExtracted || undefined,
+        referenceImageUrl: cp.referenceImageUrl || undefined,
         createdAt: cp.createdAt,
         updatedAt: cp.updatedAt,
         imageCount: cp._count.images,
@@ -109,6 +133,10 @@ export class PromptsService {
         name: dto.name,
         prompt: dto.prompt,
         undesiredContent: dto.undesiredContent,
+        normalizeReferenceStrength: dto.normalizeReferenceStrength || false,
+        referenceStrength: dto.referenceStrength,
+        informationExtracted: dto.informationExtracted,
+        referenceImageUrl: dto.referenceImageUrl,
       },
       include: {
         characterPrompts: {
@@ -118,6 +146,9 @@ export class PromptsService {
             },
           },
         },
+        _count: {
+          select: { images: true },
+        },
       },
     });
 
@@ -126,14 +157,23 @@ export class PromptsService {
       name: basePrompt.name,
       prompt: basePrompt.prompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: basePrompt.referenceStrength || undefined,
+      informationExtracted: basePrompt.informationExtracted || undefined,
+      referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
+      imageCount: basePrompt._count.images,
       characterPrompts: basePrompt.characterPrompts.map(cp => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
         prompt: cp.prompt,
         undesiredContent: cp.undesiredContent || undefined,
+        normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
+        referenceStrength: cp.referenceStrength || undefined,
+        informationExtracted: cp.informationExtracted || undefined,
+        referenceImageUrl: cp.referenceImageUrl || undefined,
         createdAt: cp.createdAt,
         updatedAt: cp.updatedAt,
         imageCount: cp._count.images,
@@ -159,6 +199,10 @@ export class PromptsService {
         name: dto.name,
         prompt: dto.prompt,
         undesiredContent: dto.undesiredContent,
+        normalizeReferenceStrength: dto.normalizeReferenceStrength,
+        referenceStrength: dto.referenceStrength,
+        informationExtracted: dto.informationExtracted,
+        referenceImageUrl: dto.referenceImageUrl,
       },
       include: {
         characterPrompts: {
@@ -168,6 +212,9 @@ export class PromptsService {
             },
           },
         },
+        _count: {
+          select: { images: true },
+        },
       },
     });
 
@@ -176,19 +223,72 @@ export class PromptsService {
       name: basePrompt.name,
       prompt: basePrompt.prompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: basePrompt.referenceStrength || undefined,
+      informationExtracted: basePrompt.informationExtracted || undefined,
+      referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
+      imageCount: basePrompt._count.images,
       characterPrompts: basePrompt.characterPrompts.map(cp => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
         prompt: cp.prompt,
         undesiredContent: cp.undesiredContent || undefined,
+        normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
+        referenceStrength: cp.referenceStrength || undefined,
+        informationExtracted: cp.informationExtracted || undefined,
+        referenceImageUrl: cp.referenceImageUrl || undefined,
         createdAt: cp.createdAt,
         updatedAt: cp.updatedAt,
         imageCount: cp._count.images,
       })),
     };
+  }
+
+  async uploadBasePromptReferenceImage(
+    id: number,
+    file: Express.Multer.File,
+  ): Promise<{ imageUrl: string }> {
+    const existing = await this.prisma.basePrompt.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Base Prompt with ID ${id} not found`);
+    }
+
+    // 验证文件
+    const validation = validateFile(file, {
+      maxSize: MAX_FILE_SIZE,
+      allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+        ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
+      ),
+    });
+
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    // 计算文件哈希
+    const hash = calculateFileMD5(file.buffer);
+
+    // 生成 COS Key
+    const cosKey = generateCosKey(hash, file.originalname);
+
+    // 上传到 COS
+    const fileUrl = await this.cosService.uploadFile(file.buffer, cosKey);
+
+    // 更新 Base Prompt 的参考图 URL
+    await this.prisma.basePrompt.update({
+      where: { id },
+      data: {
+        referenceImageUrl: fileUrl,
+      },
+    });
+
+    return { imageUrl: fileUrl };
   }
 
   async deleteBasePrompt(id: number): Promise<void> {
@@ -234,6 +334,10 @@ export class PromptsService {
       name: cp.name,
       prompt: cp.prompt,
       undesiredContent: cp.undesiredContent || undefined,
+      normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
+      referenceStrength: cp.referenceStrength || undefined,
+      informationExtracted: cp.informationExtracted || undefined,
+      referenceImageUrl: cp.referenceImageUrl || undefined,
       createdAt: cp.createdAt,
       updatedAt: cp.updatedAt,
       imageCount: cp._count.images,
@@ -260,6 +364,10 @@ export class PromptsService {
       name: characterPrompt.name,
       prompt: characterPrompt.prompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: characterPrompt.referenceStrength || undefined,
+      informationExtracted: characterPrompt.informationExtracted || undefined,
+      referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
       createdAt: characterPrompt.createdAt,
       updatedAt: characterPrompt.updatedAt,
       imageCount: characterPrompt._count.images,
@@ -284,6 +392,10 @@ export class PromptsService {
         name: dto.name,
         prompt: dto.prompt,
         undesiredContent: dto.undesiredContent,
+        normalizeReferenceStrength: dto.normalizeReferenceStrength || false,
+        referenceStrength: dto.referenceStrength,
+        informationExtracted: dto.informationExtracted,
+        referenceImageUrl: dto.referenceImageUrl,
       },
       include: {
         _count: {
@@ -298,6 +410,10 @@ export class PromptsService {
       name: characterPrompt.name,
       prompt: characterPrompt.prompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: characterPrompt.referenceStrength || undefined,
+      informationExtracted: characterPrompt.informationExtracted || undefined,
+      referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
       createdAt: characterPrompt.createdAt,
       updatedAt: characterPrompt.updatedAt,
       imageCount: characterPrompt._count.images,
@@ -322,6 +438,10 @@ export class PromptsService {
         name: dto.name,
         prompt: dto.prompt,
         undesiredContent: dto.undesiredContent,
+        normalizeReferenceStrength: dto.normalizeReferenceStrength,
+        referenceStrength: dto.referenceStrength,
+        informationExtracted: dto.informationExtracted,
+        referenceImageUrl: dto.referenceImageUrl,
       },
       include: {
         _count: {
@@ -336,10 +456,58 @@ export class PromptsService {
       name: characterPrompt.name,
       prompt: characterPrompt.prompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
+      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      referenceStrength: characterPrompt.referenceStrength || undefined,
+      informationExtracted: characterPrompt.informationExtracted || undefined,
+      referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
       createdAt: characterPrompt.createdAt,
       updatedAt: characterPrompt.updatedAt,
       imageCount: characterPrompt._count.images,
     };
+  }
+
+  async uploadReferenceImage(
+    id: number,
+    file: Express.Multer.File,
+  ): Promise<{ imageUrl: string }> {
+    const existing = await this.prisma.characterPrompt.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Character Prompt with ID ${id} not found`);
+    }
+
+    // 验证文件
+    const validation = validateFile(file, {
+      maxSize: MAX_FILE_SIZE,
+      allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+        ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
+      ),
+    });
+
+    if (!validation.valid) {
+      throw new BadRequestException(validation.error);
+    }
+
+    // 计算文件哈希
+    const hash = calculateFileMD5(file.buffer);
+
+    // 生成 COS Key
+    const cosKey = generateCosKey(hash, file.originalname);
+
+    // 上传到 COS
+    const fileUrl = await this.cosService.uploadFile(file.buffer, cosKey);
+
+    // 更新 Character Prompt 的参考图 URL
+    await this.prisma.characterPrompt.update({
+      where: { id },
+      data: {
+        referenceImageUrl: fileUrl,
+      },
+    });
+
+    return { imageUrl: fileUrl };
   }
 
   async deleteCharacterPrompt(id: number): Promise<void> {
@@ -357,6 +525,32 @@ export class PromptsService {
   }
 
   // ========== Prompt Image CRUD ==========
+
+  async findImagesByBasePromptId(basePromptId: number): Promise<PromptImageResponseDto[]> {
+    const basePrompt = await this.prisma.basePrompt.findUnique({
+      where: { id: basePromptId },
+    });
+
+    if (!basePrompt) {
+      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+    }
+
+    const images = await this.prisma.promptImage.findMany({
+      where: { basePromptId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return images.map(img => ({
+      id: img.id,
+      basePromptId: img.basePromptId || undefined,
+      characterPromptId: img.characterPromptId || undefined,
+      imageUrl: img.imageUrl,
+      generatedPrompt: img.generatedPrompt,
+      status: img.status as 'uploaded' | 'generated',
+      createdAt: img.createdAt,
+      updatedAt: img.updatedAt,
+    }));
+  }
 
   async findImagesByCharacterPromptId(
     characterPromptId: number,
@@ -378,13 +572,86 @@ export class PromptsService {
 
     return images.map(img => ({
       id: img.id,
-      characterPromptId: img.characterPromptId,
+      basePromptId: img.basePromptId || undefined,
+      characterPromptId: img.characterPromptId || undefined,
       imageUrl: img.imageUrl,
       generatedPrompt: img.generatedPrompt,
       status: img.status as 'uploaded' | 'generated',
       createdAt: img.createdAt,
       updatedAt: img.updatedAt,
     }));
+  }
+
+  async uploadImagesToBasePrompt(
+    basePromptId: number,
+    files: Express.Multer.File[],
+  ): Promise<PromptImageResponseDto[]> {
+    const basePrompt = await this.prisma.basePrompt.findUnique({
+      where: { id: basePromptId },
+    });
+
+    if (!basePrompt) {
+      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+    }
+
+    // 验证所有文件
+    for (const file of files) {
+      const validation = validateFile(file, {
+        maxSize: MAX_FILE_SIZE,
+        allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+          ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
+        ),
+      });
+
+      if (!validation.valid) {
+        throw new BadRequestException(
+          `文件 ${file.originalname}: ${validation.error}`,
+        );
+      }
+    }
+
+    // 生成 prompt（使用 Base Prompt 的配置）
+    let generatedPrompt = basePrompt.prompt;
+    if (basePrompt.undesiredContent) {
+      generatedPrompt += `, negative prompt: ${basePrompt.undesiredContent}`;
+    }
+
+    // 上传所有文件并创建记录
+    const uploadedImages: PromptImageResponseDto[] = [];
+
+    for (const file of files) {
+      // 计算文件哈希
+      const hash = calculateFileMD5(file.buffer);
+
+      // 生成 COS Key
+      const cosKey = generateCosKey(hash, file.originalname);
+
+      // 上传到 COS
+      const fileUrl = await this.cosService.uploadFile(file.buffer, cosKey);
+
+      // 创建图片记录
+      const image = await this.prisma.promptImage.create({
+        data: {
+          basePromptId,
+          imageUrl: fileUrl,
+          generatedPrompt,
+          status: 'uploaded',
+        },
+      });
+
+      uploadedImages.push({
+        id: image.id,
+        basePromptId: image.basePromptId || undefined,
+        characterPromptId: image.characterPromptId || undefined,
+        imageUrl: image.imageUrl,
+        generatedPrompt: image.generatedPrompt,
+        status: image.status as 'uploaded' | 'generated',
+        createdAt: image.createdAt,
+        updatedAt: image.updatedAt,
+      });
+    }
+
+    return uploadedImages;
   }
 
   async uploadImages(
@@ -459,7 +726,8 @@ export class PromptsService {
 
       uploadedImages.push({
         id: image.id,
-        characterPromptId: image.characterPromptId,
+        basePromptId: image.basePromptId || undefined,
+        characterPromptId: image.characterPromptId || undefined,
         imageUrl: image.imageUrl,
         generatedPrompt: image.generatedPrompt,
         status: image.status as 'uploaded' | 'generated',

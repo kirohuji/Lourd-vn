@@ -21,11 +21,12 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
@@ -82,6 +83,67 @@ export class PromptsController {
     return this.promptsService.updateBasePrompt(id, dto);
   }
 
+  @Post('base/:id/reference-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '上传 Base Prompt 参考图' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: '参考图上传成功' })
+  async uploadBasePromptReferenceImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ imageUrl: string }> {
+    return await this.promptsService.uploadBasePromptReferenceImage(id, file);
+  }
+
+  @Get('base/:id/images')
+  @ApiOperation({ summary: '获取 Base Prompt 下的所有图片' })
+  @ApiResponse({ status: 200, description: '图片列表' })
+  async findImagesByBasePromptId(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PromptImageResponseDto[]> {
+    return await this.promptsService.findImagesByBasePromptId(id);
+  }
+
+  @Post('base/:id/images')
+  @UseInterceptors(FilesInterceptor('files', 20)) // 最多支持 20 个文件
+  @ApiOperation({ summary: '上传图片到 Base Prompt（支持多文件）' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: '图片上传成功' })
+  async uploadImagesToBasePrompt(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<PromptImageResponseDto[]> {
+    if (!files || files.length === 0) {
+      throw new Error('至少需要上传一个文件');
+    }
+    return await this.promptsService.uploadImagesToBasePrompt(id, files);
+  }
+
   @Delete('base/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '删除 Base Prompt' })
@@ -128,6 +190,29 @@ export class PromptsController {
     @Body() dto: UpdateCharacterPromptDto,
   ): Promise<CharacterPromptResponseDto> {
     return this.promptsService.updateCharacterPrompt(id, dto);
+  }
+
+  @Post('characters/:id/reference-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '上传 Character Prompt 参考图' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: '参考图上传成功' })
+  async uploadReferenceImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ imageUrl: string }> {
+    return await this.promptsService.uploadReferenceImage(id, file);
   }
 
   @Delete('characters/:id')

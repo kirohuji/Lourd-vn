@@ -147,3 +147,25 @@ export function useDeletePromptImage() {
     });
 }
 
+// Base Prompt Images hooks
+export function useBasePromptImages(basePromptId: number) {
+    return useQuery({
+        queryKey: ['basePromptImages', basePromptId],
+        queryFn: () => apiClient.getBasePromptImages(basePromptId),
+        enabled: !!basePromptId,
+    });
+}
+
+export function useUploadBasePromptImages() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ basePromptId, files }: { basePromptId: number; files: File[] }) =>
+            apiClient.uploadBasePromptImages(basePromptId, files),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['basePromptImages', variables.basePromptId] });
+            queryClient.invalidateQueries({ queryKey: ['basePrompts'] });
+        },
+    });
+}
+

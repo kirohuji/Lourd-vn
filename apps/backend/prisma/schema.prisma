@@ -271,10 +271,16 @@ model BasePrompt {
   name            String
   prompt          String   @db.Text
   undesiredContent String? @db.Text
+  // Vibe Transfer 参数
+  normalizeReferenceStrength Boolean @default(false)
+  referenceStrength Float? // 0-1
+  informationExtracted Float? // 0-1
+  referenceImageUrl String? // 参考图 URL
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   characterPrompts CharacterPrompt[]
+  images          PromptImage[]
 
   @@index([name])
   @@map("base_prompts")
@@ -287,6 +293,11 @@ model CharacterPrompt {
   name           String
   prompt         String   @db.Text
   undesiredContent String? @db.Text
+  // Vibe Transfer 参数
+  normalizeReferenceStrength Boolean @default(false)
+  referenceStrength Float? // 0-1
+  informationExtracted Float? // 0-1
+  referenceImageUrl String? // 参考图 URL
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -301,15 +312,18 @@ model CharacterPrompt {
 // Prompt Image 模型
 model PromptImage {
   id              Int      @id @default(autoincrement())
-  characterPromptId Int
+  basePromptId    Int?     // 可选：直接关联到 BasePrompt
+  characterPromptId Int?   // 可选：关联到 CharacterPrompt
   imageUrl        String
   generatedPrompt String   @db.Text
   status          String   @default("uploaded") // "uploaded" | "generated"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  characterPrompt CharacterPrompt @relation(fields: [characterPromptId], references: [id], onDelete: Cascade)
+  basePrompt      BasePrompt?      @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
+  characterPrompt CharacterPrompt? @relation(fields: [characterPromptId], references: [id], onDelete: Cascade)
 
+  @@index([basePromptId])
   @@index([characterPromptId])
   @@index([status])
   @@map("prompt_images")

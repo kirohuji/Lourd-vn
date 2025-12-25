@@ -802,6 +802,47 @@ class ApiClient {
             method: 'DELETE',
         });
     }
+
+    async uploadReferenceImage(characterPromptId: number, file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return this.request<{ imageUrl: string }>(`/prompts/characters/${characterPromptId}/reference-image`, {
+            method: 'POST',
+            body: formData,
+            headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
+    async uploadBasePromptReferenceImage(basePromptId: number, file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return this.request<{ imageUrl: string }>(`/prompts/base/${basePromptId}/reference-image`, {
+            method: 'POST',
+            body: formData,
+            headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
+    async getBasePromptImages(basePromptId: number): Promise<PromptImageResponseDto[]> {
+        return this.request<PromptImageResponseDto[]>(`/prompts/base/${basePromptId}/images`, {
+            method: 'GET',
+        });
+    }
+
+    async uploadBasePromptImages(basePromptId: number, files: File[]): Promise<PromptImageResponseDto[]> {
+        const formData = new FormData();
+        files.forEach(file => {
+            formData.append('files', file);
+        });
+
+        return this.request<PromptImageResponseDto[]>(`/prompts/base/${basePromptId}/images`, {
+            method: 'POST',
+            body: formData,
+            headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
 }
 
 export const apiClient = new ApiClient();
