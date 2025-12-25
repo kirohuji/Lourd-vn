@@ -8,9 +8,11 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useUploadBasePromptImages, useUploadPromptImages } from '@/lib/hooks/use-prompts';
+import { usePromptVariants, useUploadBasePromptImages, useUploadPromptImages } from '@/lib/hooks/use-prompts';
 import { Trash2, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { FilePreview } from './file-preview';
@@ -33,10 +35,17 @@ export function PromptImageUpload({
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [selectedVariantId, setSelectedVariantId] = useState<number | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     const uploadCharacterMutation = useUploadPromptImages();
     const uploadBaseMutation = useUploadBasePromptImages();
+
+    // 获取变体列表
+    const { data: variants = [] } = usePromptVariants(
+        basePromptId,
+        characterPromptId || undefined,
+    );
 
     // 根据是否有 characterPromptId 决定使用哪个 mutation
     const isBasePromptUpload = !characterPromptId && !!basePromptId;
@@ -68,6 +77,7 @@ export function PromptImageUpload({
         if (!open) {
             setSelectedFiles([]);
             setUploadProgress(0);
+            setSelectedVariantId(undefined);
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -101,11 +111,13 @@ export function PromptImageUpload({
                 await uploadBaseMutation.mutateAsync({
                     basePromptId,
                     files: selectedFiles,
+                    variantId: selectedVariantId,
                 });
             } else if (characterPromptId) {
                 await uploadCharacterMutation.mutateAsync({
                     characterPromptId,
                     files: selectedFiles,
+                    variantId: selectedVariantId,
                 });
             } else {
                 throw new Error('请指定 Base Prompt 或 Character Prompt');
@@ -149,6 +161,36 @@ export function PromptImageUpload({
                     </DialogDescription>
                 </DialogHeader>
                 <div className='space-y-4'>
+                    {/* 变体选择 */}
+                    {variants.length > 0 && (
+                        <div className='space-y-2'>
+                            <Label htmlFor='variant-select'>选择变体（可选）</Label>
+                            <Select
+                                value={selectedVariantId?.toString() || 'none'}
+                                onValueChange={value => {
+                                    setSelectedVariantId(value === 'none' ? undefined : parseInt(value, 10));
+                                }}
+                                disabled={uploading}
+                            >
+                                <SelectTrigger id='variant-select'>
+                                    <SelectValue placeholder='选择变体（留空则上传到未分类）' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value='none'>未分类</SelectItem>
+                                    {variants.map(variant => (
+                                        <SelectItem key={variant.id} value={variant.id.toString()}>
+                                            {variant.name}
+                                            {variant.isDefault && ' (默认)'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className='text-xs text-muted-foreground'>
+                                选择变体后，上传的图片将自动分类到该变体。留空则上传到未分类。
+                            </p>
+                        </div>
+                    )}
+
                     <div className='space-y-2'>
                         <div className='flex items-center gap-2'>
                             <Input

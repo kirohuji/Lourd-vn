@@ -13,6 +13,16 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
     useBasePrompts,
@@ -21,9 +31,11 @@ import {
     useDeleteCharacterPrompt,
     useDeletePromptImage,
     usePromptImagesGrouped,
+    usePromptVariants,
+    useUpdateImageVariant,
 } from '@/lib/hooks/use-prompts';
 import { BasePromptResponseDto, CharacterPromptResponseDto, PromptImageResponseDto } from '@lourd-game/shared';
-import { Edit, Eye, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { Edit, Eye, Loader2, Move, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
@@ -41,6 +53,8 @@ export function PromptsPage() {
     const [itemToDelete, setItemToDelete] = useState<{ id: number; name?: string } | null>(null);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [moveImageDialogOpen, setMoveImageDialogOpen] = useState(false);
+    const [imageToMove, setImageToMove] = useState<PromptImageResponseDto | null>(null);
 
     const { toast } = useToast();
     const { data: basePrompts = [], isLoading: isLoadingBasePrompts, refetch: refetchBasePrompts } = useBasePrompts();
@@ -61,6 +75,13 @@ export function PromptsPage() {
     const deleteBasePrompt = useDeleteBasePrompt();
     const deleteCharacterPrompt = useDeleteCharacterPrompt();
     const deleteImage = useDeletePromptImage();
+    const updateImageVariant = useUpdateImageVariant();
+
+    // 获取变体列表
+    const { data: variants = [] } = usePromptVariants(
+        selectedCharacterPromptId ? undefined : selectedBasePromptId || undefined,
+        selectedCharacterPromptId || undefined,
+    );
 
     // 默认选中第一个 Base Prompt
     useEffect(() => {
@@ -119,6 +140,35 @@ export function PromptsPage() {
         setDeleteType('image');
         setItemToDelete({ id: image.id });
         setDeleteConfirmOpen(true);
+    };
+
+    const handleMoveImage = (image: PromptImageResponseDto) => {
+        setImageToMove(image);
+        setMoveImageDialogOpen(true);
+    };
+
+    const handleConfirmMoveImage = async (targetVariantId: number | null) => {
+        if (!imageToMove) return;
+
+        try {
+            await updateImageVariant.mutateAsync({
+                imageId: imageToMove.id,
+                variantId: targetVariantId,
+            });
+            toast({
+                title: '成功',
+                description: '图片已移动到目标变体',
+            });
+            setMoveImageDialogOpen(false);
+            setImageToMove(null);
+            refetchImages();
+        } catch (error: any) {
+            toast({
+                title: '移动失败',
+                description: error.message || '移动图片失败',
+                variant: 'destructive',
+            });
+        }
     };
 
     const handleConfirmDelete = async () => {
@@ -338,12 +388,12 @@ export function PromptsPage() {
                                     快速预览
                                 </Button>
                             )}
-                            {(selectedCharacterPromptId || selectedBasePromptId) && (
-                                <Button size='sm' onClick={() => setImageUploadOpen(true)}>
-                                    <Upload className='mr-2 h-4 w-4' />
-                                    上传图片
-                                </Button>
-                            )}
+                        {(selectedCharacterPromptId || selectedBasePromptId) && (
+                            <Button size='sm' onClick={() => setImageUploadOpen(true)}>
+                                <Upload className='mr-2 h-4 w-4' />
+                                上传图片
+                            </Button>
+                        )}
                         </div>
                     </div>
                     {!selectedBasePromptId ? (
@@ -384,6 +434,7 @@ export function PromptsPage() {
                                                     image={image}
                                                     size='thumbnail'
                                                     onDelete={() => handleDeleteImage(image)}
+                                                    onMove={() => handleMoveImage(image)}
                                                 />
                                                 <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
                                                     <p className='text-xs text-white truncate'>
@@ -407,23 +458,24 @@ export function PromptsPage() {
                                     </div>
                                     <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3'>
                                         {imagesGrouped.uncategorized.images.map(image => (
-                                            <div
-                                                key={image.id}
-                                                className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
-                                            >
-                                                <PromptImagePreview
-                                                    image={image}
-                                                    size='thumbnail'
-                                                    onDelete={() => handleDeleteImage(image)}
-                                                />
-                                                <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-                                                    <p className='text-xs text-white truncate'>
-                                                        {new Date(image.createdAt).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div
+                                        key={image.id}
+                                        className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
+                                    >
+                                        <PromptImagePreview
+                                            image={image}
+                                            size='thumbnail'
+                                            onDelete={() => handleDeleteImage(image)}
+                                            onMove={() => handleMoveImage(image)}
+                                        />
+                                        <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                            <p className='text-xs text-white truncate'>
+                                                {new Date(image.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
                                     </div>
+                                ))}
+                            </div>
                                 </div>
                             )}
                         </div>
@@ -491,6 +543,46 @@ export function PromptsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* 移动图片对话框 */}
+            <Dialog open={moveImageDialogOpen} onOpenChange={setMoveImageDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>移动图片到变体</DialogTitle>
+                        <DialogDescription>选择目标变体，或选择"未分类"将图片移出变体</DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4 py-4'>
+                        <div className='space-y-2'>
+                            <Label>目标变体</Label>
+                            <Select
+                                defaultValue='none'
+                                onValueChange={value => {
+                                    const variantId = value === 'none' ? null : parseInt(value, 10);
+                                    handleConfirmMoveImage(variantId);
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder='选择目标变体' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value='none'>未分类</SelectItem>
+                                    {variants.map(variant => (
+                                        <SelectItem key={variant.id} value={variant.id.toString()}>
+                                            {variant.name}
+                                            {variant.isDefault && ' (默认)'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant='outline' onClick={() => setMoveImageDialogOpen(false)}>
+                            取消
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* 图片画廊 Lightbox */}
             <Lightbox

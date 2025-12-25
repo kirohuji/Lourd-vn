@@ -131,8 +131,15 @@ export function useUploadPromptImages() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ characterPromptId, files }: { characterPromptId: number; files: File[] }) =>
-            apiClient.uploadPromptImages(characterPromptId, files),
+        mutationFn: ({
+            characterPromptId,
+            files,
+            variantId,
+        }: {
+            characterPromptId: number;
+            files: File[];
+            variantId?: number;
+        }) => apiClient.uploadPromptImages(characterPromptId, files, variantId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['promptImages', variables.characterPromptId] });
             queryClient.invalidateQueries({ queryKey: ['characterPrompts'] });
@@ -164,8 +171,15 @@ export function useUploadBasePromptImages() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ basePromptId, files }: { basePromptId: number; files: File[] }) =>
-            apiClient.uploadBasePromptImages(basePromptId, files),
+        mutationFn: ({
+            basePromptId,
+            files,
+            variantId,
+        }: {
+            basePromptId: number;
+            files: File[];
+            variantId?: number;
+        }) => apiClient.uploadBasePromptImages(basePromptId, files, variantId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['basePromptImages', variables.basePromptId] });
             queryClient.invalidateQueries({ queryKey: ['basePrompts'] });
@@ -322,6 +336,19 @@ export function usePromptImagesGrouped(basePromptId?: number, characterPromptId?
         queryKey: ['promptImagesGrouped', basePromptId, characterPromptId],
         queryFn: () => apiClient.getPromptImagesGrouped(basePromptId, characterPromptId),
         enabled: !!(basePromptId || characterPromptId),
+    });
+}
+
+export function useUpdateImageVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ imageId, variantId }: { imageId: number; variantId: number | null }) =>
+            apiClient.updateImageVariant(imageId, variantId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['promptImages'] });
+            queryClient.invalidateQueries({ queryKey: ['promptImagesGrouped'] });
+        },
     });
 }
 

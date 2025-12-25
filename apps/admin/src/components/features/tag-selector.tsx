@@ -30,7 +30,7 @@ const TAG_TYPES = [
 
 export function TagSelector({ value, onChange, disabled }: TagSelectorProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedTagType, setSelectedTagType] = useState<string>('');
+    const [selectedTagType, setSelectedTagType] = useState<string>('all');
     const { data: allTags = [], isLoading } = usePromptTags();
 
     // 按类型分组标签
@@ -52,7 +52,7 @@ export function TagSelector({ value, onChange, disabled }: TagSelectorProps) {
         .sort((a, b) => a.order - b.order);
 
     // 获取可用的标签（未选择且启用的）
-    const availableTags = selectedTagType
+    const availableTags = selectedTagType && selectedTagType !== 'all'
         ? (groupedTags[selectedTagType] || []).filter(tag => tag.enabled && !value.some(item => item.tagId === tag.id))
         : allTags.filter(tag => tag.enabled && !value.some(item => item.tagId === tag.id));
 
@@ -64,7 +64,7 @@ export function TagSelector({ value, onChange, disabled }: TagSelectorProps) {
         };
         onChange([...value, newTag]);
         setDialogOpen(false);
-        setSelectedTagType('');
+        setSelectedTagType('all');
     };
 
     const handleRemoveTag = (tagId: number) => {
@@ -176,7 +176,7 @@ export function TagSelector({ value, onChange, disabled }: TagSelectorProps) {
                                     <SelectValue placeholder='全部类型' />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value=''>全部类型</SelectItem>
+                                    <SelectItem value='all'>全部类型</SelectItem>
                                     {TAG_TYPES.map(type => (
                                         <SelectItem key={type.value} value={type.value}>
                                             {type.label}
@@ -189,7 +189,7 @@ export function TagSelector({ value, onChange, disabled }: TagSelectorProps) {
                             <div className='text-center py-8 text-muted-foreground'>加载中...</div>
                         ) : availableTags.length === 0 ? (
                             <div className='text-center py-8 text-muted-foreground'>
-                                {selectedTagType ? '该类型下没有可用的标签' : '没有可用的标签'}
+                                {selectedTagType && selectedTagType !== 'all' ? '该类型下没有可用的标签' : '没有可用的标签'}
                             </div>
                         ) : (
                             <div className='grid grid-cols-1 gap-2 max-h-[400px] overflow-auto'>

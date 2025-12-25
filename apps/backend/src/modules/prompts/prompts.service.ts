@@ -620,6 +620,7 @@ export class PromptsService {
   async uploadImagesToBasePrompt(
     basePromptId: number,
     files: Express.Multer.File[],
+    variantId?: number,
   ): Promise<PromptImageResponseDto[]> {
     const basePrompt = await this.prisma.basePrompt.findUnique({
       where: { id: basePromptId },
@@ -670,6 +671,7 @@ export class PromptsService {
       const image = await this.prisma.promptImage.create({
         data: {
           basePromptId,
+          variantId: variantId || null,
           imageUrl: fileUrl,
           generatedPrompt,
           status: 'uploaded',
@@ -695,6 +697,7 @@ export class PromptsService {
   async uploadImages(
     characterPromptId: number,
     files: Express.Multer.File[],
+    variantId?: number,
   ): Promise<PromptImageResponseDto[]> {
     const characterPrompt = await this.prisma.characterPrompt.findUnique({
       where: { id: characterPromptId },
@@ -756,6 +759,7 @@ export class PromptsService {
       const image = await this.prisma.promptImage.create({
         data: {
           characterPromptId,
+          variantId: variantId || null,
           imageUrl: fileUrl,
           generatedPrompt,
           status: 'uploaded',
@@ -776,6 +780,63 @@ export class PromptsService {
     }
 
     return uploadedImages;
+  }
+
+  async updateImageVariant(
+    id: number,
+    variantId: number | null,
+  ): Promise<PromptImageResponseDto> {
+    const existing = await this.prisma.promptImage.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Prompt Image with ID ${id} not found`);
+    }
+
+    // 如果指定了 variantId，验证变体是否存在
+    if (variantId !== null) {
+      const variant = await this.prisma.promptVariant.findUnique({
+        where: { id: variantId },
+      });
+      if (!variant) {
+        throw new NotFoundException(
+          `Prompt Variant with ID ${variantId} not found`,
+        );
+      }
+      // 验证变体是否属于同一个 BasePrompt 或 CharacterPrompt
+      if (
+        existing.basePromptId &&
+        variant.basePromptId !== existing.basePromptId
+      ) {
+        throw new BadRequestException('变体必须属于同一个 Base Prompt');
+      }
+      if (
+        existing.characterPromptId &&
+        variant.characterPromptId !== existing.characterPromptId
+      ) {
+        throw new BadRequestException('变体必须属于同一个 Character Prompt');
+      }
+    }
+
+    const updated = await this.prisma.promptImage.update({
+      where: { id },
+      data: {
+        variantId: variantId,
+      },
+    });
+
+    return {
+      id: updated.id,
+      basePromptId: updated.basePromptId || undefined,
+      characterPromptId: updated.characterPromptId || undefined,
+      variantId: updated.variantId || undefined,
+      imageUrl: updated.imageUrl,
+      generatedPrompt: updated.generatedPrompt,
+      status: updated.status as 'uploaded' | 'generated',
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   async deleteImage(id: number): Promise<void> {

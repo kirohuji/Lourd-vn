@@ -8,7 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Download, X } from 'lucide-react';
+import { ExternalLink, Download, Move, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PromptImagePreviewProps {
@@ -17,6 +17,7 @@ interface PromptImagePreviewProps {
     showModal?: boolean;
     onPreviewClick?: () => void;
     onDelete?: () => void;
+    onMove?: () => void;
 }
 
 export function PromptImagePreview({
@@ -25,6 +26,7 @@ export function PromptImagePreview({
     showModal = false,
     onPreviewClick,
     onDelete,
+    onMove,
 }: PromptImagePreviewProps) {
     const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -67,19 +69,36 @@ export function PromptImagePreview({
                 />
                 {/* 悬停遮罩层 */}
                 <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300' />
-                {onDelete && (
-                    <Button
-                        variant='destructive'
-                        size='icon'
-                        className='absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg z-10 hover:scale-110'
-                        onClick={e => {
-                            e.stopPropagation();
-                            onDelete();
-                        }}
-                    >
-                        <X className='h-4 w-4' />
-                    </Button>
-                )}
+                <div className='absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10'>
+                    {onMove && (
+                        <Button
+                            variant='secondary'
+                            size='icon'
+                            className='h-7 w-7 shadow-lg hover:scale-110'
+                            onClick={e => {
+                                e.stopPropagation();
+                                onMove();
+                            }}
+                            title='移动到变体'
+                        >
+                            <Move className='h-4 w-4' />
+                        </Button>
+                    )}
+                    {onDelete && (
+                        <Button
+                            variant='destructive'
+                            size='icon'
+                            className='h-7 w-7 shadow-lg hover:scale-110'
+                            onClick={e => {
+                                e.stopPropagation();
+                                onDelete();
+                            }}
+                            title='删除'
+                        >
+                            <X className='h-4 w-4' />
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* 详细预览对话框 */}

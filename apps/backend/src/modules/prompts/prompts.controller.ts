@@ -145,11 +145,13 @@ export class PromptsController {
   async uploadImagesToBasePrompt(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: Express.Multer.File[],
+    @Query('variantId') variantId?: string,
   ): Promise<PromptImageResponseDto[]> {
     if (!files || files.length === 0) {
       throw new Error('至少需要上传一个文件');
     }
-    return await this.promptsService.uploadImagesToBasePrompt(id, files);
+    const variantIdNum = variantId ? parseInt(variantId, 10) : undefined;
+    return await this.promptsService.uploadImagesToBasePrompt(id, files, variantIdNum);
   }
 
   @Delete('base/:id')
@@ -266,11 +268,13 @@ export class PromptsController {
   async uploadImages(
     @Param('characterPromptId', ParseIntPipe) characterPromptId: number,
     @UploadedFiles() files: Express.Multer.File[],
+    @Query('variantId') variantId?: string,
   ): Promise<PromptImageResponseDto[]> {
     if (!files || files.length === 0) {
       throw new Error('至少需要上传一个文件');
     }
-    return this.promptsService.uploadImages(characterPromptId, files);
+    const variantIdNum = variantId ? parseInt(variantId, 10) : undefined;
+    return this.promptsService.uploadImages(characterPromptId, files, variantIdNum);
   }
 
   @Delete('images/:id')
@@ -279,6 +283,16 @@ export class PromptsController {
   @ApiResponse({ status: 204, description: '图片删除成功' })
   async deleteImage(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.promptsService.deleteImage(id);
+  }
+
+  @Put('images/:id/variant')
+  @ApiOperation({ summary: '更新图片的变体' })
+  @ApiResponse({ status: 200, description: '图片变体更新成功' })
+  async updateImageVariant(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { variantId: number | null },
+  ): Promise<PromptImageResponseDto> {
+    return this.promptsService.updateImageVariant(id, dto.variantId);
   }
 
   // ========== Prompt Tag Endpoints ==========

@@ -799,13 +799,21 @@ class ApiClient {
         });
     }
 
-    async uploadPromptImages(characterPromptId: number, files: File[]): Promise<PromptImageResponseDto[]> {
+    async uploadPromptImages(
+        characterPromptId: number,
+        files: File[],
+        variantId?: number,
+    ): Promise<PromptImageResponseDto[]> {
         const formData = new FormData();
         files.forEach(file => {
             formData.append('files', file);
         });
 
-        return this.request<PromptImageResponseDto[]>(`/prompts/characters/${characterPromptId}/images`, {
+        const url = variantId
+            ? `/prompts/characters/${characterPromptId}/images?variantId=${variantId}`
+            : `/prompts/characters/${characterPromptId}/images`;
+
+        return this.request<PromptImageResponseDto[]>(url, {
             method: 'POST',
             body: formData,
             headers: {}, // Let browser set Content-Type for FormData
@@ -846,16 +854,35 @@ class ApiClient {
         });
     }
 
-    async uploadBasePromptImages(basePromptId: number, files: File[]): Promise<PromptImageResponseDto[]> {
+    async uploadBasePromptImages(
+        basePromptId: number,
+        files: File[],
+        variantId?: number,
+    ): Promise<PromptImageResponseDto[]> {
         const formData = new FormData();
         files.forEach(file => {
             formData.append('files', file);
         });
 
-        return this.request<PromptImageResponseDto[]>(`/prompts/base/${basePromptId}/images`, {
+        const url = variantId
+            ? `/prompts/base/${basePromptId}/images?variantId=${variantId}`
+            : `/prompts/base/${basePromptId}/images`;
+
+        return this.request<PromptImageResponseDto[]>(url, {
             method: 'POST',
             body: formData,
             headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
+
+    async updateImageVariant(
+        imageId: number,
+        variantId: number | null,
+    ): Promise<PromptImageResponseDto> {
+        return this.request<PromptImageResponseDto>(`/prompts/images/${imageId}/variant`, {
+            method: 'PUT',
+            body: { variantId },
         });
     }
 
