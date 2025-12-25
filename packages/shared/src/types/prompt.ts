@@ -67,12 +67,12 @@ export interface CreateBasePromptDto {
 export interface UpdateBasePromptDto {
     name?: string;
     prompt?: string;
-    undesiredContent?: string;
+    undesiredContent?: string | null; // null 表示清空
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
     referenceStrength?: number; // 0-1
     informationExtracted?: number; // 0-1
-    referenceImageUrl?: string; // 参考图 URL
+    referenceImageUrl?: string | null; // 参考图 URL，null 表示删除
 }
 
 /**
@@ -95,12 +95,12 @@ export interface CreateCharacterPromptDto {
 export interface UpdateCharacterPromptDto {
     name?: string;
     prompt?: string;
-    undesiredContent?: string;
+    undesiredContent?: string | null; // null 表示清空
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
     referenceStrength?: number; // 0-1
     informationExtracted?: number; // 0-1
-    referenceImageUrl?: string; // 参考图 URL
+    referenceImageUrl?: string | null; // 参考图 URL，null 表示删除
 }
 
 /**

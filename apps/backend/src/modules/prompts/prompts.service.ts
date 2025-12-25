@@ -198,11 +198,11 @@ export class PromptsService {
       data: {
         name: dto.name,
         prompt: dto.prompt,
-        undesiredContent: dto.undesiredContent,
+        undesiredContent: dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
         normalizeReferenceStrength: dto.normalizeReferenceStrength,
         referenceStrength: dto.referenceStrength,
         informationExtracted: dto.informationExtracted,
-        referenceImageUrl: dto.referenceImageUrl,
+        referenceImageUrl: dto.referenceImageUrl !== undefined ? dto.referenceImageUrl : undefined,
       },
       include: {
         characterPrompts: {
@@ -437,11 +437,11 @@ export class PromptsService {
       data: {
         name: dto.name,
         prompt: dto.prompt,
-        undesiredContent: dto.undesiredContent,
+        undesiredContent: dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
         normalizeReferenceStrength: dto.normalizeReferenceStrength,
         referenceStrength: dto.referenceStrength,
         informationExtracted: dto.informationExtracted,
-        referenceImageUrl: dto.referenceImageUrl,
+        referenceImageUrl: dto.referenceImageUrl !== undefined ? dto.referenceImageUrl : undefined,
       },
       include: {
         _count: {

@@ -122,12 +122,14 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                 const dto: UpdateBasePromptDto = {
                     name: name.trim(),
                     prompt: prompt.trim(),
-                    undesiredContent: undesiredContent.trim() || undefined,
+                    // 如果 undesiredContent 为空字符串，传递 null 来清空；如果有值，传递值；如果未定义，不包含此字段
+                    undesiredContent: undesiredContent.trim() === '' ? null : undesiredContent.trim() || undefined,
                     // 只有当有参考图时才保存 Vibe Transfer 参数
                     normalizeReferenceStrength: referenceImageUrl ? normalizeReferenceStrength : undefined,
                     referenceStrength: referenceImageUrl ? referenceStrength : undefined,
                     informationExtracted: referenceImageUrl ? informationExtracted : undefined,
-                    referenceImageUrl: referenceImageUrl || undefined,
+                    // 如果 referenceImageUrl 为空字符串，传递 null 来删除；如果有值，传递值；如果未定义，不包含此字段
+                    referenceImageUrl: referenceImageUrl === '' ? null : referenceImageUrl || undefined,
                 };
                 await updateMutation.mutateAsync({ id: basePrompt.id, dto });
                 toast({
