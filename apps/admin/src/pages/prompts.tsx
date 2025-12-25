@@ -24,8 +24,10 @@ import {
     usePromptImages,
 } from '@/lib/hooks/use-prompts';
 import { BasePromptResponseDto, CharacterPromptResponseDto, PromptImageResponseDto } from '@lourd-game/shared';
-import { Edit, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { Edit, Eye, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 
 export function PromptsPage() {
     const [selectedBasePromptId, setSelectedBasePromptId] = useState<number | null>(null);
@@ -38,6 +40,8 @@ export function PromptsPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteType, setDeleteType] = useState<'base' | 'character' | 'image' | null>(null);
     const [itemToDelete, setItemToDelete] = useState<{ id: number; name?: string } | null>(null);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
 
     const { toast } = useToast();
     const { data: basePrompts = [], isLoading: isLoadingBasePrompts, refetch: refetchBasePrompts } = useBasePrompts();
@@ -159,6 +163,14 @@ export function PromptsPage() {
 
     const selectedBasePrompt = basePrompts.find(bp => bp.id === selectedBasePromptId);
     const selectedCharacterPrompt = characterPrompts.find(cp => cp.id === selectedCharacterPromptId);
+
+    // 准备 lightbox 的图片数据
+    const lightboxSlides = promptImages.map(image => ({
+        src: image.imageUrl,
+        alt: `Prompt Image ${image.id}`,
+        title: `Prompt Image #${image.id}`,
+        description: image.generatedPrompt,
+    }));
 
     return (
         <div className='flex flex-col h-full space-y-4'>
@@ -313,12 +325,28 @@ export function PromptsPage() {
                                 ? ` - ${selectedBasePrompt.name} (Base Prompt)`
                                 : ''}
                         </div>
-                        {(selectedCharacterPromptId || selectedBasePromptId) && (
-                            <Button size='sm' onClick={() => setImageUploadOpen(true)}>
-                                <Upload className='mr-2 h-4 w-4' />
-                                上传图片
-                            </Button>
-                        )}
+                        <div className='flex items-center gap-2'>
+                            {promptImages.length > 0 && (
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={() => {
+                                        setLightboxIndex(0);
+                                        setLightboxOpen(true);
+                                    }}
+                                    title='快速预览所有图片（Lightbox）'
+                                >
+                                    <Eye className='mr-2 h-4 w-4' />
+                                    快速预览
+                                </Button>
+                            )}
+                            {(selectedCharacterPromptId || selectedBasePromptId) && (
+                                <Button size='sm' onClick={() => setImageUploadOpen(true)}>
+                                    <Upload className='mr-2 h-4 w-4' />
+                                    上传图片
+                                </Button>
+                            )}
+                        </div>
                     </div>
                     {!selectedBasePromptId ? (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
@@ -340,6 +368,7 @@ export function PromptsPage() {
                                         key={image.id}
                                         className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
                                     >
+                                        {/* 原来的预览功能（点击图片） */}
                                         <PromptImagePreview
                                             image={image}
                                             size='thumbnail'
@@ -419,6 +448,14 @@ export function PromptsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* 图片画廊 Lightbox */}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                index={lightboxIndex}
+                slides={lightboxSlides}
+            />
         </div>
     );
 }
