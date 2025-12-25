@@ -333,16 +333,27 @@ export function PromptsPage() {
                             暂无图片
                         </div>
                     ) : (
-                        <div className='grid grid-cols-2 gap-4 overflow-auto flex-1'>
-                            {promptImages.map(image => (
-                                <div key={image.id} className='relative'>
-                                    <PromptImagePreview
-                                        image={image}
-                                        size='thumbnail'
-                                        onDelete={() => handleDeleteImage(image)}
-                                    />
-                                </div>
-                            ))}
+                        <div className='overflow-auto flex-1'>
+                            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-2'>
+                                {promptImages.map(image => (
+                                    <div
+                                        key={image.id}
+                                        className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
+                                    >
+                                        <PromptImagePreview
+                                            image={image}
+                                            size='thumbnail'
+                                            onDelete={() => handleDeleteImage(image)}
+                                        />
+                                        {/* 图片信息提示 */}
+                                        <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                            <p className='text-xs text-white truncate'>
+                                                {new Date(image.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

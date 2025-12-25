@@ -46,27 +46,32 @@ export function PromptImagePreview({
         <>
             <div
                 className={cn(
-                    'relative flex items-center justify-center rounded-lg border bg-muted/50 overflow-hidden cursor-pointer hover:bg-muted transition-colors group',
-                    size === 'thumbnail' && 'w-[200px] h-[200px]',
-                    size === 'medium' && 'w-[400px] h-[400px]',
-                    size === 'large' && 'w-[800px] h-[600px]',
+                    'relative flex items-center justify-center w-full h-full overflow-hidden cursor-pointer',
+                    size === 'thumbnail' && '',
+                    size === 'medium' && '',
+                    size === 'large' && '',
                 )}
                 onClick={handleClick}
             >
                 <img
                     src={image.imageUrl}
                     alt={`Prompt Image ${image.id}`}
-                    className={cn('object-contain', sizeClasses[size])}
+                    className={cn(
+                        'w-full h-full object-cover transition-transform duration-300 group-hover:scale-110',
+                        sizeClasses[size],
+                    )}
                     onError={e => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                     }}
                 />
+                {/* 悬停遮罩层 */}
+                <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300' />
                 {onDelete && (
                     <Button
                         variant='destructive'
                         size='icon'
-                        className='absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity'
+                        className='absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg z-10 hover:scale-110'
                         onClick={e => {
                             e.stopPropagation();
                             onDelete();

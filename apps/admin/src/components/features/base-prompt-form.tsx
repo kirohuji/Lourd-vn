@@ -101,6 +101,10 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
 
     const handleRemoveReferenceImage = () => {
         setReferenceImageUrl('');
+        // 删除参考图时，重置相关参数
+        setNormalizeReferenceStrength(false);
+        setReferenceStrength(0.5);
+        setInformationExtracted(0.5);
     };
 
     const handleSubmit = async () => {
@@ -119,9 +123,10 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                     name: name.trim(),
                     prompt: prompt.trim(),
                     undesiredContent: undesiredContent.trim() || undefined,
-                    normalizeReferenceStrength,
-                    referenceStrength: referenceStrength,
-                    informationExtracted: informationExtracted,
+                    // 只有当有参考图时才保存 Vibe Transfer 参数
+                    normalizeReferenceStrength: referenceImageUrl ? normalizeReferenceStrength : undefined,
+                    referenceStrength: referenceImageUrl ? referenceStrength : undefined,
+                    informationExtracted: referenceImageUrl ? informationExtracted : undefined,
                     referenceImageUrl: referenceImageUrl || undefined,
                 };
                 await updateMutation.mutateAsync({ id: basePrompt.id, dto });
@@ -134,9 +139,10 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                     name: name.trim(),
                     prompt: prompt.trim(),
                     undesiredContent: undesiredContent.trim() || undefined,
-                    normalizeReferenceStrength,
-                    referenceStrength: referenceStrength,
-                    informationExtracted: informationExtracted,
+                    // 只有当有参考图时才保存 Vibe Transfer 参数
+                    normalizeReferenceStrength: referenceImageUrl ? normalizeReferenceStrength : undefined,
+                    referenceStrength: referenceImageUrl ? referenceStrength : undefined,
+                    informationExtracted: referenceImageUrl ? informationExtracted : undefined,
                     referenceImageUrl: referenceImageUrl || undefined,
                 };
                 const result = await createMutation.mutateAsync(dto);
@@ -218,64 +224,9 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                         <div className='font-semibold text-lg'>Vibe Transfer (Change the image, keep the vision.)</div>
                         
                         <div className='space-y-4 p-4 border rounded-lg'>
-                            <div className='flex items-center justify-between'>
-                                <Label htmlFor='normalizeReferenceStrength'>Normalize Reference Strength Values</Label>
-                                <Switch
-                                    id='normalizeReferenceStrength'
-                                    checked={normalizeReferenceStrength}
-                                    onCheckedChange={setNormalizeReferenceStrength}
-                                    disabled={createMutation.isPending || updateMutation.isPending}
-                                />
-                            </div>
-
-                            <Separator />
-
+                            {/* 参考图上传 - 放在最前面 */}
                             <div className='space-y-2'>
-                                <Label htmlFor='referenceStrength'>
-                                    Reference Strength: {referenceStrength.toFixed(2)}
-                                </Label>
-                                <Input
-                                    id='referenceStrength'
-                                    type='range'
-                                    min='0'
-                                    max='1'
-                                    step='0.01'
-                                    value={referenceStrength}
-                                    onChange={e => setReferenceStrength(parseFloat(e.target.value))}
-                                    disabled={createMutation.isPending || updateMutation.isPending}
-                                    className='w-full'
-                                />
-                                <div className='flex justify-between text-xs text-muted-foreground'>
-                                    <span>0</span>
-                                    <span>1</span>
-                                </div>
-                            </div>
-
-                            <div className='space-y-2'>
-                                <Label htmlFor='informationExtracted'>
-                                    Information Extracted: {informationExtracted.toFixed(2)}
-                                </Label>
-                                <Input
-                                    id='informationExtracted'
-                                    type='range'
-                                    min='0'
-                                    max='1'
-                                    step='0.01'
-                                    value={informationExtracted}
-                                    onChange={e => setInformationExtracted(parseFloat(e.target.value))}
-                                    disabled={createMutation.isPending || updateMutation.isPending}
-                                    className='w-full'
-                                />
-                                <div className='flex justify-between text-xs text-muted-foreground'>
-                                    <span>0</span>
-                                    <span>1</span>
-                                </div>
-                            </div>
-
-                            <Separator />
-
-                            <div className='space-y-2'>
-                                <Label>参考图</Label>
+                                <Label>参考图 *</Label>
                                 {referenceImageUrl ? (
                                     <div className='relative'>
                                         <img
@@ -319,12 +270,73 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                                         </Label>
                                     </div>
                                 )}
-                                {!isEditMode && (
+                                {!isEditMode && !referenceImageUrl && (
                                     <p className='text-xs text-muted-foreground'>
-                                        提示：创建后可以上传参考图
+                                        提示：上传参考图后，Vibe Transfer 功能将自动启用
                                     </p>
                                 )}
                             </div>
+
+                            {/* 只有当有参考图时才显示其他参数 */}
+                            {referenceImageUrl && (
+                                <>
+                                    <Separator />
+
+                                    <div className='flex items-center justify-between'>
+                                        <Label htmlFor='normalizeReferenceStrength'>Normalize Reference Strength Values</Label>
+                                        <Switch
+                                            id='normalizeReferenceStrength'
+                                            checked={normalizeReferenceStrength}
+                                            onCheckedChange={setNormalizeReferenceStrength}
+                                            disabled={createMutation.isPending || updateMutation.isPending}
+                                        />
+                                    </div>
+
+                                    <Separator />
+
+                                    <div className='space-y-2'>
+                                        <Label htmlFor='referenceStrength'>
+                                            Reference Strength: {referenceStrength.toFixed(2)}
+                                        </Label>
+                                        <Input
+                                            id='referenceStrength'
+                                            type='range'
+                                            min='0'
+                                            max='1'
+                                            step='0.01'
+                                            value={referenceStrength}
+                                            onChange={e => setReferenceStrength(parseFloat(e.target.value))}
+                                            disabled={createMutation.isPending || updateMutation.isPending}
+                                            className='w-full'
+                                        />
+                                        <div className='flex justify-between text-xs text-muted-foreground'>
+                                            <span>0</span>
+                                            <span>1</span>
+                                        </div>
+                                    </div>
+
+                                    <div className='space-y-2'>
+                                        <Label htmlFor='informationExtracted'>
+                                            Information Extracted: {informationExtracted.toFixed(2)}
+                                        </Label>
+                                        <Input
+                                            id='informationExtracted'
+                                            type='range'
+                                            min='0'
+                                            max='1'
+                                            step='0.01'
+                                            value={informationExtracted}
+                                            onChange={e => setInformationExtracted(parseFloat(e.target.value))}
+                                            disabled={createMutation.isPending || updateMutation.isPending}
+                                            className='w-full'
+                                        />
+                                        <div className='flex justify-between text-xs text-muted-foreground'>
+                                            <span>0</span>
+                                            <span>1</span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
