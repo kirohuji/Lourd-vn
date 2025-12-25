@@ -339,6 +339,11 @@ model PromptVariant {
   basePromptId      Int?
   characterPromptId Int?
 
+  // 基于其他变体（自关联）
+  parentVariantId Int?
+  parentVariant   PromptVariant? @relation("VariantInheritance", fields: [parentVariantId], references: [id], onDelete: SetNull)
+  childVariants    PromptVariant[] @relation("VariantInheritance")
+
   // 标签ID数组和顺序（JSON格式）
   // 格式: [{"tagId": 1, "order": 0}, {"tagId": 3, "order": 1}]
   tagIds Json @default("[]")

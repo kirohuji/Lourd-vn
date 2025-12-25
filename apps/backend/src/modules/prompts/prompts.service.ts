@@ -1108,6 +1108,39 @@ export class PromptsService {
 
   // ========== Prompt Variant CRUD ==========
 
+  /**
+   * 检查循环依赖
+   */
+  private async checkCircularDependency(
+    variantId: number | null,
+    parentVariantId: number,
+  ): Promise<void> {
+    const visited = new Set<number>();
+    let currentId: number | null = parentVariantId;
+
+    while (currentId) {
+      // 如果当前变体 ID 等于要设置的变体 ID，说明形成循环
+      if (currentId === variantId) {
+        throw new BadRequestException(
+          '检测到循环依赖：变体不能基于自身或其子变体',
+        );
+      }
+      // 如果已经访问过，避免无限循环
+      if (visited.has(currentId)) {
+        break;
+      }
+      visited.add(currentId);
+
+      // 获取当前变体的父变体
+      const variant = (await this.prisma.promptVariant.findUnique({
+        where: { id: currentId },
+      })) as any;
+
+      if (!variant) break;
+      currentId = variant.parentVariantId;
+    }
+  }
+
   async findVariantsByPrompt(
     promptId: number,
     type: 'base' | 'character',
@@ -1128,6 +1161,7 @@ export class PromptsService {
       isDefault: variant.isDefault,
       basePromptId: variant.basePromptId || undefined,
       characterPromptId: variant.characterPromptId || undefined,
+      parentVariantId: (variant as any).parentVariantId || undefined,
       tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
       mergedPrompt: variant.mergedPrompt,
       mergeConfig: (variant.mergeConfig as {
@@ -1219,11 +1253,39 @@ export class PromptsService {
       throw new NotFoundException('Prompt not found');
     }
 
+    // 如果指定了 parentVariantId，验证父变体
+    if (dto.parentVariantId) {
+      const parentVariant = await this.prisma.promptVariant.findUnique({
+        where: { id: dto.parentVariantId },
+      });
+
+      if (!parentVariant) {
+        throw new NotFoundException(
+          `Parent Variant with ID ${dto.parentVariantId} not found`,
+        );
+      }
+
+      // 验证父变体属于同一个 Base Prompt 或 Character Prompt
+      if (dto.basePromptId && parentVariant.basePromptId !== dto.basePromptId) {
+        throw new BadRequestException('父变体必须属于同一个 Base Prompt');
+      }
+      if (
+        dto.characterPromptId &&
+        parentVariant.characterPromptId !== dto.characterPromptId
+      ) {
+        throw new BadRequestException('父变体必须属于同一个 Character Prompt');
+      }
+
+      // 检查循环依赖（创建时 variantId 为 null）
+      await this.checkCircularDependency(null, dto.parentVariantId);
+    }
+
     // 合并 Prompt
     const mergedPrompt = await this.mergePrompt(
       (prompt as any).basicPrompt,
       dto.tagIds,
       dto.mergeConfig,
+      dto.parentVariantId,
     );
 
     // 创建变体
@@ -1233,11 +1295,12 @@ export class PromptsService {
         description: dto.description,
         basePromptId: dto.basePromptId,
         characterPromptId: dto.characterPromptId,
+        parentVariantId: dto.parentVariantId || null,
         tagIds: dto.tagIds as any,
         mergedPrompt,
         mergeConfig: (dto.mergeConfig || { separator: '\n' }) as any,
         order: dto.order || 0,
-      },
+      } as any,
     });
 
     return {
@@ -1247,6 +1310,7 @@ export class PromptsService {
       isDefault: variant.isDefault,
       basePromptId: variant.basePromptId || undefined,
       characterPromptId: variant.characterPromptId || undefined,
+      parentVariantId: (variant as any).parentVariantId || undefined,
       tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
       mergedPrompt: variant.mergedPrompt,
       mergeConfig: (variant.mergeConfig as {
@@ -1381,6 +1445,7 @@ export class PromptsService {
       isDefault: updated.isDefault,
       basePromptId: updated.basePromptId || undefined,
       characterPromptId: updated.characterPromptId || undefined,
+      parentVariantId: (updated as any).parentVariantId || undefined,
       tagIds: (updated.tagIds as unknown as VariantTagItem[]) || [],
       mergedPrompt: updated.mergedPrompt,
       mergeConfig: (updated.mergeConfig as {
@@ -1424,6 +1489,7 @@ export class PromptsService {
       (prompt as any).basicPrompt,
       variant.tagIds as unknown as VariantTagItem[],
       variant.mergeConfig as any,
+      (variant as any).parentVariantId || undefined,
     );
 
     // 更新变体的 mergedPrompt
@@ -1440,7 +1506,21 @@ export class PromptsService {
     basicPrompt: string,
     tagIds: VariantTagItem[],
     mergeConfig?: { separator?: string; prefix?: string; suffix?: string },
+    parentVariantId?: number,
   ): Promise<string> {
+    let baseText = basicPrompt;
+
+    // 如果有基础变体，先获取基础变体的 mergedPrompt
+    if (parentVariantId) {
+      const parentVariant = await this.prisma.promptVariant.findUnique({
+        where: { id: parentVariantId },
+        select: { mergedPrompt: true },
+      });
+      if (parentVariant) {
+        baseText = parentVariant.mergedPrompt;
+      }
+    }
+
     // 1. 按 order 排序标签
     const sortedTags = [...tagIds].sort((a, b) => a.order - b.order);
 
@@ -1456,9 +1536,9 @@ export class PromptsService {
       .filter((tag) => tag && tag.enabled)
       .map((tag) => tag!.content);
 
-    // 4. 合并
+    // 4. 合并：基础文本（可能是 basicPrompt 或父变体的 mergedPrompt）+ 当前变体的标签
     const separator = mergeConfig?.separator || '\n';
-    const parts = [basicPrompt, ...enabledTags].filter(Boolean);
+    const parts = [baseText, ...enabledTags].filter(Boolean);
     return parts.join(separator);
   }
 

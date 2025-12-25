@@ -31,6 +31,7 @@ export interface PromptVariant {
     isDefault: boolean;
     basePromptId?: number;
     characterPromptId?: number;
+    parentVariantId?: number; // 基于其他变体
     tagIds: VariantTagItem[]; // JSON 解析后的数组
     mergedPrompt: string;
     mergeConfig?: {
@@ -124,6 +125,7 @@ export interface CreatePromptVariantDto {
     description?: string;
     basePromptId?: number;
     characterPromptId?: number;
+    parentVariantId?: number; // 基于其他变体
     tagIds: VariantTagItem[];
     mergeConfig?: {
         separator?: string;
@@ -139,6 +141,7 @@ export interface CreatePromptVariantDto {
 export interface UpdatePromptVariantDto {
     name?: string;
     description?: string;
+    parentVariantId?: number; // 基于其他变体
     tagIds?: VariantTagItem[];
     mergeConfig?: {
         separator?: string;
@@ -174,6 +177,7 @@ export interface PromptVariantResponseDto {
     isDefault: boolean;
     basePromptId?: number;
     characterPromptId?: number;
+    parentVariantId?: number; // 基于其他变体
     tagIds: VariantTagItem[];
     mergedPrompt: string;
     mergeConfig?: {

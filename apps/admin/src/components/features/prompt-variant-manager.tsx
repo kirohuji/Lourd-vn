@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -12,7 +13,7 @@ import {
     useUpdatePromptVariant,
 } from '@/lib/hooks/use-prompts';
 import { CreatePromptVariantDto, PromptVariantResponseDto, VariantTagItem } from '@lourd-game/shared';
-import { Loader2, Plus, Star, Trash2 } from 'lucide-react';
+import { Edit, Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { TagSelector } from './tag-selector';
 
@@ -32,10 +33,12 @@ export function PromptVariantManager({
     const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
     const [newVariantName, setNewVariantName] = useState('');
     const [newVariantDescription, setNewVariantDescription] = useState('');
+    const [newVariantParentId, setNewVariantParentId] = useState<number | undefined>(undefined);
     const [variantTagIds, setVariantTagIds] = useState<VariantTagItem[]>([]);
     const [mergedPreview, setMergedPreview] = useState<string>('');
     const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
     const [editingVariantName, setEditingVariantName] = useState<string>('');
+    const [editingVariantParentId, setEditingVariantParentId] = useState<number | undefined>(undefined);
 
     const { toast } = useToast();
     const { data: variants = [], isLoading, refetch } = usePromptVariants(basePromptId, characterPromptId);
@@ -60,15 +63,17 @@ export function PromptVariantManager({
         if (selectedVariant) {
             setVariantTagIds(selectedVariant.tagIds);
             setMergedPreview(selectedVariant.mergedPrompt);
+            setEditingVariantParentId(selectedVariant.parentVariantId);
         } else {
             setVariantTagIds([]);
             setMergedPreview(basicPrompt);
+            setEditingVariantParentId(undefined);
         }
     }, [selectedVariant, basicPrompt]);
 
-    // 实时预览合并结果 - 当标签变化时自动更新预览
+    // 实时预览合并结果 - 当标签变化或基础变体变化时自动更新预览
     useEffect(() => {
-        if (selectedVariant && variantTagIds.length > 0) {
+        if (selectedVariant) {
             // 延迟触发合并预览，避免频繁请求
             const timer = setTimeout(() => {
                 handlePreviewMerge();
@@ -78,7 +83,7 @@ export function PromptVariantManager({
             setMergedPreview(basicPrompt);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [variantTagIds]);
+    }, [variantTagIds, editingVariantParentId, selectedVariant]);
 
     const handlePreviewMerge = async () => {
         if (!selectedVariant) return;
@@ -109,6 +114,7 @@ export function PromptVariantManager({
                 description: newVariantDescription.trim() || undefined,
                 basePromptId,
                 characterPromptId,
+                parentVariantId: newVariantParentId,
                 tagIds: [],
                 order: variants.length,
             };
@@ -116,6 +122,7 @@ export function PromptVariantManager({
             setSelectedVariantId(result.id);
             setNewVariantName('');
             setNewVariantDescription('');
+            setNewVariantParentId(undefined);
             refetch();
             toast({
                 title: '成功',
@@ -222,19 +229,39 @@ export function PromptVariantManager({
             <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
                     <Label>变体列表</Label>
-                    <div className='flex items-center gap-2'>
-                        <Input
-                            placeholder='新变体名称'
-                            value={newVariantName}
-                            onChange={e => setNewVariantName(e.target.value)}
-                            className='w-32'
-                            disabled={disabled}
-                        />
-                        <Button size='sm' onClick={handleCreateVariant} disabled={disabled || createMutation.isPending}>
-                            <Plus className='mr-2 h-4 w-4' />
-                            新建
-                        </Button>
-                    </div>
+                    <Button size='sm' onClick={handleCreateVariant} disabled={disabled || createMutation.isPending}>
+                        <Plus className='mr-2 h-4 w-4' />
+                        新建
+                    </Button>
+                </div>
+                <div className='flex items-center gap-2'>
+                    <Input
+                        placeholder='新变体名称'
+                        value={newVariantName}
+                        onChange={e => setNewVariantName(e.target.value)}
+                        className='flex-1'
+                        disabled={disabled}
+                    />
+                    <Select
+                        value={newVariantParentId?.toString() || 'none'}
+                        onValueChange={value => {
+                            setNewVariantParentId(value === 'none' ? undefined : parseInt(value, 10));
+                        }}
+                        disabled={disabled}
+                    >
+                        <SelectTrigger className='w-48'>
+                            <SelectValue placeholder='选择基础变体（可选）' />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value='none'>无（基于 Basic Prompt）</SelectItem>
+                            {variants.map(variant => (
+                                <SelectItem key={variant.id} value={variant.id.toString()}>
+                                    {variant.name}
+                                    {variant.isDefault && ' (默认)'}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className='flex flex-wrap gap-2'>
                     {variants.map(variant => (
@@ -269,16 +296,23 @@ export function PromptVariantManager({
                                     autoFocus
                                 />
                             ) : (
-                                <span
-                                    className='text-sm font-medium cursor-pointer hover:text-primary'
+                                <span className='text-sm font-medium'>{variant.name}</span>
+                            )}
+                            {editingVariantId !== variant.id && (
+                                <Button
+                                    variant='ghost'
+                                    size='icon'
+                                    className='h-5 w-5 ml-1'
                                     onClick={e => {
                                         e.stopPropagation();
                                         setEditingVariantId(variant.id);
                                         setEditingVariantName(variant.name);
                                     }}
+                                    disabled={disabled}
+                                    title='编辑名称'
                                 >
-                                    {variant.name}
-                                </span>
+                                    <Edit className='h-3 w-3' />
+                                </Button>
                             )}
                             <Button
                                 variant='ghost'
@@ -303,7 +337,12 @@ export function PromptVariantManager({
                                     e.stopPropagation();
                                     handleDeleteVariant(variant);
                                 }}
-                                disabled={disabled || variant.isDefault || deleteMutation.isPending || editingVariantId === variant.id}
+                                disabled={
+                                    disabled ||
+                                    variant.isDefault ||
+                                    deleteMutation.isPending ||
+                                    editingVariantId === variant.id
+                                }
                             >
                                 <Trash2 className='h-3 w-3' />
                             </Button>
@@ -322,52 +361,115 @@ export function PromptVariantManager({
                         )}
                     </div>
 
-                    {/* 标签选择 */}
-                    <TagSelector
-                        value={variantTagIds}
-                        onChange={async tags => {
-                            setVariantTagIds(tags);
-                            // 自动保存
-                            if (selectedVariant) {
-                                try {
-                                    await updateMutation.mutateAsync({
-                                        id: selectedVariant.id,
-                                        dto: { tagIds: tags },
-                                    });
-                                    refetch();
-                                } catch (error) {
-                                    // 保存失败时恢复原值
-                                    setVariantTagIds(selectedVariant.tagIds);
-                                }
-                            }
-                        }}
-                        disabled={disabled}
-                    />
-
-                    {/* 合并预览 */}
+                    {/* 基础变体选择 */}
                     <div className='space-y-2'>
-                        <div className='flex items-center justify-between'>
-                            <Label>合并预览</Label>
-                            <Button
-                                size='sm'
-                                variant='outline'
-                                onClick={handlePreviewMerge}
-                                disabled={disabled || mergeMutation.isPending}
-                            >
-                                {mergeMutation.isPending ? (
-                                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                                ) : (
-                                    '刷新预览'
-                                )}
-                            </Button>
+                        <Label>基础变体（可选）</Label>
+                        <Select
+                            value={editingVariantParentId?.toString() || 'none'}
+                            onValueChange={async value => {
+                                const newParentId = value === 'none' ? undefined : parseInt(value, 10);
+                                setEditingVariantParentId(newParentId);
+                                // 自动保存
+                                if (selectedVariant) {
+                                    try {
+                                        await updateMutation.mutateAsync({
+                                            id: selectedVariant.id,
+                                            dto: { parentVariantId: newParentId },
+                                        });
+                                        refetch();
+                                        // 更新后立即刷新预览
+                                        setTimeout(() => {
+                                            handlePreviewMerge();
+                                        }, 300);
+                                    } catch (error: any) {
+                                        toast({
+                                            title: '更新失败',
+                                            description: error.message || '更新基础变体失败',
+                                            variant: 'destructive',
+                                        });
+                                        // 恢复原值
+                                        setEditingVariantParentId(selectedVariant.parentVariantId);
+                                    }
+                                }
+                            }}
+                            disabled={disabled}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder='选择基础变体（留空则基于 Basic Prompt）' />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value='none'>无（基于 Basic Prompt）</SelectItem>
+                                {variants
+                                    .filter(v => v.id !== selectedVariant.id)
+                                    .map(variant => (
+                                        <SelectItem key={variant.id} value={variant.id.toString()}>
+                                            {variant.name}
+                                            {variant.isDefault && ' (默认)'}
+                                        </SelectItem>
+                                    ))}
+                            </SelectContent>
+                        </Select>
+                        {selectedVariant.parentVariantId && (
+                            <p className='text-xs text-muted-foreground'>
+                                当前基于:{' '}
+                                {variants.find(v => v.id === selectedVariant.parentVariantId)?.name || '未知变体'}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* 标签选择和合并预览 - 左右布局 */}
+                    <div className='grid grid-cols-2 gap-4'>
+                        {/* 左侧：标签选择 */}
+                        <div className='space-y-2'>
+                            <Label>标签选择</Label>
+                            <TagSelector
+                                value={variantTagIds}
+                                onChange={async tags => {
+                                    setVariantTagIds(tags);
+                                    // 自动保存
+                                    if (selectedVariant) {
+                                        try {
+                                            await updateMutation.mutateAsync({
+                                                id: selectedVariant.id,
+                                                dto: { tagIds: tags },
+                                            });
+                                            refetch();
+                                            handlePreviewMerge();
+                                        } catch (error) {
+                                            // 保存失败时恢复原值
+                                            setVariantTagIds(selectedVariant.tagIds);
+                                        }
+                                    }
+                                }}
+                                disabled={disabled}
+                            />
                         </div>
-                        <Textarea
-                            value={mergedPreview}
-                            readOnly
-                            rows={8}
-                            className='font-mono text-sm bg-muted'
-                            placeholder='合并后的 Prompt 将显示在这里...'
-                        />
+
+                        {/* 右侧：合并预览 */}
+                        <div className='space-y-2'>
+                            <div className='flex items-center justify-between'>
+                                <Label>合并预览</Label>
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={handlePreviewMerge}
+                                    disabled={disabled || mergeMutation.isPending}
+                                >
+                                    {mergeMutation.isPending ? (
+                                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                    ) : (
+                                        '刷新预览'
+                                    )}
+                                </Button>
+                            </div>
+                            <Textarea
+                                value={mergedPreview}
+                                readOnly
+                                rows={12}
+                                className='font-mono text-sm bg-muted'
+                                placeholder='合并后的 Prompt 将显示在这里...'
+                            />
+                        </div>
                     </div>
                 </div>
             )}
