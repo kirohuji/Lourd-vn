@@ -1,8 +1,12 @@
 import {
     CreateBasePromptDto,
     CreateCharacterPromptDto,
+    CreatePromptTagDto,
+    CreatePromptVariantDto,
     UpdateBasePromptDto,
     UpdateCharacterPromptDto,
+    UpdatePromptTagDto,
+    UpdatePromptVariantDto,
 } from '@lourd-game/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
@@ -166,6 +170,158 @@ export function useUploadBasePromptImages() {
             queryClient.invalidateQueries({ queryKey: ['basePromptImages', variables.basePromptId] });
             queryClient.invalidateQueries({ queryKey: ['basePrompts'] });
         },
+    });
+}
+
+// Prompt Tag hooks
+export function usePromptTags(tagType?: string) {
+    return useQuery({
+        queryKey: ['promptTags', tagType],
+        queryFn: () => apiClient.getPromptTags(tagType),
+    });
+}
+
+export function usePromptTag(id: number) {
+    return useQuery({
+        queryKey: ['promptTags', id],
+        queryFn: () => apiClient.getPromptTag(id),
+        enabled: !!id,
+    });
+}
+
+export function useCreatePromptTag() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (dto: CreatePromptTagDto) => apiClient.createPromptTag(dto),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['promptTags'] });
+        },
+    });
+}
+
+export function useUpdatePromptTag() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, dto }: { id: number; dto: UpdatePromptTagDto }) =>
+            apiClient.updatePromptTag(id, dto),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['promptTags'] });
+            queryClient.invalidateQueries({ queryKey: ['promptTags', variables.id] });
+        },
+    });
+}
+
+export function useDeletePromptTag() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.deletePromptTag(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['promptTags'] });
+        },
+    });
+}
+
+// Prompt Variant hooks
+export function usePromptVariants(basePromptId?: number, characterPromptId?: number) {
+    return useQuery({
+        queryKey: ['promptVariants', basePromptId, characterPromptId],
+        queryFn: () => apiClient.getPromptVariants(basePromptId, characterPromptId),
+        enabled: !!(basePromptId || characterPromptId),
+    });
+}
+
+export function usePromptVariant(id: number) {
+    return useQuery({
+        queryKey: ['promptVariants', id],
+        queryFn: () => apiClient.getPromptVariant(id),
+        enabled: !!id,
+    });
+}
+
+export function useCreatePromptVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (dto: CreatePromptVariantDto) => apiClient.createPromptVariant(dto),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['promptVariants'] });
+            if (data.basePromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', data.basePromptId] });
+            }
+            if (data.characterPromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', undefined, data.characterPromptId] });
+            }
+        },
+    });
+}
+
+export function useUpdatePromptVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, dto }: { id: number; dto: UpdatePromptVariantDto }) =>
+            apiClient.updatePromptVariant(id, dto),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['promptVariants'] });
+            queryClient.invalidateQueries({ queryKey: ['promptVariants', variables.id] });
+            if (data.basePromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', data.basePromptId] });
+            }
+            if (data.characterPromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', undefined, data.characterPromptId] });
+            }
+        },
+    });
+}
+
+export function useDeletePromptVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.deletePromptVariant(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['promptVariants'] });
+        },
+    });
+}
+
+export function useSetDefaultPromptVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.setDefaultPromptVariant(id),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['promptVariants'] });
+            if (data.basePromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', data.basePromptId] });
+            }
+            if (data.characterPromptId) {
+                queryClient.invalidateQueries({ queryKey: ['promptVariants', undefined, data.characterPromptId] });
+            }
+        },
+    });
+}
+
+export function useMergePromptVariant() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => apiClient.mergePromptVariant(id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: ['promptVariants', id] });
+        },
+    });
+}
+
+// Prompt Images Grouped hooks
+export function usePromptImagesGrouped(basePromptId?: number, characterPromptId?: number) {
+    return useQuery({
+        queryKey: ['promptImagesGrouped', basePromptId, characterPromptId],
+        queryFn: () => apiClient.getPromptImagesGrouped(basePromptId, characterPromptId),
+        enabled: !!(basePromptId || characterPromptId),
     });
 }
 

@@ -1,10 +1,56 @@
 /**
+ * Prompt Tag（标签 Prompt）实体类型
+ */
+export interface PromptTag {
+    id: number;
+    name: string;
+    tagType: 'action' | 'status' | 'style' | 'appearance' | 'personality';
+    content: string;
+    description?: string;
+    order: number;
+    enabled: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
+ * 变体标签项
+ */
+export interface VariantTagItem {
+    tagId: number;
+    order: number;
+}
+
+/**
+ * Prompt Variant（变体）实体类型
+ */
+export interface PromptVariant {
+    id: number;
+    name: string;
+    description?: string;
+    isDefault: boolean;
+    basePromptId?: number;
+    characterPromptId?: number;
+    tagIds: VariantTagItem[]; // JSON 解析后的数组
+    mergedPrompt: string;
+    mergeConfig?: {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+    };
+    order: number;
+    enabled: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
  * Base Prompt 实体类型
  */
 export interface BasePrompt {
     id: number;
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -22,7 +68,7 @@ export interface CharacterPrompt {
     id: number;
     basePromptId: number;
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -48,11 +94,105 @@ export interface PromptImage {
 }
 
 /**
+ * 创建 Prompt Tag DTO
+ */
+export interface CreatePromptTagDto {
+    name: string;
+    tagType: string;
+    content: string;
+    description?: string;
+    order?: number;
+}
+
+/**
+ * 更新 Prompt Tag DTO
+ */
+export interface UpdatePromptTagDto {
+    name?: string;
+    tagType?: string;
+    content?: string;
+    description?: string;
+    order?: number;
+    enabled?: boolean;
+}
+
+/**
+ * 创建 Prompt Variant DTO
+ */
+export interface CreatePromptVariantDto {
+    name: string;
+    description?: string;
+    basePromptId?: number;
+    characterPromptId?: number;
+    tagIds: VariantTagItem[];
+    mergeConfig?: {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+    };
+    order?: number;
+}
+
+/**
+ * 更新 Prompt Variant DTO
+ */
+export interface UpdatePromptVariantDto {
+    name?: string;
+    description?: string;
+    tagIds?: VariantTagItem[];
+    mergeConfig?: {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+    };
+    order?: number;
+    enabled?: boolean;
+}
+
+/**
+ * Prompt Tag 响应 DTO
+ */
+export interface PromptTagResponseDto {
+    id: number;
+    name: string;
+    tagType: string;
+    content: string;
+    description?: string;
+    order: number;
+    enabled: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
+ * Prompt Variant 响应 DTO
+ */
+export interface PromptVariantResponseDto {
+    id: number;
+    name: string;
+    description?: string;
+    isDefault: boolean;
+    basePromptId?: number;
+    characterPromptId?: number;
+    tagIds: VariantTagItem[];
+    mergedPrompt: string;
+    mergeConfig?: {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+    };
+    order: number;
+    enabled: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
  * 创建 Base Prompt DTO
  */
 export interface CreateBasePromptDto {
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -66,7 +206,7 @@ export interface CreateBasePromptDto {
  */
 export interface UpdateBasePromptDto {
     name?: string;
-    prompt?: string;
+    basicPrompt?: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string | null; // null 表示清空
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -80,7 +220,7 @@ export interface UpdateBasePromptDto {
  */
 export interface CreateCharacterPromptDto {
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -94,7 +234,7 @@ export interface CreateCharacterPromptDto {
  */
 export interface UpdateCharacterPromptDto {
     name?: string;
-    prompt?: string;
+    basicPrompt?: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string | null; // null 表示清空
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -109,7 +249,7 @@ export interface UpdateCharacterPromptDto {
 export interface BasePromptResponseDto {
     id: number;
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -129,7 +269,7 @@ export interface CharacterPromptResponseDto {
     id: number;
     basePromptId: number;
     name: string;
-    prompt: string;
+    basicPrompt: string; // 原 prompt 字段，重命名为 basicPrompt
     undesiredContent?: string;
     // Vibe Transfer 参数
     normalizeReferenceStrength?: boolean;
@@ -146,8 +286,9 @@ export interface CharacterPromptResponseDto {
  */
 export interface PromptImageResponseDto {
     id: number;
-    basePromptId?: number; // 可选：直接关联到 BasePrompt
-    characterPromptId?: number; // 可选：关联到 CharacterPrompt
+    basePromptId?: number; // 可选：直接关联到 BasePrompt（保留用于兼容）
+    characterPromptId?: number; // 可选：关联到 CharacterPrompt（保留用于兼容）
+    variantId?: number; // 新增：关联到变体
     imageUrl: string;
     generatedPrompt: string;
     status: 'uploaded' | 'generated';
@@ -155,3 +296,19 @@ export interface PromptImageResponseDto {
     updatedAt: Date;
 }
 
+/**
+ * 图片按变体分组响应 DTO
+ */
+export interface PromptImagesGroupedResponseDto {
+    variants: Array<{
+        id: number;
+        name: string;
+        isDefault: boolean;
+        imageCount: number;
+        images: PromptImageResponseDto[];
+    }>;
+    uncategorized: {
+        imageCount: number;
+        images: PromptImageResponseDto[];
+    };
+}

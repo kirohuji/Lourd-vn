@@ -9,15 +9,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { BasePromptResponseDto, CreateBasePromptDto, UpdateBasePromptDto } from '@lourd-game/shared';
-import { useEffect, useState, useRef } from 'react';
-import { useCreateBasePrompt, useUpdateBasePrompt } from '@/lib/hooks/use-prompts';
 import { apiClient } from '@/lib/api/client';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { useCreateBasePrompt, useUpdateBasePrompt } from '@/lib/hooks/use-prompts';
+import { BasePromptResponseDto, CreateBasePromptDto, UpdateBasePromptDto } from '@lourd-game/shared';
+import { Loader2, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { PromptVariantManager } from './prompt-variant-manager';
 
 interface BasePromptFormProps {
     open: boolean;
@@ -44,7 +46,7 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
     useEffect(() => {
         if (isEditMode && basePrompt) {
             setName(basePrompt.name);
-            setPrompt(basePrompt.prompt);
+            setPrompt(basePrompt.basicPrompt);
             setUndesiredContent(basePrompt.undesiredContent || '');
             setNormalizeReferenceStrength(basePrompt.normalizeReferenceStrength || false);
             setReferenceStrength(basePrompt.referenceStrength ?? 0.5);
@@ -121,7 +123,7 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
             if (isEditMode && basePrompt) {
                 const dto: UpdateBasePromptDto = {
                     name: name.trim(),
-                    prompt: prompt.trim(),
+                    basicPrompt: prompt.trim(),
                     // 如果 undesiredContent 为空字符串，传递 null 来清空；如果有值，传递值；如果未定义，不包含此字段
                     undesiredContent: undesiredContent.trim() === '' ? null : undesiredContent.trim() || undefined,
                     // 只有当有参考图时才保存 Vibe Transfer 参数
@@ -139,7 +141,7 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
             } else {
                 const dto: CreateBasePromptDto = {
                     name: name.trim(),
-                    prompt: prompt.trim(),
+                    basicPrompt: prompt.trim(),
                     undesiredContent: undesiredContent.trim() || undefined,
                     // 只有当有参考图时才保存 Vibe Transfer 参数
                     normalizeReferenceStrength: referenceImageUrl ? normalizeReferenceStrength : undefined,
@@ -183,172 +185,208 @@ export function BasePromptForm({ open, onOpenChange, basePrompt, onSuccess }: Ba
                         {isEditMode ? '修改 Base Prompt 信息' : '创建一个新的 Base Prompt'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className='grid grid-cols-2 gap-6'>
-                    {/* 左侧：基础信息 */}
-                    <div className='space-y-4'>
-                        <div className='font-semibold text-lg'>基础信息</div>
-                        <div className='space-y-2'>
-                            <Label htmlFor='name'>名称 *</Label>
-                            <Input
-                                id='name'
-                                placeholder='Base Prompt 名称'
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                                disabled={createMutation.isPending || updateMutation.isPending}
-                            />
-                        </div>
-                        <div className='space-y-2'>
-                            <Label htmlFor='prompt'>Prompt *</Label>
-                            <Textarea
-                                id='prompt'
-                                placeholder='输入基础 Prompt'
-                                value={prompt}
-                                onChange={e => setPrompt(e.target.value)}
-                                disabled={createMutation.isPending || updateMutation.isPending}
-                                rows={8}
-                            />
-                        </div>
-                        <div className='space-y-2'>
-                            <Label htmlFor='undesiredContent'>Undesired Content（可选）</Label>
-                            <Textarea
-                                id='undesiredContent'
-                                placeholder='输入不希望出现的内容'
-                                value={undesiredContent}
-                                onChange={e => setUndesiredContent(e.target.value)}
-                                disabled={createMutation.isPending || updateMutation.isPending}
-                                rows={6}
-                            />
-                        </div>
-                    </div>
+                <Tabs defaultValue='basic' className='w-full'>
+                    <TabsList className='grid w-full grid-cols-3'>
+                        <TabsTrigger value='basic'>基础 Prompt</TabsTrigger>
+                        <TabsTrigger value='variants' disabled={!isEditMode || !basePrompt?.id}>
+                            变体管理
+                        </TabsTrigger>
+                        <TabsTrigger value='settings'>设置</TabsTrigger>
+                    </TabsList>
 
-                    {/* 右侧：Vibe Transfer 参数 */}
-                    <div className='space-y-4'>
-                        <div className='font-semibold text-lg'>Vibe Transfer (Change the image, keep the vision.)</div>
-                        
-                        <div className='space-y-4 p-4 border rounded-lg'>
-                            {/* 参考图上传 - 放在最前面 */}
+                    {/* 基础 Prompt 标签页 */}
+                    <TabsContent value='basic' className='space-y-4'>
+                        <div className='space-y-4'>
                             <div className='space-y-2'>
-                                <Label>参考图 *</Label>
-                                {referenceImageUrl ? (
-                                    <div className='relative'>
-                                        <img
-                                            src={referenceImageUrl}
-                                            alt='参考图'
-                                            className='w-full h-48 object-contain border rounded-lg'
-                                        />
-                                        <Button
-                                            variant='destructive'
-                                            size='icon'
-                                            className='absolute top-2 right-2'
-                                            onClick={handleRemoveReferenceImage}
-                                            disabled={createMutation.isPending || updateMutation.isPending}
-                                        >
-                                            <X className='h-4 w-4' />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className='border-2 border-dashed rounded-lg p-8 text-center'>
-                                        <Input
-                                            ref={fileInputRef}
-                                            type='file'
-                                            accept='image/*'
-                                            onChange={handleReferenceImageUpload}
-                                            disabled={uploadingReferenceImage || createMutation.isPending || updateMutation.isPending}
-                                            className='hidden'
-                                            id='reference-image-input'
-                                        />
-                                        <Label
-                                            htmlFor='reference-image-input'
-                                            className='cursor-pointer flex flex-col items-center gap-2'
-                                        >
-                                            {uploadingReferenceImage ? (
-                                                <Loader2 className='h-8 w-8 animate-spin' />
-                                            ) : (
-                                                <Upload className='h-8 w-8 text-muted-foreground' />
-                                            )}
-                                            <span className='text-sm text-muted-foreground'>
-                                                {uploadingReferenceImage ? '上传中...' : '点击上传参考图'}
-                                            </span>
-                                        </Label>
-                                    </div>
-                                )}
-                                {!isEditMode && !referenceImageUrl && (
-                                    <p className='text-xs text-muted-foreground'>
-                                        提示：上传参考图后，Vibe Transfer 功能将自动启用
-                                    </p>
-                                )}
+                                <Label htmlFor='name'>名称 *</Label>
+                                <Input
+                                    id='name'
+                                    placeholder='Base Prompt 名称'
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    disabled={createMutation.isPending || updateMutation.isPending}
+                                />
+                            </div>
+                            <div className='space-y-2'>
+                                <Label htmlFor='prompt'>基础 Prompt *</Label>
+                                <Textarea
+                                    id='prompt'
+                                    placeholder='输入基础 Prompt'
+                                    value={prompt}
+                                    onChange={e => setPrompt(e.target.value)}
+                                    disabled={createMutation.isPending || updateMutation.isPending}
+                                    rows={10}
+                                />
+                            </div>
+                            <div className='space-y-2'>
+                                <Label htmlFor='undesiredContent'>Undesired Content（可选）</Label>
+                                <Textarea
+                                    id='undesiredContent'
+                                    placeholder='输入不希望出现的内容'
+                                    value={undesiredContent}
+                                    onChange={e => setUndesiredContent(e.target.value)}
+                                    disabled={createMutation.isPending || updateMutation.isPending}
+                                    rows={6}
+                                />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* 变体管理标签页 */}
+                    <TabsContent value='variants' className='space-y-4'>
+                        {isEditMode && basePrompt?.id && (
+                            <PromptVariantManager
+                                basePromptId={basePrompt.id}
+                                basicPrompt={prompt}
+                                disabled={createMutation.isPending || updateMutation.isPending}
+                            />
+                        )}
+                    </TabsContent>
+
+                    {/* 设置标签页 */}
+                    <TabsContent value='settings' className='space-y-4'>
+                        <div className='space-y-4'>
+                            <div className='font-semibold text-lg'>
+                                Vibe Transfer (Change the image, keep the vision.)
                             </div>
 
-                            {/* 只有当有参考图时才显示其他参数 */}
-                            {referenceImageUrl && (
-                                <>
-                                    <Separator />
-
-                                    <div className='flex items-center justify-between'>
-                                        <Label htmlFor='normalizeReferenceStrength'>Normalize Reference Strength Values</Label>
-                                        <Switch
-                                            id='normalizeReferenceStrength'
-                                            checked={normalizeReferenceStrength}
-                                            onCheckedChange={setNormalizeReferenceStrength}
-                                            disabled={createMutation.isPending || updateMutation.isPending}
-                                        />
-                                    </div>
-
-                                    <Separator />
-
-                                    <div className='space-y-2'>
-                                        <Label htmlFor='referenceStrength'>
-                                            Reference Strength: {referenceStrength.toFixed(2)}
-                                        </Label>
-                                        <Input
-                                            id='referenceStrength'
-                                            type='range'
-                                            min='0'
-                                            max='1'
-                                            step='0.01'
-                                            value={referenceStrength}
-                                            onChange={e => setReferenceStrength(parseFloat(e.target.value))}
-                                            disabled={createMutation.isPending || updateMutation.isPending}
-                                            className='w-full'
-                                        />
-                                        <div className='flex justify-between text-xs text-muted-foreground'>
-                                            <span>0</span>
-                                            <span>1</span>
+                            <div className='space-y-4 p-4 border rounded-lg'>
+                                {/* 参考图上传 - 放在最前面 */}
+                                <div className='space-y-2'>
+                                    <Label>参考图 *</Label>
+                                    {referenceImageUrl ? (
+                                        <div className='relative'>
+                                            <img
+                                                src={referenceImageUrl}
+                                                alt='参考图'
+                                                className='w-full h-48 object-contain border rounded-lg'
+                                            />
+                                            <Button
+                                                variant='destructive'
+                                                size='icon'
+                                                className='absolute top-2 right-2'
+                                                onClick={handleRemoveReferenceImage}
+                                                disabled={createMutation.isPending || updateMutation.isPending}
+                                            >
+                                                <X className='h-4 w-4' />
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    <div className='space-y-2'>
-                                        <Label htmlFor='informationExtracted'>
-                                            Information Extracted: {informationExtracted.toFixed(2)}
-                                        </Label>
-                                        <Input
-                                            id='informationExtracted'
-                                            type='range'
-                                            min='0'
-                                            max='1'
-                                            step='0.01'
-                                            value={informationExtracted}
-                                            onChange={e => setInformationExtracted(parseFloat(e.target.value))}
-                                            disabled={createMutation.isPending || updateMutation.isPending}
-                                            className='w-full'
-                                        />
-                                        <div className='flex justify-between text-xs text-muted-foreground'>
-                                            <span>0</span>
-                                            <span>1</span>
+                                    ) : (
+                                        <div className='border-2 border-dashed rounded-lg p-8 text-center'>
+                                            <Input
+                                                ref={fileInputRef}
+                                                type='file'
+                                                accept='image/*'
+                                                onChange={handleReferenceImageUpload}
+                                                disabled={
+                                                    uploadingReferenceImage ||
+                                                    createMutation.isPending ||
+                                                    updateMutation.isPending
+                                                }
+                                                className='hidden'
+                                                id='reference-image-input'
+                                            />
+                                            <Label
+                                                htmlFor='reference-image-input'
+                                                className='cursor-pointer flex flex-col items-center gap-2'
+                                            >
+                                                {uploadingReferenceImage ? (
+                                                    <Loader2 className='h-8 w-8 animate-spin' />
+                                                ) : (
+                                                    <Upload className='h-8 w-8 text-muted-foreground' />
+                                                )}
+                                                <span className='text-sm text-muted-foreground'>
+                                                    {uploadingReferenceImage ? '上传中...' : '点击上传参考图'}
+                                                </span>
+                                            </Label>
                                         </div>
-                                    </div>
-                                </>
-                            )}
+                                    )}
+                                    {!isEditMode && !referenceImageUrl && (
+                                        <p className='text-xs text-muted-foreground'>
+                                            提示：上传参考图后，Vibe Transfer 功能将自动启用
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* 只有当有参考图时才显示其他参数 */}
+                                {referenceImageUrl && (
+                                    <>
+                                        <Separator />
+
+                                        <div className='flex items-center justify-between'>
+                                            <Label htmlFor='normalizeReferenceStrength'>
+                                                Normalize Reference Strength Values
+                                            </Label>
+                                            <Switch
+                                                id='normalizeReferenceStrength'
+                                                checked={normalizeReferenceStrength}
+                                                onCheckedChange={setNormalizeReferenceStrength}
+                                                disabled={createMutation.isPending || updateMutation.isPending}
+                                            />
+                                        </div>
+
+                                        <Separator />
+
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='referenceStrength'>
+                                                Reference Strength: {referenceStrength.toFixed(2)}
+                                            </Label>
+                                            <Input
+                                                id='referenceStrength'
+                                                type='range'
+                                                min='0'
+                                                max='1'
+                                                step='0.01'
+                                                value={referenceStrength}
+                                                onChange={e => setReferenceStrength(parseFloat(e.target.value))}
+                                                disabled={createMutation.isPending || updateMutation.isPending}
+                                                className='w-full'
+                                            />
+                                            <div className='flex justify-between text-xs text-muted-foreground'>
+                                                <span>0</span>
+                                                <span>1</span>
+                                            </div>
+                                        </div>
+
+                                        <div className='space-y-2'>
+                                            <Label htmlFor='informationExtracted'>
+                                                Information Extracted: {informationExtracted.toFixed(2)}
+                                            </Label>
+                                            <Input
+                                                id='informationExtracted'
+                                                type='range'
+                                                min='0'
+                                                max='1'
+                                                step='0.01'
+                                                value={informationExtracted}
+                                                onChange={e => setInformationExtracted(parseFloat(e.target.value))}
+                                                disabled={createMutation.isPending || updateMutation.isPending}
+                                                className='w-full'
+                                            />
+                                            <div className='flex justify-between text-xs text-muted-foreground'>
+                                                <span>0</span>
+                                                <span>1</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </TabsContent>
+                </Tabs>
                 <DialogFooter>
-                    <Button variant='outline' onClick={() => onOpenChange(false)} disabled={createMutation.isPending || updateMutation.isPending}>
+                    <Button
+                        variant='outline'
+                        onClick={() => onOpenChange(false)}
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                    >
                         取消
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={createMutation.isPending || updateMutation.isPending || !name.trim() || !prompt.trim()}
+                        disabled={
+                            createMutation.isPending || updateMutation.isPending || !name.trim() || !prompt.trim()
+                        }
                     >
                         {createMutation.isPending || updateMutation.isPending
                             ? '保存中...'

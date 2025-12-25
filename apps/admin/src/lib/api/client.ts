@@ -16,6 +16,8 @@ import {
     CreateLoreBookEntryDto,
     CreateMapDto,
     CreateProjectDto,
+    CreatePromptTagDto,
+    CreatePromptVariantDto,
     CreateRoomDto,
     EmailLoginDto,
     InkFile,
@@ -30,6 +32,9 @@ import {
     ProjectQueryDto,
     ProjectResponseDto,
     PromptImageResponseDto,
+    PromptImagesGroupedResponseDto,
+    PromptTagResponseDto,
+    PromptVariantResponseDto,
     ResourceQueryDto,
     ResourceResponseDto,
     RoomConfig,
@@ -44,6 +49,8 @@ import {
     UpdateLoreBookSettingsDto,
     UpdateMapDto,
     UpdateProjectDto,
+    UpdatePromptTagDto,
+    UpdatePromptVariantDto,
     UpdateResourceDto,
     UpdateRoomDto,
     UpdateUserDto,
@@ -937,6 +944,103 @@ class ApiClient {
         return this.request<LoreBookSettingsResponseDto>(endpoints.lorebook.settings.update, {
             method: 'PUT',
             body: dto,
+        });
+    }
+
+    // Prompt Tag APIs
+    async getPromptTags(tagType?: string): Promise<PromptTagResponseDto[]> {
+        const url = tagType ? `/prompts/tags?tagType=${tagType}` : '/prompts/tags';
+        return this.request<PromptTagResponseDto[]>(url, {
+            method: 'GET',
+        });
+    }
+
+    async getPromptTag(id: number): Promise<PromptTagResponseDto> {
+        return this.request<PromptTagResponseDto>(`/prompts/tags/${id}`, {
+            method: 'GET',
+        });
+    }
+
+    async createPromptTag(dto: CreatePromptTagDto): Promise<PromptTagResponseDto> {
+        return this.request<PromptTagResponseDto>('/prompts/tags', {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updatePromptTag(id: number, dto: UpdatePromptTagDto): Promise<PromptTagResponseDto> {
+        return this.request<PromptTagResponseDto>(`/prompts/tags/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deletePromptTag(id: number): Promise<void> {
+        return this.request<void>(`/prompts/tags/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // Prompt Variant APIs
+    async getPromptVariants(basePromptId?: number, characterPromptId?: number): Promise<PromptVariantResponseDto[]> {
+        const params = new URLSearchParams();
+        if (basePromptId) params.append('basePromptId', basePromptId.toString());
+        if (characterPromptId) params.append('characterPromptId', characterPromptId.toString());
+        const url = `/prompts/variants${params.toString() ? `?${params.toString()}` : ''}`;
+        return this.request<PromptVariantResponseDto[]>(url, {
+            method: 'GET',
+        });
+    }
+
+    async getPromptVariant(id: number): Promise<PromptVariantResponseDto> {
+        return this.request<PromptVariantResponseDto>(`/prompts/variants/${id}`, {
+            method: 'GET',
+        });
+    }
+
+    async createPromptVariant(dto: CreatePromptVariantDto): Promise<PromptVariantResponseDto> {
+        return this.request<PromptVariantResponseDto>('/prompts/variants', {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updatePromptVariant(id: number, dto: UpdatePromptVariantDto): Promise<PromptVariantResponseDto> {
+        return this.request<PromptVariantResponseDto>(`/prompts/variants/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deletePromptVariant(id: number): Promise<void> {
+        return this.request<void>(`/prompts/variants/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async setDefaultPromptVariant(id: number): Promise<PromptVariantResponseDto> {
+        return this.request<PromptVariantResponseDto>(`/prompts/variants/${id}/set-default`, {
+            method: 'POST',
+        });
+    }
+
+    async mergePromptVariant(id: number): Promise<{ mergedPrompt: string }> {
+        return this.request<{ mergedPrompt: string }>(`/prompts/variants/${id}/merge`, {
+            method: 'POST',
+        });
+    }
+
+    // Prompt Images Grouped API
+    async getPromptImagesGrouped(
+        basePromptId?: number,
+        characterPromptId?: number,
+    ): Promise<PromptImagesGroupedResponseDto> {
+        const params = new URLSearchParams();
+        if (basePromptId) params.append('basePromptId', basePromptId.toString());
+        if (characterPromptId) params.append('characterPromptId', characterPromptId.toString());
+        const url = `/prompts/images/grouped${params.toString() ? `?${params.toString()}` : ''}`;
+        return this.request<PromptImagesGroupedResponseDto>(url, {
+            method: 'GET',
         });
     }
 }

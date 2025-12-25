@@ -15,13 +15,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
-    useBasePromptImages,
     useBasePrompts,
     useCharacterPrompts,
     useDeleteBasePrompt,
     useDeleteCharacterPrompt,
     useDeletePromptImage,
-    usePromptImages,
+    usePromptImagesGrouped,
 } from '@/lib/hooks/use-prompts';
 import { BasePromptResponseDto, CharacterPromptResponseDto, PromptImageResponseDto } from '@lourd-game/shared';
 import { Edit, Eye, Loader2, Plus, Trash2, Upload } from 'lucide-react';
@@ -51,20 +50,13 @@ export function PromptsPage() {
         refetch: refetchCharacterPrompts,
     } = useCharacterPrompts(selectedBasePromptId || 0);
     const {
-        data: characterPromptImages = [],
-        isLoading: isLoadingCharacterImages,
-        refetch: refetchCharacterImages,
-    } = usePromptImages(selectedCharacterPromptId || 0);
-    const {
-        data: basePromptImages = [],
-        isLoading: isLoadingBaseImages,
-        refetch: refetchBaseImages,
-    } = useBasePromptImages(selectedBasePromptId || 0);
-
-    // 根据是否选中 CharacterPrompt 决定显示哪个图片集合
-    const promptImages = selectedCharacterPromptId ? characterPromptImages : basePromptImages;
-    const isLoadingImages = selectedCharacterPromptId ? isLoadingCharacterImages : isLoadingBaseImages;
-    const refetchImages = selectedCharacterPromptId ? refetchCharacterImages : refetchBaseImages;
+        data: imagesGrouped,
+        isLoading: isLoadingImages,
+        refetch: refetchImages,
+    } = usePromptImagesGrouped(
+        selectedCharacterPromptId ? undefined : selectedBasePromptId || undefined,
+        selectedCharacterPromptId || undefined,
+    );
 
     const deleteBasePrompt = useDeleteBasePrompt();
     const deleteCharacterPrompt = useDeleteCharacterPrompt();
@@ -164,8 +156,14 @@ export function PromptsPage() {
     const selectedBasePrompt = basePrompts.find(bp => bp.id === selectedBasePromptId);
     const selectedCharacterPrompt = characterPrompts.find(cp => cp.id === selectedCharacterPromptId);
 
-    // 准备 lightbox 的图片数据
-    const lightboxSlides = promptImages.map(image => ({
+    // 准备 lightbox 的图片数据（所有图片）
+    const allImages = imagesGrouped
+        ? [
+              ...imagesGrouped.variants.flatMap(v => v.images),
+              ...imagesGrouped.uncategorized.images,
+          ]
+        : [];
+    const lightboxSlides = allImages.map(image => ({
         src: image.imageUrl,
         alt: `Prompt Image ${image.id}`,
         title: `Prompt Image #${image.id}`,
@@ -326,7 +324,7 @@ export function PromptsPage() {
                                 : ''}
                         </div>
                         <div className='flex items-center gap-2'>
-                            {promptImages.length > 0 && (
+                            {allImages.length > 0 && (
                                 <Button
                                     size='sm'
                                     variant='outline'
@@ -340,12 +338,12 @@ export function PromptsPage() {
                                     快速预览
                                 </Button>
                             )}
-                        {(selectedCharacterPromptId || selectedBasePromptId) && (
-                            <Button size='sm' onClick={() => setImageUploadOpen(true)}>
-                                <Upload className='mr-2 h-4 w-4' />
-                                上传图片
-                            </Button>
-                        )}
+                            {(selectedCharacterPromptId || selectedBasePromptId) && (
+                                <Button size='sm' onClick={() => setImageUploadOpen(true)}>
+                                    <Upload className='mr-2 h-4 w-4' />
+                                    上传图片
+                                </Button>
+                            )}
                         </div>
                     </div>
                     {!selectedBasePromptId ? (
@@ -356,33 +354,78 @@ export function PromptsPage() {
                         <div className='flex items-center justify-center flex-1'>
                             <Loader2 className='h-6 w-6 animate-spin' />
                         </div>
-                    ) : promptImages.length === 0 ? (
+                    ) : !imagesGrouped || (imagesGrouped.variants.length === 0 && imagesGrouped.uncategorized.imageCount === 0) ? (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
                             暂无图片
                         </div>
                     ) : (
-                        <div className='overflow-auto flex-1'>
-                            <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-2'>
-                                {promptImages.map(image => (
-                                    <div
-                                        key={image.id}
-                                        className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
-                                    >
-                                        {/* 原来的预览功能（点击图片） */}
-                                        <PromptImagePreview
-                                            image={image}
-                                            size='thumbnail'
-                                            onDelete={() => handleDeleteImage(image)}
-                                        />
-                                        {/* 图片信息提示 */}
-                                        <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-                                            <p className='text-xs text-white truncate'>
-                                                {new Date(image.createdAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
+                        <div className='overflow-auto flex-1 space-y-6'>
+                            {/* 按变体分组显示 */}
+                            {imagesGrouped.variants.map(variant => (
+                                <div key={variant.id} className='space-y-3'>
+                                    <div className='flex items-center gap-2'>
+                                        <h3 className='font-semibold text-lg'>
+                                            {variant.name}
+                                            {variant.isDefault && (
+                                                <span className='ml-2 text-xs text-muted-foreground'>(默认)</span>
+                                            )}
+                                        </h3>
+                                        <span className='text-sm text-muted-foreground'>
+                                            {variant.imageCount} 张图片
+                                        </span>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3'>
+                                        {variant.images.map(image => (
+                                            <div
+                                                key={image.id}
+                                                className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
+                                            >
+                                                <PromptImagePreview
+                                                    image={image}
+                                                    size='thumbnail'
+                                                    onDelete={() => handleDeleteImage(image)}
+                                                />
+                                                <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                                    <p className='text-xs text-white truncate'>
+                                                        {new Date(image.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* 未分类的图片 */}
+                            {imagesGrouped.uncategorized.imageCount > 0 && (
+                                <div className='space-y-3'>
+                                    <div className='flex items-center gap-2'>
+                                        <h3 className='font-semibold text-lg'>未分类</h3>
+                                        <span className='text-sm text-muted-foreground'>
+                                            {imagesGrouped.uncategorized.imageCount} 张图片
+                                        </span>
+                                    </div>
+                                    <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3'>
+                                        {imagesGrouped.uncategorized.images.map(image => (
+                                            <div
+                                                key={image.id}
+                                                className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
+                                            >
+                                                <PromptImagePreview
+                                                    image={image}
+                                                    size='thumbnail'
+                                                    onDelete={() => handleDeleteImage(image)}
+                                                />
+                                                <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                                    <p className='text-xs text-white truncate'>
+                                                        {new Date(image.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

@@ -16,15 +16,15 @@ enum UserRole {
 }
 
 model Project {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  description String?
-  enabled     Boolean  @default(true)
-  commonBundle String? // 共通资源包名称
-  commonBundleZipUrl String? // 共通资源包 ZIP 下载地址
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique
+  description         String?
+  enabled             Boolean  @default(true)
+  commonBundle        String? // 共通资源包名称
+  commonBundleZipUrl  String? // 共通资源包 ZIP 下载地址
   commonBundleVersion Int? // 共通资源包版本号
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   // 项目的章节
   chapters Chapter[]
@@ -38,16 +38,16 @@ model Project {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String?   @unique
-  password     String?   // 密码哈希（仅用于管理员邮箱登录）
-  wechatOpenId String?   @unique
-  wechatUnionId String?  @unique
+  id             Int      @id @default(autoincrement())
+  email          String?  @unique
+  password       String? // 密码哈希（仅用于管理员邮箱登录）
+  wechatOpenId   String?  @unique
+  wechatUnionId  String?  @unique
   wechatNickname String? // 微信昵称
-  wechatAvatar String?   // 微信头像 URL
-  role         UserRole  @default(USER)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  wechatAvatar   String? // 微信头像 URL
+  role           UserRole @default(USER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   resources Resource[]
 
@@ -70,8 +70,8 @@ model Resource {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  uploader User    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
-  
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
   // 被哪些项目使用（多对多关系）
   usedByProjects ProjectResourceUsage[]
   // 被哪些章节使用（多对多关系）
@@ -85,46 +85,46 @@ model Resource {
 }
 
 model Chapter {
-  id          Int      @id @default(autoincrement())
-  projectId   Int
-  name        String
-  description String?
-  order       Int      @default(0)
-  enabled     Boolean  @default(true)
-  requireAd   Boolean  @default(false)
-  chapterBundleZipUrl String? // 章节资源包 ZIP 下载地址
+  id                   Int      @id @default(autoincrement())
+  projectId            Int
+  name                 String
+  description          String?
+  order                Int      @default(0)
+  enabled              Boolean  @default(true)
+  requireAd            Boolean  @default(false)
+  chapterBundleZipUrl  String? // 章节资源包 ZIP 下载地址
   chapterBundleVersion Int? // 章节资源包版本号
   // 章节资源包访问地址（非 ZIP），可为目录前缀
-  chapterBundleUrl String?
+  chapterBundleUrl     String?
   // 资源包目录树 JSON（可选）
-  bundleDirTree Json?
+  bundleDirTree        Json?
   // 指定章节的起始 Ink 文件
-  startInkId Int? @unique
-  startInk   InkFile? @relation("ChapterStartInk", fields: [startInkId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  startInkId           Int?     @unique
+  startInk             InkFile? @relation("ChapterStartInk", fields: [startInkId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project       Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   usedResources ChapterResourceUsage[]
-  inkFiles    InkFile[]
+  inkFiles      InkFile[]
 
+  @@unique([projectId, order])
   @@index([projectId])
   @@index([order])
-  @@unique([projectId, order])
   @@map("chapters")
 }
 
 model InkFile {
-  id         Int      @id @default(autoincrement())
-  chapterId  Int
-  filename   String
-  displayName String?
-  content    String?
+  id           Int      @id @default(autoincrement())
+  chapterId    Int
+  filename     String
+  displayName  String?
+  content      String?
   compiledPath String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  chapter    Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   // 与章节 startInk 的自关联
   chapterStart Chapter? @relation("ChapterStartInk")
 
@@ -134,36 +134,36 @@ model InkFile {
 }
 
 model Map {
-  id             String   @id
+  id             String  @id
   name           String
   bundle         String?
-  backgroundType String   @default("timeSlots")
+  backgroundType String  @default("timeSlots")
   backgroundJson Json?
-  
-  locations      Location[]
-  rooms          Room[]
-  
+
+  locations Location[]
+  rooms     Room[]
+
   // 被哪些项目使用（多对多关系）
   usedByProjects ProjectMapUsage[]
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Location {
-  id        String  @id
-  map       Map     @relation(fields: [mapId], references: [id])
-  mapId     String
-  name      String
-  iconAlias String?
-  order     Int     @default(0)
+  id         String  @id
+  map        Map     @relation(fields: [mapId], references: [id])
+  mapId      String
+  name       String
+  iconAlias  String?
+  order      Int     @default(0)
   /**
    * Sprite 配置 JSON，包含位置和尺寸信息
    * 结构: { xAlign?: number; yAlign?: number; width?: number; height?: number }
    */
   spriteJson Json?
 
-  rooms     Room[]
+  rooms Room[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -181,18 +181,18 @@ model Room {
   backgroundJson Json?
   hotspotsJson   Json?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Character {
-  id        String  @id
-  name      String
-  age       Int?
-  icon      String?
-  color     String?
-  enabled   Boolean @default(true)
-  order     Int     @default(0)
+  id      String  @id
+  name    String
+  age     Int?
+  icon    String?
+  color   String?
+  enabled Boolean @default(true)
+  order   Int     @default(0)
 
   // 被哪些项目使用（多对多关系）
   usedByProjects ProjectCharacterUsage[]
@@ -208,8 +208,8 @@ model ProjectResourceUsage {
   resourceId Int
   createdAt  DateTime @default(now())
 
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  resource  Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, resourceId])
   @@index([projectId])
@@ -256,8 +256,8 @@ model ChapterResourceUsage {
   resourceId Int
   createdAt  DateTime @default(now())
 
-  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  resource  Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  chapter  Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   @@unique([chapterId, resourceId])
   @@index([chapterId])
@@ -265,22 +265,40 @@ model ChapterResourceUsage {
   @@map("chapter_resource_usage")
 }
 
+// Prompt Tag 模型（标签 Prompt）
+model PromptTag {
+  id          Int      @id @default(autoincrement())
+  name        String // 标签名称，如 "anime", "standing", "happy"
+  tagType     String // 标签类型: "action" | "status" | "style" | "appearance" | "personality"
+  content     String   @db.Text // Prompt 内容
+  description String? // 描述
+  order       Int      @default(0) // 排序权重
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tagType])
+  @@index([enabled])
+  @@map("prompt_tags")
+}
+
 // Base Prompt 模型
 model BasePrompt {
-  id              Int      @id @default(autoincrement())
-  name            String
-  prompt          String   @db.Text
-  undesiredContent String? @db.Text
+  id                         Int      @id @default(autoincrement())
+  name                       String
+  basicPrompt                String   @db.Text @map("basic_prompt") // 原 prompt 字段，重命名为 basicPrompt
+  undesiredContent           String?  @db.Text
   // Vibe Transfer 参数
-  normalizeReferenceStrength Boolean @default(false)
-  referenceStrength Float? // 0-1
-  informationExtracted Float? // 0-1
-  referenceImageUrl String? // 参考图 URL
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  normalizeReferenceStrength Boolean  @default(false)
+  referenceStrength          Float? // 0-1
+  informationExtracted       Float? // 0-1
+  referenceImageUrl          String? // 参考图 URL
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   characterPrompts CharacterPrompt[]
-  images          PromptImage[]
+  images           PromptImage[]
+  variants         PromptVariant[] // 新增关联
 
   @@index([name])
   @@map("base_prompts")
@@ -288,107 +306,150 @@ model BasePrompt {
 
 // Character Prompt 模型
 model CharacterPrompt {
-  id              Int      @id @default(autoincrement())
-  basePromptId   Int
-  name           String
-  prompt         String   @db.Text
-  undesiredContent String? @db.Text
+  id                         Int      @id @default(autoincrement())
+  basePromptId               Int
+  name                       String
+  basicPrompt                String   @db.Text @map("basic_prompt") // 原 prompt 字段，重命名为 basicPrompt
+  undesiredContent           String?  @db.Text
   // Vibe Transfer 参数
-  normalizeReferenceStrength Boolean @default(false)
-  referenceStrength Float? // 0-1
-  informationExtracted Float? // 0-1
-  referenceImageUrl String? // 参考图 URL
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  normalizeReferenceStrength Boolean  @default(false)
+  referenceStrength          Float? // 0-1
+  informationExtracted       Float? // 0-1
+  referenceImageUrl          String? // 参考图 URL
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
-  basePrompt BasePrompt  @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
+  basePrompt BasePrompt      @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
   images     PromptImage[]
+  variants   PromptVariant[] // 新增关联
 
   @@index([basePromptId])
   @@index([name])
   @@map("character_prompts")
 }
 
-// Prompt Image 模型
-model PromptImage {
-  id              Int      @id @default(autoincrement())
-  basePromptId    Int?     // 可选：直接关联到 BasePrompt
-  characterPromptId Int?   // 可选：关联到 CharacterPrompt
-  imageUrl        String
-  generatedPrompt String   @db.Text
-  status          String   @default("uploaded") // "uploaded" | "generated"
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+// Prompt Variant 模型（变体）
+model PromptVariant {
+  id          Int     @id @default(autoincrement())
+  name        String // 变体名称，如 "Default", "Standing Pose"
+  description String? // 变体描述
+  isDefault   Boolean @default(false) // 是否为默认变体
 
+  // 关联到 BasePrompt 或 CharacterPrompt（二选一）
+  basePromptId      Int?
+  characterPromptId Int?
+
+  // 标签ID数组和顺序（JSON格式）
+  // 格式: [{"tagId": 1, "order": 0}, {"tagId": 3, "order": 1}]
+  tagIds Json @default("[]")
+
+  // 合并后的最终 Prompt（缓存）
+  mergedPrompt String @db.Text
+
+  // 合并配置（JSON）
+  // 格式: {"separator": "\n", "prefix": "", "suffix": ""}
+  mergeConfig Json? @default("{\"separator\": \"\\n\"}")
+
+  order   Int     @default(0) // 排序
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联
   basePrompt      BasePrompt?      @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
   characterPrompt CharacterPrompt? @relation(fields: [characterPromptId], references: [id], onDelete: Cascade)
+  images          PromptImage[]
 
   @@index([basePromptId])
   @@index([characterPromptId])
+  @@index([isDefault])
+  @@map("prompt_variants")
+}
+
+// Prompt Image 模型
+model PromptImage {
+  id                Int      @id @default(autoincrement())
+  basePromptId      Int? // 可选：直接关联到 BasePrompt（保留用于兼容）
+  characterPromptId Int? // 可选：关联到 CharacterPrompt（保留用于兼容）
+  variantId         Int? @map("variant_id") // 新增：关联到变体
+  imageUrl          String
+  generatedPrompt   String   @db.Text
+  status            String   @default("uploaded") // "uploaded" | "generated"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  basePrompt      BasePrompt?      @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
+  characterPrompt CharacterPrompt? @relation(fields: [characterPromptId], references: [id], onDelete: Cascade)
+  variant         PromptVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([basePromptId])
+  @@index([characterPromptId])
+  @@index([variantId])
   @@index([status])
   @@map("prompt_images")
 }
 
 // LoreBook Category 模型
 model LoreBookCategory {
-  id                  String   @id @default(uuid())
+  id                  String  @id @default(uuid())
   name                String
-  enabled             Boolean  @default(true)
-  createSubcontext    Boolean  @default(false)
-  useCategoryDefaults Boolean  @default(false)
-  open                Boolean  @default(false)
-  
+  enabled             Boolean @default(true)
+  createSubcontext    Boolean @default(false)
+  useCategoryDefaults Boolean @default(false)
+  open                Boolean @default(false)
+
   // Subcontext Settings (JSON 对象，包含完整的 entry 结构)
-  subcontextSettings  Json?
-  
+  subcontextSettings Json?
+
   // Category Defaults (JSON 对象，包含完整的 entry 结构)
-  categoryDefaults    Json?
-  
+  categoryDefaults Json?
+
   // Category Bias Groups (JSON 数组)
-  categoryBiasGroups  Json     @default("[]")
-  
+  categoryBiasGroups Json @default("[]")
+
   // Settings (JSON 对象)
-  settings            Json     @default("{}")
-  
+  settings Json @default("{}")
+
   // Order (JSON 数组，包含 entry IDs)
-  order               Json     @default("[]")
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  entries             LoreBookEntry[]
+  order Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries LoreBookEntry[]
 
   @@map("lorebook_categories")
 }
 
 // LoreBook Entry 模型
 model LoreBookEntry {
-  id                  String   @id @default(uuid())
-  text                String   @db.Text
+  id                  String            @id @default(uuid())
+  text                String            @db.Text
   displayName         String
-  generationType      String?  // General, Person, Place, Thing, Life, Faction, Role, Concept, History
-  keys                Json     // 字符串数组
-  searchRange         Int      @default(1000)
-  enabled             Boolean  @default(true)
-  forceActivation     Boolean  @default(false)
-  keyRelative         Boolean  @default(false)
-  nonStoryActivatable Boolean  @default(false)
-  hidden              Boolean  @default(false)
+  generationType      String? // General, Person, Place, Thing, Life, Faction, Role, Concept, History
+  keys                Json // 字符串数组
+  searchRange         Int               @default(1000)
+  enabled             Boolean           @default(true)
+  forceActivation     Boolean           @default(false)
+  keyRelative         Boolean           @default(false)
+  nonStoryActivatable Boolean           @default(false)
+  hidden              Boolean           @default(false)
   categoryId          String?
   category            LoreBookCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  
+
   // Context Config (JSON 对象)
-  contextConfig       Json
-  
+  contextConfig Json
+
   // Lore Bias Groups (JSON 数组)
-  loreBiasGroups      Json     @default("[]")
-  
+  loreBiasGroups Json @default("[]")
+
   // Advanced Conditions (JSON 数组)
-  advancedConditions  Json     @default("[]")
-  
-  lastUpdatedAt       BigInt   // 时间戳
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  advancedConditions Json @default("[]")
+
+  lastUpdatedAt BigInt // 时间戳
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([categoryId])
   @@map("lorebook_entries")

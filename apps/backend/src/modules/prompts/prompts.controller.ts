@@ -1,13 +1,20 @@
 import type {
   CreateBasePromptDto,
   CreateCharacterPromptDto,
+  CreatePromptTagDto,
+  CreatePromptVariantDto,
   UpdateBasePromptDto,
   UpdateCharacterPromptDto,
+  UpdatePromptTagDto,
+  UpdatePromptVariantDto,
 } from '@lourd-game/shared';
 import {
   BasePromptResponseDto,
   CharacterPromptResponseDto,
   PromptImageResponseDto,
+  PromptImagesGroupedResponseDto,
+  PromptTagResponseDto,
+  PromptVariantResponseDto,
   UserRole,
 } from '@lourd-game/shared';
 import {
@@ -21,6 +28,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -271,5 +279,143 @@ export class PromptsController {
   @ApiResponse({ status: 204, description: '图片删除成功' })
   async deleteImage(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.promptsService.deleteImage(id);
+  }
+
+  // ========== Prompt Tag Endpoints ==========
+
+  @Get('tags')
+  @ApiOperation({ summary: '获取所有标签 Prompt' })
+  @ApiResponse({ status: 200, description: '标签 Prompt 列表' })
+  async findAllTags(
+    @Query('tagType') tagType?: string,
+  ): Promise<PromptTagResponseDto[]> {
+    return this.promptsService.findAllTags(tagType);
+  }
+
+  @Get('tags/:id')
+  @ApiOperation({ summary: '获取标签 Prompt 详情' })
+  @ApiResponse({ status: 200, description: '标签 Prompt 详情' })
+  async findTagById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PromptTagResponseDto> {
+    return this.promptsService.findTagById(id);
+  }
+
+  @Post('tags')
+  @ApiOperation({ summary: '创建标签 Prompt' })
+  @ApiResponse({ status: 201, description: '标签 Prompt 创建成功' })
+  async createTag(
+    @Body() dto: CreatePromptTagDto,
+  ): Promise<PromptTagResponseDto> {
+    return this.promptsService.createTag(dto);
+  }
+
+  @Put('tags/:id')
+  @ApiOperation({ summary: '更新标签 Prompt' })
+  @ApiResponse({ status: 200, description: '标签 Prompt 更新成功' })
+  async updateTag(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePromptTagDto,
+  ): Promise<PromptTagResponseDto> {
+    return this.promptsService.updateTag(id, dto);
+  }
+
+  @Delete('tags/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '删除标签 Prompt' })
+  @ApiResponse({ status: 204, description: '标签 Prompt 删除成功' })
+  async deleteTag(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.promptsService.deleteTag(id);
+  }
+
+  // ========== Prompt Variant Endpoints ==========
+
+  @Get('variants')
+  @ApiOperation({ summary: '获取变体列表' })
+  @ApiResponse({ status: 200, description: '变体列表' })
+  async findVariants(
+    @Query('basePromptId') basePromptId?: number,
+    @Query('characterPromptId') characterPromptId?: number,
+  ): Promise<PromptVariantResponseDto[]> {
+    if (basePromptId) {
+      return this.promptsService.findVariantsByPrompt(basePromptId, 'base');
+    } else if (characterPromptId) {
+      return this.promptsService.findVariantsByPrompt(
+        characterPromptId,
+        'character',
+      );
+    } else {
+      return [];
+    }
+  }
+
+  @Get('variants/:id')
+  @ApiOperation({ summary: '获取变体详情' })
+  @ApiResponse({ status: 200, description: '变体详情' })
+  async findVariantById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PromptVariantResponseDto> {
+    return this.promptsService.findVariantById(id);
+  }
+
+  @Post('variants')
+  @ApiOperation({ summary: '创建变体' })
+  @ApiResponse({ status: 201, description: '变体创建成功' })
+  async createVariant(
+    @Body() dto: CreatePromptVariantDto,
+  ): Promise<PromptVariantResponseDto> {
+    return this.promptsService.createVariant(dto);
+  }
+
+  @Put('variants/:id')
+  @ApiOperation({ summary: '更新变体' })
+  @ApiResponse({ status: 200, description: '变体更新成功' })
+  async updateVariant(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePromptVariantDto,
+  ): Promise<PromptVariantResponseDto> {
+    return this.promptsService.updateVariant(id, dto);
+  }
+
+  @Delete('variants/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '删除变体' })
+  @ApiResponse({ status: 204, description: '变体删除成功' })
+  async deleteVariant(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.promptsService.deleteVariant(id);
+  }
+
+  @Post('variants/:id/set-default')
+  @ApiOperation({ summary: '设置默认变体' })
+  @ApiResponse({ status: 200, description: '默认变体设置成功' })
+  async setDefaultVariant(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PromptVariantResponseDto> {
+    return this.promptsService.setDefaultVariant(id);
+  }
+
+  @Post('variants/:id/merge')
+  @ApiOperation({ summary: '合并变体 Prompt' })
+  @ApiResponse({ status: 200, description: '合并成功' })
+  async mergeVariant(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ mergedPrompt: string }> {
+    const mergedPrompt = await this.promptsService.mergeVariantPrompt(id);
+    return { mergedPrompt };
+  }
+
+  // ========== 图片分组查询 ==========
+
+  @Get('images/grouped')
+  @ApiOperation({ summary: '获取按变体分组的图片' })
+  @ApiResponse({ status: 200, description: '分组图片列表' })
+  async findImagesGrouped(
+    @Query('basePromptId') basePromptId?: number,
+    @Query('characterPromptId') characterPromptId?: number,
+  ): Promise<PromptImagesGroupedResponseDto> {
+    return this.promptsService.findImagesGroupedByVariant(
+      basePromptId,
+      characterPromptId,
+    );
   }
 }

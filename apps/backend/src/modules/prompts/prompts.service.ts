@@ -3,9 +3,16 @@ import {
   CharacterPromptResponseDto,
   CreateBasePromptDto,
   CreateCharacterPromptDto,
+  CreatePromptTagDto,
+  CreatePromptVariantDto,
   PromptImageResponseDto,
+  PromptTagResponseDto,
+  PromptVariantResponseDto,
   UpdateBasePromptDto,
   UpdateCharacterPromptDto,
+  UpdatePromptTagDto,
+  UpdatePromptVariantDto,
+  VariantTagItem,
 } from '@lourd-game/shared';
 import {
   BadRequestException,
@@ -48,10 +55,10 @@ export class PromptsService {
       },
     });
 
-    return basePrompts.map(bp => ({
+    return basePrompts.map((bp) => ({
       id: bp.id,
       name: bp.name,
-      prompt: bp.prompt,
+      basicPrompt: bp.basicPrompt,
       undesiredContent: bp.undesiredContent || undefined,
       normalizeReferenceStrength: bp.normalizeReferenceStrength || undefined,
       referenceStrength: bp.referenceStrength || undefined,
@@ -60,11 +67,11 @@ export class PromptsService {
       createdAt: bp.createdAt,
       updatedAt: bp.updatedAt,
       imageCount: bp._count.images,
-      characterPrompts: bp.characterPrompts.map(cp => ({
+      characterPrompts: bp.characterPrompts.map((cp) => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
-        prompt: cp.prompt,
+        basicPrompt: cp.basicPrompt,
         undesiredContent: cp.undesiredContent || undefined,
         normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
         referenceStrength: cp.referenceStrength || undefined,
@@ -101,20 +108,21 @@ export class PromptsService {
     return {
       id: basePrompt.id,
       name: basePrompt.name,
-      prompt: basePrompt.prompt,
+      basicPrompt: basePrompt.basicPrompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        basePrompt.normalizeReferenceStrength || undefined,
       referenceStrength: basePrompt.referenceStrength || undefined,
       informationExtracted: basePrompt.informationExtracted || undefined,
       referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
       imageCount: basePrompt._count.images,
-      characterPrompts: basePrompt.characterPrompts.map(cp => ({
+      characterPrompts: basePrompt.characterPrompts.map((cp) => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
-        prompt: cp.prompt,
+        basicPrompt: cp.basicPrompt,
         undesiredContent: cp.undesiredContent || undefined,
         normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
         referenceStrength: cp.referenceStrength || undefined,
@@ -127,11 +135,13 @@ export class PromptsService {
     };
   }
 
-  async createBasePrompt(dto: CreateBasePromptDto): Promise<BasePromptResponseDto> {
+  async createBasePrompt(
+    dto: CreateBasePromptDto,
+  ): Promise<BasePromptResponseDto> {
     const basePrompt = await this.prisma.basePrompt.create({
       data: {
         name: dto.name,
-        prompt: dto.prompt,
+        basicPrompt: dto.basicPrompt,
         undesiredContent: dto.undesiredContent,
         normalizeReferenceStrength: dto.normalizeReferenceStrength || false,
         referenceStrength: dto.referenceStrength,
@@ -155,20 +165,21 @@ export class PromptsService {
     return {
       id: basePrompt.id,
       name: basePrompt.name,
-      prompt: basePrompt.prompt,
+      basicPrompt: basePrompt.basicPrompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        basePrompt.normalizeReferenceStrength || undefined,
       referenceStrength: basePrompt.referenceStrength || undefined,
       informationExtracted: basePrompt.informationExtracted || undefined,
       referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
       imageCount: basePrompt._count.images,
-      characterPrompts: basePrompt.characterPrompts.map(cp => ({
+      characterPrompts: basePrompt.characterPrompts.map((cp) => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
-        prompt: cp.prompt,
+        basicPrompt: cp.basicPrompt,
         undesiredContent: cp.undesiredContent || undefined,
         normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
         referenceStrength: cp.referenceStrength || undefined,
@@ -197,12 +208,17 @@ export class PromptsService {
       where: { id },
       data: {
         name: dto.name,
-        prompt: dto.prompt,
-        undesiredContent: dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
+        basicPrompt:
+          dto.basicPrompt !== undefined ? dto.basicPrompt : undefined,
+        undesiredContent:
+          dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
         normalizeReferenceStrength: dto.normalizeReferenceStrength,
         referenceStrength: dto.referenceStrength,
         informationExtracted: dto.informationExtracted,
-        referenceImageUrl: dto.referenceImageUrl !== undefined ? dto.referenceImageUrl : undefined,
+        referenceImageUrl:
+          dto.referenceImageUrl !== undefined
+            ? dto.referenceImageUrl
+            : undefined,
       },
       include: {
         characterPrompts: {
@@ -221,20 +237,21 @@ export class PromptsService {
     return {
       id: basePrompt.id,
       name: basePrompt.name,
-      prompt: basePrompt.prompt,
+      basicPrompt: basePrompt.basicPrompt,
       undesiredContent: basePrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: basePrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        basePrompt.normalizeReferenceStrength || undefined,
       referenceStrength: basePrompt.referenceStrength || undefined,
       informationExtracted: basePrompt.informationExtracted || undefined,
       referenceImageUrl: basePrompt.referenceImageUrl || undefined,
       createdAt: basePrompt.createdAt,
       updatedAt: basePrompt.updatedAt,
       imageCount: basePrompt._count.images,
-      characterPrompts: basePrompt.characterPrompts.map(cp => ({
+      characterPrompts: basePrompt.characterPrompts.map((cp) => ({
         id: cp.id,
         basePromptId: cp.basePromptId,
         name: cp.name,
-        prompt: cp.prompt,
+        basicPrompt: cp.basicPrompt,
         undesiredContent: cp.undesiredContent || undefined,
         normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
         referenceStrength: cp.referenceStrength || undefined,
@@ -262,7 +279,7 @@ export class PromptsService {
     // 验证文件
     const validation = validateFile(file, {
       maxSize: MAX_FILE_SIZE,
-      allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+      allowedTypes: ALLOWED_FILE_TYPES.filter((type) =>
         ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
       ),
     });
@@ -315,7 +332,9 @@ export class PromptsService {
     });
 
     if (!basePrompt) {
-      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+      throw new NotFoundException(
+        `Base Prompt with ID ${basePromptId} not found`,
+      );
     }
 
     const characterPrompts = await this.prisma.characterPrompt.findMany({
@@ -328,11 +347,11 @@ export class PromptsService {
       },
     });
 
-    return characterPrompts.map(cp => ({
+    return characterPrompts.map((cp) => ({
       id: cp.id,
       basePromptId: cp.basePromptId,
       name: cp.name,
-      prompt: cp.prompt,
+      basicPrompt: cp.basicPrompt,
       undesiredContent: cp.undesiredContent || undefined,
       normalizeReferenceStrength: cp.normalizeReferenceStrength || undefined,
       referenceStrength: cp.referenceStrength || undefined,
@@ -344,7 +363,9 @@ export class PromptsService {
     }));
   }
 
-  async findCharacterPromptById(id: number): Promise<CharacterPromptResponseDto> {
+  async findCharacterPromptById(
+    id: number,
+  ): Promise<CharacterPromptResponseDto> {
     const characterPrompt = await this.prisma.characterPrompt.findUnique({
       where: { id },
       include: {
@@ -362,9 +383,10 @@ export class PromptsService {
       id: characterPrompt.id,
       basePromptId: characterPrompt.basePromptId,
       name: characterPrompt.name,
-      prompt: characterPrompt.prompt,
+      basicPrompt: characterPrompt.basicPrompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        characterPrompt.normalizeReferenceStrength || undefined,
       referenceStrength: characterPrompt.referenceStrength || undefined,
       informationExtracted: characterPrompt.informationExtracted || undefined,
       referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
@@ -383,14 +405,16 @@ export class PromptsService {
     });
 
     if (!basePrompt) {
-      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+      throw new NotFoundException(
+        `Base Prompt with ID ${basePromptId} not found`,
+      );
     }
 
     const characterPrompt = await this.prisma.characterPrompt.create({
       data: {
         basePromptId,
         name: dto.name,
-        prompt: dto.prompt,
+        basicPrompt: dto.basicPrompt,
         undesiredContent: dto.undesiredContent,
         normalizeReferenceStrength: dto.normalizeReferenceStrength || false,
         referenceStrength: dto.referenceStrength,
@@ -408,9 +432,10 @@ export class PromptsService {
       id: characterPrompt.id,
       basePromptId: characterPrompt.basePromptId,
       name: characterPrompt.name,
-      prompt: characterPrompt.prompt,
+      basicPrompt: characterPrompt.basicPrompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        characterPrompt.normalizeReferenceStrength || undefined,
       referenceStrength: characterPrompt.referenceStrength || undefined,
       informationExtracted: characterPrompt.informationExtracted || undefined,
       referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
@@ -436,12 +461,17 @@ export class PromptsService {
       where: { id },
       data: {
         name: dto.name,
-        prompt: dto.prompt,
-        undesiredContent: dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
+        basicPrompt:
+          dto.basicPrompt !== undefined ? dto.basicPrompt : undefined,
+        undesiredContent:
+          dto.undesiredContent !== undefined ? dto.undesiredContent : undefined,
         normalizeReferenceStrength: dto.normalizeReferenceStrength,
         referenceStrength: dto.referenceStrength,
         informationExtracted: dto.informationExtracted,
-        referenceImageUrl: dto.referenceImageUrl !== undefined ? dto.referenceImageUrl : undefined,
+        referenceImageUrl:
+          dto.referenceImageUrl !== undefined
+            ? dto.referenceImageUrl
+            : undefined,
       },
       include: {
         _count: {
@@ -454,9 +484,10 @@ export class PromptsService {
       id: characterPrompt.id,
       basePromptId: characterPrompt.basePromptId,
       name: characterPrompt.name,
-      prompt: characterPrompt.prompt,
+      basicPrompt: characterPrompt.basicPrompt,
       undesiredContent: characterPrompt.undesiredContent || undefined,
-      normalizeReferenceStrength: characterPrompt.normalizeReferenceStrength || undefined,
+      normalizeReferenceStrength:
+        characterPrompt.normalizeReferenceStrength || undefined,
       referenceStrength: characterPrompt.referenceStrength || undefined,
       informationExtracted: characterPrompt.informationExtracted || undefined,
       referenceImageUrl: characterPrompt.referenceImageUrl || undefined,
@@ -481,7 +512,7 @@ export class PromptsService {
     // 验证文件
     const validation = validateFile(file, {
       maxSize: MAX_FILE_SIZE,
-      allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+      allowedTypes: ALLOWED_FILE_TYPES.filter((type) =>
         ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
       ),
     });
@@ -526,13 +557,17 @@ export class PromptsService {
 
   // ========== Prompt Image CRUD ==========
 
-  async findImagesByBasePromptId(basePromptId: number): Promise<PromptImageResponseDto[]> {
+  async findImagesByBasePromptId(
+    basePromptId: number,
+  ): Promise<PromptImageResponseDto[]> {
     const basePrompt = await this.prisma.basePrompt.findUnique({
       where: { id: basePromptId },
     });
 
     if (!basePrompt) {
-      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+      throw new NotFoundException(
+        `Base Prompt with ID ${basePromptId} not found`,
+      );
     }
 
     const images = await this.prisma.promptImage.findMany({
@@ -540,7 +575,7 @@ export class PromptsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return images.map(img => ({
+    return images.map((img) => ({
       id: img.id,
       basePromptId: img.basePromptId || undefined,
       characterPromptId: img.characterPromptId || undefined,
@@ -570,7 +605,7 @@ export class PromptsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return images.map(img => ({
+    return images.map((img) => ({
       id: img.id,
       basePromptId: img.basePromptId || undefined,
       characterPromptId: img.characterPromptId || undefined,
@@ -591,14 +626,16 @@ export class PromptsService {
     });
 
     if (!basePrompt) {
-      throw new NotFoundException(`Base Prompt with ID ${basePromptId} not found`);
+      throw new NotFoundException(
+        `Base Prompt with ID ${basePromptId} not found`,
+      );
     }
 
     // 验证所有文件
     for (const file of files) {
       const validation = validateFile(file, {
         maxSize: MAX_FILE_SIZE,
-        allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+        allowedTypes: ALLOWED_FILE_TYPES.filter((type) =>
           ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
         ),
       });
@@ -611,7 +648,7 @@ export class PromptsService {
     }
 
     // 生成 prompt（使用 Base Prompt 的配置）
-    let generatedPrompt = basePrompt.prompt;
+    let generatedPrompt = basePrompt.basicPrompt;
     if (basePrompt.undesiredContent) {
       generatedPrompt += `, negative prompt: ${basePrompt.undesiredContent}`;
     }
@@ -643,6 +680,7 @@ export class PromptsService {
         id: image.id,
         basePromptId: image.basePromptId || undefined,
         characterPromptId: image.characterPromptId || undefined,
+        variantId: image.variantId || undefined,
         imageUrl: image.imageUrl,
         generatedPrompt: image.generatedPrompt,
         status: image.status as 'uploaded' | 'generated',
@@ -675,7 +713,7 @@ export class PromptsService {
     for (const file of files) {
       const validation = validateFile(file, {
         maxSize: MAX_FILE_SIZE,
-        allowedTypes: ALLOWED_FILE_TYPES.filter(type =>
+        allowedTypes: ALLOWED_FILE_TYPES.filter((type) =>
           ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(type),
         ),
       });
@@ -688,8 +726,8 @@ export class PromptsService {
     }
 
     // 生成组合 prompt
-    const basePromptText = characterPrompt.basePrompt.prompt;
-    const characterPromptText = characterPrompt.prompt;
+    const basePromptText = characterPrompt.basePrompt.basicPrompt;
+    const characterPromptText = characterPrompt.basicPrompt;
     const baseUndesired = characterPrompt.basePrompt.undesiredContent || '';
     const characterUndesired = characterPrompt.undesiredContent || '';
 
@@ -728,6 +766,7 @@ export class PromptsService {
         id: image.id,
         basePromptId: image.basePromptId || undefined,
         characterPromptId: image.characterPromptId || undefined,
+        variantId: image.variantId || undefined,
         imageUrl: image.imageUrl,
         generatedPrompt: image.generatedPrompt,
         status: image.status as 'uploaded' | 'generated',
@@ -765,5 +804,573 @@ export class PromptsService {
       where: { id },
     });
   }
-}
 
+  // ========== Prompt Tag CRUD ==========
+
+  async findAllTags(tagType?: string): Promise<PromptTagResponseDto[]> {
+    const where = tagType ? { tagType, enabled: true } : { enabled: true };
+    const tags = await this.prisma.promptTag.findMany({
+      where,
+      orderBy: [{ tagType: 'asc' }, { order: 'asc' }, { name: 'asc' }],
+    });
+
+    return tags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      tagType: tag.tagType,
+      content: tag.content,
+      description: tag.description || undefined,
+      order: tag.order,
+      enabled: tag.enabled,
+      createdAt: tag.createdAt,
+      updatedAt: tag.updatedAt,
+    }));
+  }
+
+  async findTagById(id: number): Promise<PromptTagResponseDto> {
+    const tag = await this.prisma.promptTag.findUnique({
+      where: { id },
+    });
+
+    if (!tag) {
+      throw new NotFoundException(`Prompt Tag with ID ${id} not found`);
+    }
+
+    return {
+      id: tag.id,
+      name: tag.name,
+      tagType: tag.tagType,
+      content: tag.content,
+      description: tag.description || undefined,
+      order: tag.order,
+      enabled: tag.enabled,
+      createdAt: tag.createdAt,
+      updatedAt: tag.updatedAt,
+    };
+  }
+
+  async createTag(dto: CreatePromptTagDto): Promise<PromptTagResponseDto> {
+    const tag = await this.prisma.promptTag.create({
+      data: {
+        name: dto.name,
+        tagType: dto.tagType,
+        content: dto.content,
+        description: dto.description,
+        order: dto.order || 0,
+      },
+    });
+
+    return {
+      id: tag.id,
+      name: tag.name,
+      tagType: tag.tagType,
+      content: tag.content,
+      description: tag.description || undefined,
+      order: tag.order,
+      enabled: tag.enabled,
+      createdAt: tag.createdAt,
+      updatedAt: tag.updatedAt,
+    };
+  }
+
+  async updateTag(
+    id: number,
+    dto: UpdatePromptTagDto,
+  ): Promise<PromptTagResponseDto> {
+    const existing = await this.prisma.promptTag.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Prompt Tag with ID ${id} not found`);
+    }
+
+    const tag = await this.prisma.promptTag.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        tagType: dto.tagType,
+        content: dto.content,
+        description: dto.description,
+        order: dto.order,
+        enabled: dto.enabled,
+      },
+    });
+
+    return {
+      id: tag.id,
+      name: tag.name,
+      tagType: tag.tagType,
+      content: tag.content,
+      description: tag.description || undefined,
+      order: tag.order,
+      enabled: tag.enabled,
+      createdAt: tag.createdAt,
+      updatedAt: tag.updatedAt,
+    };
+  }
+
+  async deleteTag(id: number): Promise<void> {
+    const existing = await this.prisma.promptTag.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Prompt Tag with ID ${id} not found`);
+    }
+
+    await this.prisma.promptTag.delete({
+      where: { id },
+    });
+  }
+
+  // ========== Prompt Variant CRUD ==========
+
+  async findVariantsByPrompt(
+    promptId: number,
+    type: 'base' | 'character',
+  ): Promise<PromptVariantResponseDto[]> {
+    const where =
+      type === 'base'
+        ? { basePromptId: promptId }
+        : { characterPromptId: promptId };
+    const variants = await this.prisma.promptVariant.findMany({
+      where,
+      orderBy: [{ isDefault: 'desc' }, { order: 'asc' }, { name: 'asc' }],
+    });
+
+    return variants.map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      description: variant.description || undefined,
+      isDefault: variant.isDefault,
+      basePromptId: variant.basePromptId || undefined,
+      characterPromptId: variant.characterPromptId || undefined,
+      tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
+      mergedPrompt: variant.mergedPrompt,
+      mergeConfig: (variant.mergeConfig as {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+      }) || { separator: '\n' },
+      order: variant.order,
+      enabled: variant.enabled,
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
+    }));
+  }
+
+  async findVariantById(id: number): Promise<PromptVariantResponseDto> {
+    const variant = await this.prisma.promptVariant.findUnique({
+      where: { id },
+    });
+
+    if (!variant) {
+      throw new NotFoundException(`Prompt Variant with ID ${id} not found`);
+    }
+
+    return {
+      id: variant.id,
+      name: variant.name,
+      description: variant.description || undefined,
+      isDefault: variant.isDefault,
+      basePromptId: variant.basePromptId || undefined,
+      characterPromptId: variant.characterPromptId || undefined,
+      tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
+      mergedPrompt: variant.mergedPrompt,
+      mergeConfig: (variant.mergeConfig as {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+      }) || { separator: '\n' },
+      order: variant.order,
+      enabled: variant.enabled,
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
+    };
+  }
+
+  async createVariant(
+    dto: CreatePromptVariantDto,
+  ): Promise<PromptVariantResponseDto> {
+    // 验证 basePromptId 或 characterPromptId 必须有一个
+    if (!dto.basePromptId && !dto.characterPromptId) {
+      throw new BadRequestException(
+        'Either basePromptId or characterPromptId must be provided',
+      );
+    }
+
+    // 如果指定了 basePromptId，验证它存在
+    if (dto.basePromptId) {
+      const basePrompt = await this.prisma.basePrompt.findUnique({
+        where: { id: dto.basePromptId },
+      });
+      if (!basePrompt) {
+        throw new NotFoundException(
+          `Base Prompt with ID ${dto.basePromptId} not found`,
+        );
+      }
+    }
+
+    // 如果指定了 characterPromptId，验证它存在
+    if (dto.characterPromptId) {
+      const characterPrompt = await this.prisma.characterPrompt.findUnique({
+        where: { id: dto.characterPromptId },
+      });
+      if (!characterPrompt) {
+        throw new NotFoundException(
+          `Character Prompt with ID ${dto.characterPromptId} not found`,
+        );
+      }
+    }
+
+    // 获取基础 Prompt
+    const prompt = dto.basePromptId
+      ? await this.prisma.basePrompt.findUnique({
+          where: { id: dto.basePromptId },
+        })
+      : await this.prisma.characterPrompt.findUnique({
+          where: { id: dto.characterPromptId! },
+        });
+
+    if (!prompt) {
+      throw new NotFoundException('Prompt not found');
+    }
+
+    // 合并 Prompt
+    const mergedPrompt = await this.mergePrompt(
+      (prompt as any).basicPrompt,
+      dto.tagIds,
+      dto.mergeConfig,
+    );
+
+    // 创建变体
+    const variant = await this.prisma.promptVariant.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        basePromptId: dto.basePromptId,
+        characterPromptId: dto.characterPromptId,
+        tagIds: dto.tagIds as any,
+        mergedPrompt,
+        mergeConfig: (dto.mergeConfig || { separator: '\n' }) as any,
+        order: dto.order || 0,
+      },
+    });
+
+    return {
+      id: variant.id,
+      name: variant.name,
+      description: variant.description || undefined,
+      isDefault: variant.isDefault,
+      basePromptId: variant.basePromptId || undefined,
+      characterPromptId: variant.characterPromptId || undefined,
+      tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
+      mergedPrompt: variant.mergedPrompt,
+      mergeConfig: (variant.mergeConfig as {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+      }) || { separator: '\n' },
+      order: variant.order,
+      enabled: variant.enabled,
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
+    };
+  }
+
+  async updateVariant(
+    id: number,
+    dto: UpdatePromptVariantDto,
+  ): Promise<PromptVariantResponseDto> {
+    const existing = await this.prisma.promptVariant.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Prompt Variant with ID ${id} not found`);
+    }
+
+    // 如果需要更新标签或合并配置，重新计算 mergedPrompt
+    let mergedPrompt = existing.mergedPrompt;
+    if (dto.tagIds || dto.mergeConfig) {
+      const prompt = existing.basePromptId
+        ? await this.prisma.basePrompt.findUnique({
+            where: { id: existing.basePromptId },
+          })
+        : await this.prisma.characterPrompt.findUnique({
+            where: { id: existing.characterPromptId! },
+          });
+
+      if (prompt) {
+        const tagIds =
+          dto.tagIds || (existing.tagIds as unknown as VariantTagItem[]);
+        const mergeConfig = dto.mergeConfig || existing.mergeConfig;
+        mergedPrompt = await this.mergePrompt(
+          (prompt as any).basicPrompt,
+          tagIds,
+          mergeConfig as any,
+        );
+      }
+    }
+
+    const variant = await this.prisma.promptVariant.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        tagIds: dto.tagIds ? (dto.tagIds as any) : undefined,
+        mergedPrompt,
+        mergeConfig: dto.mergeConfig ? (dto.mergeConfig as any) : undefined,
+        order: dto.order,
+        enabled: dto.enabled,
+      },
+    });
+
+    return {
+      id: variant.id,
+      name: variant.name,
+      description: variant.description || undefined,
+      isDefault: variant.isDefault,
+      basePromptId: variant.basePromptId || undefined,
+      characterPromptId: variant.characterPromptId || undefined,
+      tagIds: (variant.tagIds as unknown as VariantTagItem[]) || [],
+      mergedPrompt: variant.mergedPrompt,
+      mergeConfig: (variant.mergeConfig as {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+      }) || { separator: '\n' },
+      order: variant.order,
+      enabled: variant.enabled,
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt,
+    };
+  }
+
+  async deleteVariant(id: number): Promise<void> {
+    const existing = await this.prisma.promptVariant.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Prompt Variant with ID ${id} not found`);
+    }
+
+    // 如果是默认变体，不允许删除
+    if (existing.isDefault) {
+      throw new BadRequestException('Cannot delete default variant');
+    }
+
+    await this.prisma.promptVariant.delete({
+      where: { id },
+    });
+  }
+
+  async setDefaultVariant(id: number): Promise<PromptVariantResponseDto> {
+    const variant = await this.prisma.promptVariant.findUnique({
+      where: { id },
+    });
+
+    if (!variant) {
+      throw new NotFoundException(`Prompt Variant with ID ${id} not found`);
+    }
+
+    // 取消同一 Prompt 的其他变体的默认状态
+    const where = variant.basePromptId
+      ? { basePromptId: variant.basePromptId, isDefault: true }
+      : { characterPromptId: variant.characterPromptId, isDefault: true };
+
+    await this.prisma.promptVariant.updateMany({
+      where,
+      data: { isDefault: false },
+    });
+
+    // 设置当前变体为默认
+    const updated = await this.prisma.promptVariant.update({
+      where: { id },
+      data: { isDefault: true },
+    });
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      description: updated.description || undefined,
+      isDefault: updated.isDefault,
+      basePromptId: updated.basePromptId || undefined,
+      characterPromptId: updated.characterPromptId || undefined,
+      tagIds: (updated.tagIds as unknown as VariantTagItem[]) || [],
+      mergedPrompt: updated.mergedPrompt,
+      mergeConfig: (updated.mergeConfig as {
+        separator?: string;
+        prefix?: string;
+        suffix?: string;
+      }) || { separator: '\n' },
+      order: updated.order,
+      enabled: updated.enabled,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  }
+
+  async mergeVariantPrompt(variantId: number): Promise<string> {
+    const variant = await this.prisma.promptVariant.findUnique({
+      where: { id: variantId },
+    });
+
+    if (!variant) {
+      throw new NotFoundException(
+        `Prompt Variant with ID ${variantId} not found`,
+      );
+    }
+
+    // 获取基础 Prompt
+    const prompt = variant.basePromptId
+      ? await this.prisma.basePrompt.findUnique({
+          where: { id: variant.basePromptId },
+        })
+      : await this.prisma.characterPrompt.findUnique({
+          where: { id: variant.characterPromptId! },
+        });
+
+    if (!prompt) {
+      throw new NotFoundException('Prompt not found');
+    }
+
+    // 合并 Prompt
+    const mergedPrompt = await this.mergePrompt(
+      (prompt as any).basicPrompt,
+      variant.tagIds as unknown as VariantTagItem[],
+      variant.mergeConfig as any,
+    );
+
+    // 更新变体的 mergedPrompt
+    await this.prisma.promptVariant.update({
+      where: { id: variantId },
+      data: { mergedPrompt },
+    });
+
+    return mergedPrompt;
+  }
+
+  // 合并 Prompt 的私有方法
+  private async mergePrompt(
+    basicPrompt: string,
+    tagIds: VariantTagItem[],
+    mergeConfig?: { separator?: string; prefix?: string; suffix?: string },
+  ): Promise<string> {
+    // 1. 按 order 排序标签
+    const sortedTags = [...tagIds].sort((a, b) => a.order - b.order);
+
+    // 2. 获取标签内容
+    const tagContents = await Promise.all(
+      sortedTags.map((item) =>
+        this.prisma.promptTag.findUnique({ where: { id: item.tagId } }),
+      ),
+    );
+
+    // 3. 过滤启用的标签
+    const enabledTags = tagContents
+      .filter((tag) => tag && tag.enabled)
+      .map((tag) => tag!.content);
+
+    // 4. 合并
+    const separator = mergeConfig?.separator || '\n';
+    const parts = [basicPrompt, ...enabledTags].filter(Boolean);
+    return parts.join(separator);
+  }
+
+  // ========== 图片按变体分组查询 ==========
+
+  async findImagesGroupedByVariant(
+    basePromptId?: number,
+    characterPromptId?: number,
+  ): Promise<{
+    variants: Array<{
+      id: number;
+      name: string;
+      isDefault: boolean;
+      imageCount: number;
+      images: PromptImageResponseDto[];
+    }>;
+    uncategorized: {
+      imageCount: number;
+      images: PromptImageResponseDto[];
+    };
+  }> {
+    // 确定查询条件
+    const where: any = {};
+    if (basePromptId) {
+      where.basePromptId = basePromptId;
+    } else if (characterPromptId) {
+      where.characterPromptId = characterPromptId;
+    } else {
+      throw new BadRequestException(
+        'Either basePromptId or characterPromptId must be provided',
+      );
+    }
+
+    // 获取所有变体
+    const variantWhere = basePromptId
+      ? { basePromptId }
+      : { characterPromptId };
+    const variants = await this.prisma.promptVariant.findMany({
+      where: variantWhere,
+      orderBy: [{ isDefault: 'desc' }, { order: 'asc' }, { name: 'asc' }],
+    });
+
+    // 获取所有图片
+    const allImages = await this.prisma.promptImage.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 按变体分组
+    const variantGroups = variants.map((variant) => {
+      const images = allImages
+        .filter((img) => img.variantId === variant.id)
+        .map((img) => ({
+          id: img.id,
+          basePromptId: img.basePromptId || undefined,
+          characterPromptId: img.characterPromptId || undefined,
+          variantId: img.variantId || undefined,
+          imageUrl: img.imageUrl,
+          generatedPrompt: img.generatedPrompt,
+          status: img.status as 'uploaded' | 'generated',
+          createdAt: img.createdAt,
+          updatedAt: img.updatedAt,
+        }));
+
+      return {
+        id: variant.id,
+        name: variant.name,
+        isDefault: variant.isDefault,
+        imageCount: images.length,
+        images,
+      };
+    });
+
+    // 未分类的图片（没有 variantId）
+    const uncategorizedImages = allImages
+      .filter((img) => !img.variantId)
+      .map((img) => ({
+        id: img.id,
+        basePromptId: img.basePromptId || undefined,
+        characterPromptId: img.characterPromptId || undefined,
+        variantId: img.variantId || undefined,
+        imageUrl: img.imageUrl,
+        generatedPrompt: img.generatedPrompt,
+        status: img.status as 'uploaded' | 'generated',
+        createdAt: img.createdAt,
+        updatedAt: img.updatedAt,
+      }));
+
+    return {
+      variants: variantGroups,
+      uncategorized: {
+        imageCount: uncategorizedImages.length,
+        images: uncategorizedImages,
+      },
+    };
+  }
+}

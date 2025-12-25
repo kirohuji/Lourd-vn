@@ -73,10 +73,20 @@ export type {
     CharacterPromptResponseDto,
     CreateBasePromptDto,
     CreateCharacterPromptDto,
+    CreatePromptTagDto,
+    CreatePromptVariantDto,
     PromptImage,
     PromptImageResponseDto,
+    PromptImagesGroupedResponseDto,
+    PromptTag,
+    PromptTagResponseDto,
+    PromptVariant,
+    PromptVariantResponseDto,
     UpdateBasePromptDto,
     UpdateCharacterPromptDto,
+    UpdatePromptTagDto,
+    UpdatePromptVariantDto,
+    VariantTagItem,
 } from './types/prompt.js';
 
 export type {
