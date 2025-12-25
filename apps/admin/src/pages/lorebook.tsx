@@ -51,9 +51,9 @@ export function LoreBookPage() {
     const [itemToDelete, setItemToDelete] = useState<{ id: string; name?: string } | null>(null);
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
     const [createCategoryDialogOpen, setCreateCategoryDialogOpen] = useState(false);
-    const [createEntryDialogOpen, setCreateEntryDialogOpen] = useState(false);
+    const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<LoreBookCategoryResponseDto | null>(null);
     const [newCategoryName, setNewCategoryName] = useState('');
-    const [newEntryCategoryId, setNewEntryCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     const { toast } = useToast();
@@ -160,16 +160,11 @@ export function LoreBookPage() {
     };
 
     const handleCreateEntry = (categoryId?: string) => {
-        setNewEntryCategoryId(categoryId || selectedCategoryId);
-        setCreateEntryDialogOpen(true);
-    };
-
-    const handleSaveCreateEntry = () => {
         const dto: CreateLoreBookEntryDto = {
             text: '',
             displayName: '新条目',
             keys: [],
-            categoryId: newEntryCategoryId || undefined,
+            categoryId: categoryId || selectedCategoryId || undefined,
             lastUpdatedAt: Date.now(),
         };
 
@@ -179,9 +174,13 @@ export function LoreBookPage() {
                 setSelectedEntryId(data.id);
                 if (data.categoryId) {
                     setSelectedCategoryId(data.categoryId);
+                    // 确保分类展开
+                    const catId = data.categoryId;
+                    if (catId && !expandedCategories.has(catId)) {
+                        setExpandedCategories(prev => new Set(prev).add(catId));
+                        updateCategory.mutate({ id: catId, dto: { open: true } });
+                    }
                 }
-                setCreateEntryDialogOpen(false);
-                setNewEntryCategoryId(null);
             },
             onError: (error: any) => {
                 toast({
@@ -191,6 +190,61 @@ export function LoreBookPage() {
                 });
             },
         });
+    };
+
+    const [editCategoryName, setEditCategoryName] = useState('');
+    const [editCategoryEnabled, setEditCategoryEnabled] = useState(true);
+    const [editCategoryOpen, setEditCategoryOpen] = useState(true);
+    const [editCategoryCreateSubcontext, setEditCategoryCreateSubcontext] = useState(false);
+    const [editCategoryUseDefaults, setEditCategoryUseDefaults] = useState(false);
+
+    const handleEditCategory = (category: LoreBookCategoryResponseDto) => {
+        setEditingCategory(category);
+        setEditCategoryName(category.name);
+        setEditCategoryEnabled(category.enabled);
+        setEditCategoryOpen(category.open);
+        setEditCategoryCreateSubcontext(category.createSubcontext);
+        setEditCategoryUseDefaults(category.useCategoryDefaults);
+        setEditCategoryDialogOpen(true);
+    };
+
+    const handleSaveEditCategory = () => {
+        if (!editingCategory || !editCategoryName.trim()) {
+            toast({
+                title: '错误',
+                description: '请输入分类名称',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        updateCategory.mutate(
+            {
+                id: editingCategory.id,
+                dto: {
+                    name: editCategoryName.trim(),
+                    enabled: editCategoryEnabled,
+                    open: editCategoryOpen,
+                    createSubcontext: editCategoryCreateSubcontext,
+                    useCategoryDefaults: editCategoryUseDefaults,
+                },
+            },
+            {
+                onSuccess: () => {
+                    toast({ title: '成功', description: '分类更新成功' });
+                    setEditCategoryDialogOpen(false);
+                    setEditingCategory(null);
+                    setEditCategoryName('');
+                },
+                onError: (error: any) => {
+                    toast({
+                        title: '更新失败',
+                        description: error.message || '更新分类失败',
+                        variant: 'destructive',
+                    });
+                },
+            },
+        );
     };
 
     const handleDeleteCategory = (category: LoreBookCategoryResponseDto) => {
@@ -269,16 +323,10 @@ export function LoreBookPage() {
                 <div className='col-span-4 border rounded-lg p-4 flex flex-col min-h-0 bg-card'>
                     <div className='flex items-center justify-between mb-3'>
                         <div className='font-semibold text-lg'>条目列表</div>
-                        <div className='flex gap-2'>
-                            <Button size='sm' variant='outline' onClick={handleCreateCategory}>
-                                <Plus className='mr-2 h-4 w-4' />
-                                分类
-                            </Button>
-                            <Button size='sm' onClick={() => handleCreateEntry()}>
-                                <Plus className='mr-2 h-4 w-4' />
-                                条目
-                            </Button>
-                        </div>
+                        <Button size='sm' variant='outline' onClick={handleCreateCategory}>
+                            <Plus className='mr-2 h-4 w-4' />
+                            分类
+                        </Button>
                     </div>
 
                     {/* 搜索框 */}
@@ -312,59 +360,78 @@ export function LoreBookPage() {
                                 const isSelected = selectedCategoryId === category.id;
 
                                 return (
-                                    <div
-                                        key={category.id}
-                                        className={`group relative border rounded-lg bg-card shadow-sm hover:shadow-md transition-all overflow-hidden ${
-                                            isSelected ? 'ring-2 ring-primary ring-offset-1' : ''
-                                        }`}
-                                    >
-                                        {/* Category Card */}
-                                        <div
-                                            className='p-4 pb-3 cursor-pointer'
-                                            onClick={() => {
-                                                setSelectedCategoryId(category.id);
-                                                setSelectedEntryId(null);
-                                            }}
-                                        >
-                                            <div className='flex items-start justify-between'>
-                                                <div className='flex items-center gap-2 flex-1 min-w-0 pr-2'>
-                                                    <button
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleToggleCategory(category.id);
-                                                        }}
-                                                        className='p-1 hover:bg-accent rounded transition-colors shrink-0'
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className='h-4 w-4 text-muted-foreground' />
-                                                        ) : (
-                                                            <ChevronRight className='h-4 w-4 text-muted-foreground' />
-                                                        )}
-                                                    </button>
-                                                    <div className='flex-1 min-w-0'>
-                                                        <h3
-                                                            className={`font-semibold text-base truncate ${
-                                                                isSelected ? 'text-primary' : ''
-                                                            }`}
-                                                        >
-                                                            {category.name}
-                                                        </h3>
-                                                        <p className='text-xs text-muted-foreground mt-0.5'>
-                                                            {categoryEntries.length} 个条目
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {!category.enabled && (
-                                                    <span className='text-xs text-muted-foreground/60 px-2 py-1 bg-muted rounded shrink-0'>
-                                                        禁用
-                                                    </span>
-                                                )}
+                                    <div key={category.id} className='pb-4 border-b border-border mb-4'>
+                                        {/* Category Header */}
+                                        <div className='flex items-center justify-between mb-2 px-1'>
+                                            <div className='flex items-center gap-2 flex-1 min-w-0'>
+                                                <h3
+                                                    className={`font-semibold text-base truncate cursor-pointer ${
+                                                        isSelected ? 'text-primary' : ''
+                                                    }`}
+                                                    onClick={() => {
+                                                        setSelectedCategoryId(category.id);
+                                                        setSelectedEntryId(null);
+                                                    }}
+                                                >
+                                                    {category.name}
+                                                </h3>
+                                                <span className='text-xs text-muted-foreground'>
+                                                    {categoryEntries.length} entries
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center gap-1'>
+                                                <Button
+                                                    variant='ghost'
+                                                    size='icon'
+                                                    className='h-6 w-6 text-muted-foreground hover:text-destructive'
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleDeleteCategory(category);
+                                                    }}
+                                                >
+                                                    <Trash2 className='h-3.5 w-3.5' />
+                                                </Button>
+                                                <Button
+                                                    variant='ghost'
+                                                    size='icon'
+                                                    className='h-6 w-6 text-muted-foreground'
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleEditCategory(category);
+                                                    }}
+                                                >
+                                                    <Edit className='h-3.5 w-3.5' />
+                                                </Button>
+                                                <Button
+                                                    variant='ghost'
+                                                    size='icon'
+                                                    className='h-6 w-6 text-muted-foreground'
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleCreateEntry(category.id);
+                                                    }}
+                                                >
+                                                    <Plus className='h-3.5 w-3.5' />
+                                                </Button>
+                                                <button
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleToggleCategory(category.id);
+                                                    }}
+                                                    className='p-1 hover:bg-accent rounded transition-colors shrink-0'
+                                                >
+                                                    {isExpanded ? (
+                                                        <ChevronDown className='h-4 w-4 text-muted-foreground' />
+                                                    ) : (
+                                                        <ChevronRight className='h-4 w-4 text-muted-foreground' />
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
 
                                         {/* Category Entries */}
                                         {isExpanded && categoryEntries.length > 0 && (
-                                            <div className='px-4 pb-4 space-y-2'>
+                                            <div className='space-y-1 pl-6'>
                                                 {categoryEntries.map(entry => {
                                                     const isEntrySelected = selectedEntryId === entry.id;
                                                     const description =
@@ -374,88 +441,51 @@ export function LoreBookPage() {
                                                     return (
                                                         <div
                                                             key={entry.id}
-                                                            className={`group/entry relative rounded-lg border bg-background hover:bg-muted/50 cursor-pointer transition-all shadow-sm ${
+                                                            className={`group/entry relative px-3 py-2 rounded cursor-pointer transition-colors ${
                                                                 isEntrySelected
-                                                                    ? 'border-primary bg-primary/5 shadow-md'
-                                                                    : 'border-border'
+                                                                    ? 'bg-primary/10 text-primary'
+                                                                    : 'hover:bg-muted/50'
                                                             }`}
                                                             onClick={() => {
                                                                 setSelectedEntryId(entry.id);
                                                                 setSelectedCategoryId(category.id);
                                                             }}
                                                         >
-                                                            <div className='p-3 pr-10 flex flex-col gap-1.5'>
-                                                                <div className='flex items-start justify-between gap-2'>
+                                                            <div className='flex flex-col gap-0.5'>
+                                                                <div className='flex items-center justify-between'>
                                                                     <span
-                                                                        className={`text-sm font-medium flex-1 ${
+                                                                        className={`text-sm font-medium ${
                                                                             isEntrySelected ? 'text-primary' : ''
                                                                         }`}
                                                                     >
                                                                         {entry.displayName}
                                                                     </span>
-                                                                    {!entry.enabled && (
-                                                                        <span className='text-xs text-muted-foreground/60 px-1.5 py-0.5 bg-muted rounded shrink-0'>
-                                                                            禁用
-                                                                        </span>
-                                                                    )}
+                                                                    <Button
+                                                                        variant='ghost'
+                                                                        size='icon'
+                                                                        className='h-5 w-5 opacity-0 group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:text-destructive'
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            setDeleteType('entry');
+                                                                            setItemToDelete({
+                                                                                id: entry.id,
+                                                                                name: entry.displayName,
+                                                                            });
+                                                                            setDeleteConfirmOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className='h-3 w-3' />
+                                                                    </Button>
                                                                 </div>
                                                                 {description && (
-                                                                    <span className='text-xs text-muted-foreground line-clamp-2 break-words'>
+                                                                    <span className='text-xs text-muted-foreground'>
                                                                         {description}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            {/* Entry Delete Button - Bottom Left */}
-                                                            <div className='absolute bottom-2 left-2 opacity-0 group-hover/entry:opacity-100 transition-opacity z-10'>
-                                                                <Button
-                                                                    variant='ghost'
-                                                                    size='icon'
-                                                                    className='h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10'
-                                                                    onClick={e => {
-                                                                        e.stopPropagation();
-                                                                        setDeleteType('entry');
-                                                                        setItemToDelete({
-                                                                            id: entry.id,
-                                                                            name: entry.displayName,
-                                                                        });
-                                                                        setDeleteConfirmOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className='h-3.5 w-3.5' />
-                                                                </Button>
-                                                            </div>
                                                         </div>
                                                     );
                                                 })}
-                                            </div>
-                                        )}
-
-                                        {/* Category Actions - Bottom Left */}
-                                        {!isExpanded && (
-                                            <div className='absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10'>
-                                                <Button
-                                                    variant='ghost'
-                                                    size='icon'
-                                                    className='h-7 w-7'
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        setSelectedCategoryId(category.id);
-                                                        setSelectedEntryId(null);
-                                                    }}
-                                                >
-                                                    <Edit className='h-3.5 w-3.5' />
-                                                </Button>
-                                                <Button
-                                                    variant='ghost'
-                                                    size='icon'
-                                                    className='h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10'
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        handleDeleteCategory(category);
-                                                    }}
-                                                >
-                                                    <Trash2 className='h-3.5 w-3.5' />
-                                                </Button>
                                             </div>
                                         )}
                                     </div>
@@ -521,39 +551,102 @@ export function LoreBookPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* 创建条目对话框 */}
-            <Dialog open={createEntryDialogOpen} onOpenChange={setCreateEntryDialogOpen}>
-                <DialogContent>
+            {/* 编辑分类对话框 */}
+            <Dialog open={editCategoryDialogOpen} onOpenChange={setEditCategoryDialogOpen}>
+                <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
                     <DialogHeader>
-                        <DialogTitle>创建条目</DialogTitle>
-                        <DialogDescription>创建一个新的 LoreBook 条目</DialogDescription>
+                        <DialogTitle>编辑分类</DialogTitle>
+                        <DialogDescription>修改分类的配置信息</DialogDescription>
                     </DialogHeader>
-                    <div className='space-y-4'>
+                    <div className='space-y-6 py-4'>
                         <div className='space-y-2'>
-                            <Label htmlFor='entry-category'>分类（可选）</Label>
-                            <Select
-                                value={newEntryCategoryId || 'none'}
-                                onValueChange={value => setNewEntryCategoryId(value === 'none' ? null : value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder='选择分类' />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value='none'>无分类</SelectItem>
-                                    {categories.map(cat => (
-                                        <SelectItem key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor='edit-category-name'>分类名称 *</Label>
+                            <Input
+                                id='edit-category-name'
+                                value={editCategoryName}
+                                onChange={e => setEditCategoryName(e.target.value)}
+                                placeholder='请输入分类名称'
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && e.ctrlKey) {
+                                        handleSaveEditCategory();
+                                    }
+                                    if (e.key === 'Escape') {
+                                        setEditCategoryDialogOpen(false);
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <div className='border rounded-lg p-4 space-y-4'>
+                            <h3 className='font-semibold text-sm mb-4'>基本选项</h3>
+                            <div className='space-y-3'>
+                                <div className='flex items-center justify-between'>
+                                    <div className='space-y-0.5'>
+                                        <Label htmlFor='edit-category-enabled' className='cursor-pointer'>
+                                            启用
+                                        </Label>
+                                        <p className='text-xs text-muted-foreground'>是否启用此分类</p>
+                                    </div>
+                                    <Switch
+                                        id='edit-category-enabled'
+                                        checked={editCategoryEnabled}
+                                        onCheckedChange={setEditCategoryEnabled}
+                                    />
+                                </div>
+                                <div className='flex items-center justify-between'>
+                                    <div className='space-y-0.5'>
+                                        <Label htmlFor='edit-category-open' className='cursor-pointer'>
+                                            默认展开
+                                        </Label>
+                                        <p className='text-xs text-muted-foreground'>分类是否默认展开显示条目</p>
+                                    </div>
+                                    <Switch
+                                        id='edit-category-open'
+                                        checked={editCategoryOpen}
+                                        onCheckedChange={setEditCategoryOpen}
+                                    />
+                                </div>
+                                <div className='flex items-center justify-between'>
+                                    <div className='space-y-0.5'>
+                                        <Label htmlFor='edit-category-subcontext' className='cursor-pointer'>
+                                            创建子上下文
+                                        </Label>
+                                        <p className='text-xs text-muted-foreground'>为分类创建独立的子上下文</p>
+                                    </div>
+                                    <Switch
+                                        id='edit-category-subcontext'
+                                        checked={editCategoryCreateSubcontext}
+                                        onCheckedChange={setEditCategoryCreateSubcontext}
+                                    />
+                                </div>
+                                <div className='flex items-center justify-between'>
+                                    <div className='space-y-0.5'>
+                                        <Label htmlFor='edit-category-defaults' className='cursor-pointer'>
+                                            使用分类默认值
+                                        </Label>
+                                        <p className='text-xs text-muted-foreground'>新条目使用分类的默认配置</p>
+                                    </div>
+                                    <Switch
+                                        id='edit-category-defaults'
+                                        checked={editCategoryUseDefaults}
+                                        onCheckedChange={setEditCategoryUseDefaults}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant='outline' onClick={() => setCreateEntryDialogOpen(false)}>
+                        <Button
+                            variant='outline'
+                            onClick={() => {
+                                setEditCategoryDialogOpen(false);
+                                setEditingCategory(null);
+                                setEditCategoryName('');
+                            }}
+                        >
                             取消
                         </Button>
-                        <Button onClick={handleSaveCreateEntry}>创建</Button>
+                        <Button onClick={handleSaveEditCategory}>保存</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -635,11 +728,38 @@ function EntryEditor({
         });
     };
 
+    const [isEditingName, setIsEditingName] = useState(false);
+
     return (
         <div className='flex flex-col h-full min-w-0'>
             <div className='flex items-center justify-between border-b pb-4 mb-6 shrink-0'>
                 <div className='min-w-0 flex-1 pr-4'>
-                    <h2 className='text-2xl font-bold truncate'>{displayName || '编辑条目'}</h2>
+                    {isEditingName ? (
+                        <Input
+                            value={displayName}
+                            onChange={e => setDisplayName(e.target.value)}
+                            onBlur={() => setIsEditingName(false)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    setIsEditingName(false);
+                                }
+                                if (e.key === 'Escape') {
+                                    setDisplayName(entry.displayName);
+                                    setIsEditingName(false);
+                                }
+                            }}
+                            className='text-2xl font-bold h-auto py-1 px-0 border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0'
+                            autoFocus
+                        />
+                    ) : (
+                        <h2
+                            className='text-2xl font-bold truncate cursor-text hover:text-primary transition-colors'
+                            onClick={() => setIsEditingName(true)}
+                            title='点击编辑名称'
+                        >
+                            {displayName || '编辑条目'}
+                        </h2>
+                    )}
                     <p className='text-sm text-muted-foreground mt-1'>修改条目的详细信息</p>
                 </div>
                 <Button onClick={handleSave} size='lg' className='shrink-0'>
@@ -656,19 +776,8 @@ function EntryEditor({
 
                 <TabsContent value='basic' className='mt-6 space-y-6 flex-1 overflow-auto min-h-0'>
                     <div className='space-y-4 pr-2'>
-                        <div className='space-y-2'>
-                            <Label htmlFor='entry-display-name'>显示名称 *</Label>
-                            <Input
-                                id='entry-display-name'
-                                value={displayName}
-                                onChange={e => setDisplayName(e.target.value)}
-                                placeholder='条目的显示名称'
-                                className='w-full max-w-full'
-                            />
-                        </div>
-
                         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                            <div className='space-y-2 min-w-0'>
+                            <div className='space-y-2 min-w-0 ml-1'>
                                 <Label htmlFor='entry-generation-type'>Generation Type</Label>
                                 <Select value={generationType} onValueChange={value => setGenerationType(value)}>
                                     <SelectTrigger id='entry-generation-type' className='w-full'>
@@ -707,7 +816,7 @@ function EntryEditor({
                             </div>
                         </div>
 
-                        <div className='space-y-2'>
+                        <div className='space-y-2 ml-1'>
                             <Label htmlFor='entry-content'>Entry Text *</Label>
                             <p className='text-xs text-muted-foreground'>
                                 The following text will be referenced when the Keys are activated.
@@ -722,7 +831,7 @@ function EntryEditor({
                             />
                         </div>
 
-                        <div className='space-y-2'>
+                        <div className='space-y-2 ml-1'>
                             <Label htmlFor='entry-search-range'>搜索范围</Label>
                             <Input
                                 id='entry-search-range'
