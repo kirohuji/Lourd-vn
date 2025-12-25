@@ -294,6 +294,15 @@ export interface PromptImageResponseDto {
     status: 'uploaded' | 'generated';
     createdAt: Date;
     updatedAt: Date;
+    // 新增：关联的 Prompt 详细信息
+    basePrompt?: {
+        basicPrompt: string;
+        undesiredContent?: string;
+    };
+    characterPrompt?: {
+        basicPrompt: string;
+        undesiredContent?: string;
+    };
 }
 
 /**

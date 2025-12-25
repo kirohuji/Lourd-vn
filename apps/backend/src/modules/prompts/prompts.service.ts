@@ -592,6 +592,9 @@ export class PromptsService {
   ): Promise<PromptImageResponseDto[]> {
     const characterPrompt = await this.prisma.characterPrompt.findUnique({
       where: { id: characterPromptId },
+      include: {
+        basePrompt: true,
+      },
     });
 
     if (!characterPrompt) {
@@ -609,11 +612,23 @@ export class PromptsService {
       id: img.id,
       basePromptId: img.basePromptId || undefined,
       characterPromptId: img.characterPromptId || undefined,
+      variantId: img.variantId || undefined,
       imageUrl: img.imageUrl,
       generatedPrompt: img.generatedPrompt,
       status: img.status as 'uploaded' | 'generated',
       createdAt: img.createdAt,
       updatedAt: img.updatedAt,
+      basePrompt: characterPrompt.basePrompt
+        ? {
+            basicPrompt: characterPrompt.basePrompt.basicPrompt,
+            undesiredContent:
+              characterPrompt.basePrompt.undesiredContent || undefined,
+          }
+        : undefined,
+      characterPrompt: {
+        basicPrompt: characterPrompt.basicPrompt,
+        undesiredContent: characterPrompt.undesiredContent || undefined,
+      },
     }));
   }
 
@@ -688,6 +703,11 @@ export class PromptsService {
         status: image.status as 'uploaded' | 'generated',
         createdAt: image.createdAt,
         updatedAt: image.updatedAt,
+        basePrompt: {
+          basicPrompt: basePrompt.basicPrompt,
+          undesiredContent: basePrompt.undesiredContent || undefined,
+        },
+        characterPrompt: undefined,
       });
     }
 
@@ -776,6 +796,17 @@ export class PromptsService {
         status: image.status as 'uploaded' | 'generated',
         createdAt: image.createdAt,
         updatedAt: image.updatedAt,
+        basePrompt: characterPrompt.basePrompt
+          ? {
+              basicPrompt: characterPrompt.basePrompt.basicPrompt,
+              undesiredContent:
+                characterPrompt.basePrompt.undesiredContent || undefined,
+            }
+          : undefined,
+        characterPrompt: {
+          basicPrompt: characterPrompt.basicPrompt,
+          undesiredContent: characterPrompt.undesiredContent || undefined,
+        },
       });
     }
 
@@ -826,6 +857,54 @@ export class PromptsService {
       },
     });
 
+    // 获取关联的 Prompt 信息
+    let basePromptInfo:
+      | { basicPrompt: string; undesiredContent?: string }
+      | undefined;
+    let characterPromptInfo:
+      | { basicPrompt: string; undesiredContent?: string }
+      | undefined;
+
+    if (existing.basePromptId) {
+      const bp = await this.prisma.basePrompt.findUnique({
+        where: { id: existing.basePromptId },
+        select: {
+          basicPrompt: true,
+          undesiredContent: true,
+        },
+      });
+      if (bp) {
+        basePromptInfo = {
+          basicPrompt: bp.basicPrompt,
+          undesiredContent: bp.undesiredContent || undefined,
+        };
+      }
+    } else if (existing.characterPromptId) {
+      const cp = await this.prisma.characterPrompt.findUnique({
+        where: { id: existing.characterPromptId },
+        include: {
+          basePrompt: {
+            select: {
+              basicPrompt: true,
+              undesiredContent: true,
+            },
+          },
+        },
+      });
+      if (cp) {
+        if (cp.basePrompt) {
+          basePromptInfo = {
+            basicPrompt: cp.basePrompt.basicPrompt,
+            undesiredContent: cp.basePrompt.undesiredContent || undefined,
+          };
+        }
+        characterPromptInfo = {
+          basicPrompt: cp.basicPrompt,
+          undesiredContent: cp.undesiredContent || undefined,
+        };
+      }
+    }
+
     return {
       id: updated.id,
       basePromptId: updated.basePromptId || undefined,
@@ -836,6 +915,8 @@ export class PromptsService {
       status: updated.status as 'uploaded' | 'generated',
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
+      basePrompt: basePromptInfo,
+      characterPrompt: characterPromptInfo,
     };
   }
 
@@ -1380,27 +1461,81 @@ export class PromptsService {
       orderBy: [{ isDefault: 'desc' }, { order: 'asc' }, { name: 'asc' }],
     });
 
-    // 获取所有图片
+    // 获取所有图片，同时获取关联的 Prompt 信息
     const allImages = await this.prisma.promptImage.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        basePrompt: basePromptId
+          ? {
+              select: {
+                basicPrompt: true,
+                undesiredContent: true,
+              },
+            }
+          : false,
+        characterPrompt: characterPromptId
+          ? {
+              include: {
+                basePrompt: {
+                  select: {
+                    basicPrompt: true,
+                    undesiredContent: true,
+                  },
+                },
+              },
+            }
+          : false,
+      },
     });
 
     // 按变体分组
     const variantGroups = variants.map((variant) => {
       const images = allImages
         .filter((img) => img.variantId === variant.id)
-        .map((img) => ({
-          id: img.id,
-          basePromptId: img.basePromptId || undefined,
-          characterPromptId: img.characterPromptId || undefined,
-          variantId: img.variantId || undefined,
-          imageUrl: img.imageUrl,
-          generatedPrompt: img.generatedPrompt,
-          status: img.status as 'uploaded' | 'generated',
-          createdAt: img.createdAt,
-          updatedAt: img.updatedAt,
-        }));
+        .map((img) => {
+          const result: any = {
+            id: img.id,
+            basePromptId: img.basePromptId || undefined,
+            characterPromptId: img.characterPromptId || undefined,
+            variantId: img.variantId || undefined,
+            imageUrl: img.imageUrl,
+            generatedPrompt: img.generatedPrompt,
+            status: img.status as 'uploaded' | 'generated',
+            createdAt: img.createdAt,
+            updatedAt: img.updatedAt,
+          };
+
+          // 添加 basePrompt 信息
+          if (basePromptId && (img as any).basePrompt) {
+            result.basePrompt = {
+              basicPrompt: (img as any).basePrompt.basicPrompt,
+              undesiredContent:
+                (img as any).basePrompt.undesiredContent || undefined,
+            };
+          } else if (
+            characterPromptId &&
+            (img as any).characterPrompt?.basePrompt
+          ) {
+            result.basePrompt = {
+              basicPrompt: (img as any).characterPrompt.basePrompt.basicPrompt,
+              undesiredContent:
+                (img as any).characterPrompt.basePrompt.undesiredContent ||
+                undefined,
+            };
+          }
+
+          // 添加 characterPrompt 信息
+          if (characterPromptId && (img as any).characterPrompt) {
+            result.characterPrompt = {
+              basicPrompt: (img as any).characterPrompt.basicPrompt,
+              undesiredContent:
+                (img as any).characterPrompt.undesiredContent || undefined,
+            };
+          }
+
+          return result;
+        });
 
       return {
         id: variant.id,
@@ -1414,17 +1549,49 @@ export class PromptsService {
     // 未分类的图片（没有 variantId）
     const uncategorizedImages = allImages
       .filter((img) => !img.variantId)
-      .map((img) => ({
-        id: img.id,
-        basePromptId: img.basePromptId || undefined,
-        characterPromptId: img.characterPromptId || undefined,
-        variantId: img.variantId || undefined,
-        imageUrl: img.imageUrl,
-        generatedPrompt: img.generatedPrompt,
-        status: img.status as 'uploaded' | 'generated',
-        createdAt: img.createdAt,
-        updatedAt: img.updatedAt,
-      }));
+      .map((img) => {
+        const result: any = {
+          id: img.id,
+          basePromptId: img.basePromptId || undefined,
+          characterPromptId: img.characterPromptId || undefined,
+          variantId: img.variantId || undefined,
+          imageUrl: img.imageUrl,
+          generatedPrompt: img.generatedPrompt,
+          status: img.status as 'uploaded' | 'generated',
+          createdAt: img.createdAt,
+          updatedAt: img.updatedAt,
+        };
+
+        // 添加 basePrompt 信息
+        if (basePromptId && (img as any).basePrompt) {
+          result.basePrompt = {
+            basicPrompt: (img as any).basePrompt.basicPrompt,
+            undesiredContent:
+              (img as any).basePrompt.undesiredContent || undefined,
+          };
+        } else if (
+          characterPromptId &&
+          (img as any).characterPrompt?.basePrompt
+        ) {
+          result.basePrompt = {
+            basicPrompt: (img as any).characterPrompt.basePrompt.basicPrompt,
+            undesiredContent:
+              (img as any).characterPrompt.basePrompt.undesiredContent ||
+              undefined,
+          };
+        }
+
+        // 添加 characterPrompt 信息
+        if (characterPromptId && (img as any).characterPrompt) {
+          result.characterPrompt = {
+            basicPrompt: (img as any).characterPrompt.basicPrompt,
+            undesiredContent:
+              (img as any).characterPrompt.undesiredContent || undefined,
+          };
+        }
+
+        return result;
+      });
 
     return {
       variants: variantGroups,

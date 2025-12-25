@@ -35,7 +35,7 @@ import {
     useUpdateImageVariant,
 } from '@/lib/hooks/use-prompts';
 import { BasePromptResponseDto, CharacterPromptResponseDto, PromptImageResponseDto } from '@lourd-game/shared';
-import { Edit, Eye, Loader2, Move, Plus, Trash2, Upload } from 'lucide-react';
+import { Edit, Eye, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
@@ -54,7 +54,8 @@ export function PromptsPage() {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [moveImageDialogOpen, setMoveImageDialogOpen] = useState(false);
-    const [imageToMove, setImageToMove] = useState<PromptImageResponseDto | null>(null);
+    const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const { toast } = useToast();
     const { data: basePrompts = [], isLoading: isLoadingBasePrompts, refetch: refetchBasePrompts } = useBasePrompts();
@@ -142,25 +143,72 @@ export function PromptsPage() {
         setDeleteConfirmOpen(true);
     };
 
-    const handleMoveImage = (image: PromptImageResponseDto) => {
-        setImageToMove(image);
+    const handleToggleSelectionMode = () => {
+        setIsSelectionMode(!isSelectionMode);
+        if (isSelectionMode) {
+            setSelectedImages(new Set());
+        }
+    };
+
+    const handleToggleImageSelect = (imageId: number) => {
+        setSelectedImages(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(imageId)) {
+                newSet.delete(imageId);
+            } else {
+                newSet.add(imageId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleSelectAll = () => {
+        const allImageIds = new Set<number>();
+        if (imagesGrouped) {
+            imagesGrouped.variants.forEach(variant => {
+                variant.images.forEach(img => allImageIds.add(img.id));
+            });
+            imagesGrouped.uncategorized.images.forEach(img => allImageIds.add(img.id));
+        }
+        setSelectedImages(allImageIds);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedImages(new Set());
+    };
+
+    const handleBatchMove = () => {
+        if (selectedImages.size === 0) {
+            toast({
+                title: '提示',
+                description: '请先选择要移动的图片',
+                variant: 'destructive',
+            });
+            return;
+        }
         setMoveImageDialogOpen(true);
     };
 
     const handleConfirmMoveImage = async (targetVariantId: number | null) => {
-        if (!imageToMove) return;
+        if (selectedImages.size === 0) return;
 
         try {
-            await updateImageVariant.mutateAsync({
-                imageId: imageToMove.id,
-                variantId: targetVariantId,
-            });
+            const imageIds = Array.from(selectedImages);
+            await Promise.all(
+                imageIds.map(imageId =>
+                    updateImageVariant.mutateAsync({
+                        imageId,
+                        variantId: targetVariantId,
+                    }),
+                ),
+            );
             toast({
                 title: '成功',
-                description: '图片已移动到目标变体',
+                description: `已成功移动 ${imageIds.length} 张图片到目标变体`,
             });
             setMoveImageDialogOpen(false);
-            setImageToMove(null);
+            setSelectedImages(new Set());
+            setIsSelectionMode(false);
             refetchImages();
         } catch (error: any) {
             toast({
@@ -208,10 +256,7 @@ export function PromptsPage() {
 
     // 准备 lightbox 的图片数据（所有图片）
     const allImages = imagesGrouped
-        ? [
-              ...imagesGrouped.variants.flatMap(v => v.images),
-              ...imagesGrouped.uncategorized.images,
-          ]
+        ? [...imagesGrouped.variants.flatMap(v => v.images), ...imagesGrouped.uncategorized.images]
         : [];
     const lightboxSlides = allImages.map(image => ({
         src: image.imageUrl,
@@ -374,7 +419,7 @@ export function PromptsPage() {
                                 : ''}
                         </div>
                         <div className='flex items-center gap-2'>
-                            {allImages.length > 0 && (
+                            {allImages.length > 0 && !isSelectionMode && (
                                 <Button
                                     size='sm'
                                     variant='outline'
@@ -388,12 +433,36 @@ export function PromptsPage() {
                                     快速预览
                                 </Button>
                             )}
-                        {(selectedCharacterPromptId || selectedBasePromptId) && (
-                            <Button size='sm' onClick={() => setImageUploadOpen(true)}>
-                                <Upload className='mr-2 h-4 w-4' />
-                                上传图片
-                            </Button>
-                        )}
+                            {isSelectionMode ? (
+                                <>
+                                    <Button size='sm' variant='outline' onClick={handleSelectAll}>
+                                        全选
+                                    </Button>
+                                    <Button size='sm' variant='outline' onClick={handleClearSelection}>
+                                        取消选择
+                                    </Button>
+                                    <Button size='sm' variant='outline' onClick={handleToggleSelectionMode}>
+                                        退出选择
+                                    </Button>
+                                    {selectedImages.size > 0 && (
+                                        <Button size='sm' onClick={handleBatchMove}>
+                                            移动到变体 ({selectedImages.size})
+                                        </Button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <Button size='sm' variant='outline' onClick={handleToggleSelectionMode}>
+                                        选择
+                                    </Button>
+                                    {(selectedCharacterPromptId || selectedBasePromptId) && (
+                                        <Button size='sm' onClick={() => setImageUploadOpen(true)}>
+                                            <Upload className='mr-2 h-4 w-4' />
+                                            上传图片
+                                        </Button>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                     {!selectedBasePromptId ? (
@@ -404,7 +473,8 @@ export function PromptsPage() {
                         <div className='flex items-center justify-center flex-1'>
                             <Loader2 className='h-6 w-6 animate-spin' />
                         </div>
-                    ) : !imagesGrouped || (imagesGrouped.variants.length === 0 && imagesGrouped.uncategorized.imageCount === 0) ? (
+                    ) : !imagesGrouped ||
+                      (imagesGrouped.variants.length === 0 && imagesGrouped.uncategorized.imageCount === 0) ? (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
                             暂无图片
                         </div>
@@ -434,7 +504,9 @@ export function PromptsPage() {
                                                     image={image}
                                                     size='thumbnail'
                                                     onDelete={() => handleDeleteImage(image)}
-                                                    onMove={() => handleMoveImage(image)}
+                                                    isSelected={selectedImages.has(image.id)}
+                                                    isSelectionMode={isSelectionMode}
+                                                    onToggleSelect={() => handleToggleImageSelect(image.id)}
                                                 />
                                                 <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
                                                     <p className='text-xs text-white truncate'>
@@ -458,24 +530,26 @@ export function PromptsPage() {
                                     </div>
                                     <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3'>
                                         {imagesGrouped.uncategorized.images.map(image => (
-                                    <div
-                                        key={image.id}
-                                        className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
-                                    >
-                                        <PromptImagePreview
-                                            image={image}
-                                            size='thumbnail'
-                                            onDelete={() => handleDeleteImage(image)}
-                                            onMove={() => handleMoveImage(image)}
-                                        />
-                                        <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-                                            <p className='text-xs text-white truncate'>
-                                                {new Date(image.createdAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
+                                            <div
+                                                key={image.id}
+                                                className='relative group aspect-square rounded-lg overflow-hidden border-2 border-border bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-lg hover:scale-[1.02]'
+                                            >
+                                                <PromptImagePreview
+                                                    image={image}
+                                                    size='thumbnail'
+                                                    onDelete={() => handleDeleteImage(image)}
+                                                    isSelected={selectedImages.has(image.id)}
+                                                    isSelectionMode={isSelectionMode}
+                                                    onToggleSelect={() => handleToggleImageSelect(image.id)}
+                                                />
+                                                <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                                                    <p className='text-xs text-white truncate'>
+                                                        {new Date(image.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
                                 </div>
                             )}
                         </div>
@@ -548,8 +622,17 @@ export function PromptsPage() {
             <Dialog open={moveImageDialogOpen} onOpenChange={setMoveImageDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>移动图片到变体</DialogTitle>
-                        <DialogDescription>选择目标变体，或选择"未分类"将图片移出变体</DialogDescription>
+                        <DialogTitle>
+                            移动图片到变体
+                            {selectedImages.size > 0 && (
+                                <span className='ml-2 text-sm font-normal text-muted-foreground'>
+                                    ({selectedImages.size} 张图片)
+                                </span>
+                            )}
+                        </DialogTitle>
+                        <DialogDescription>
+                            选择目标变体，或选择"未分类"将图片移出变体（默认：未分类）
+                        </DialogDescription>
                     </DialogHeader>
                     <div className='space-y-4 py-4'>
                         <div className='space-y-2'>
@@ -562,10 +645,10 @@ export function PromptsPage() {
                                 }}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder='选择目标变体' />
+                                    <SelectValue placeholder='选择目标变体（默认：未分类）' />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value='none'>未分类</SelectItem>
+                                    <SelectItem value='none'>未分类（默认）</SelectItem>
                                     {variants.map(variant => (
                                         <SelectItem key={variant.id} value={variant.id.toString()}>
                                             {variant.name}
