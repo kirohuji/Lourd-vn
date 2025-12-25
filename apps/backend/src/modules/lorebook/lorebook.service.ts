@@ -8,11 +8,7 @@ import {
   UpdateLoreBookEntryDto,
   UpdateLoreBookSettingsDto,
 } from '@lourd-game/shared';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
@@ -22,14 +18,16 @@ export class LoreBookService {
 
   // ========== Entry CRUD ==========
 
-  async findAllEntries(categoryId?: string): Promise<LoreBookEntryResponseDto[]> {
+  async findAllEntries(
+    categoryId?: string,
+  ): Promise<LoreBookEntryResponseDto[]> {
     const where = categoryId ? { categoryId } : {};
     const entries = await this.prisma.loreBookEntry.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
 
-    return entries.map(entry => this.mapEntryToDto(entry));
+    return entries.map((entry) => this.mapEntryToDto(entry));
   }
 
   async findEntryById(id: string): Promise<LoreBookEntryResponseDto> {
@@ -44,7 +42,9 @@ export class LoreBookService {
     return this.mapEntryToDto(entry);
   }
 
-  async createEntry(dto: CreateLoreBookEntryDto): Promise<LoreBookEntryResponseDto> {
+  async createEntry(
+    dto: CreateLoreBookEntryDto,
+  ): Promise<LoreBookEntryResponseDto> {
     // 设置默认值
     const defaultContextConfig = {
       prefix: '',
@@ -74,6 +74,7 @@ export class LoreBookService {
       data: {
         text: dto.text,
         displayName: dto.displayName,
+        generationType: dto.generationType || null,
         keys: dto.keys || [],
         searchRange: dto.searchRange ?? 1000,
         enabled: dto.enabled ?? true,
@@ -82,7 +83,7 @@ export class LoreBookService {
         nonStoryActivatable: dto.nonStoryActivatable ?? false,
         hidden: dto.hidden ?? false,
         categoryId: dto.categoryId || null,
-        contextConfig: defaultContextConfig as any,
+        contextConfig: defaultContextConfig,
         loreBiasGroups: defaultLoreBiasGroups as any,
         advancedConditions: (dto.advancedConditions || []) as any,
         lastUpdatedAt: BigInt(dto.lastUpdatedAt || Date.now()),
@@ -114,6 +115,7 @@ export class LoreBookService {
       data: {
         text: dto.text,
         displayName: dto.displayName,
+        generationType: dto.generationType === null ? null : dto.generationType,
         keys: dto.keys,
         searchRange: dto.searchRange,
         enabled: dto.enabled,
@@ -125,7 +127,9 @@ export class LoreBookService {
         contextConfig,
         loreBiasGroups: dto.loreBiasGroups as any,
         advancedConditions: dto.advancedConditions as any,
-        lastUpdatedAt: dto.lastUpdatedAt ? BigInt(dto.lastUpdatedAt) : undefined,
+        lastUpdatedAt: dto.lastUpdatedAt
+          ? BigInt(dto.lastUpdatedAt)
+          : undefined,
       },
     });
 
@@ -156,7 +160,7 @@ export class LoreBookService {
       },
     });
 
-    return categories.map(category => this.mapCategoryToDto(category));
+    return categories.map((category) => this.mapCategoryToDto(category));
   }
 
   async findCategoryById(id: string): Promise<LoreBookCategoryResponseDto> {
@@ -184,8 +188,12 @@ export class LoreBookService {
         createSubcontext: dto.createSubcontext ?? false,
         useCategoryDefaults: dto.useCategoryDefaults ?? false,
         open: dto.open ?? false,
-        subcontextSettings: dto.subcontextSettings ? (dto.subcontextSettings as any) : Prisma.DbNull,
-        categoryDefaults: dto.categoryDefaults ? (dto.categoryDefaults as any) : Prisma.DbNull,
+        subcontextSettings: dto.subcontextSettings
+          ? (dto.subcontextSettings as any)
+          : Prisma.DbNull,
+        categoryDefaults: dto.categoryDefaults
+          ? (dto.categoryDefaults as any)
+          : Prisma.DbNull,
         categoryBiasGroups: (dto.categoryBiasGroups || []) as any,
         settings: dto.settings || {},
         order: dto.order || [],
@@ -215,8 +223,14 @@ export class LoreBookService {
         createSubcontext: dto.createSubcontext,
         useCategoryDefaults: dto.useCategoryDefaults,
         open: dto.open,
-        subcontextSettings: dto.subcontextSettings === null ? Prisma.DbNull : (dto.subcontextSettings as any),
-        categoryDefaults: dto.categoryDefaults === null ? Prisma.DbNull : (dto.categoryDefaults as any),
+        subcontextSettings:
+          dto.subcontextSettings === null
+            ? Prisma.DbNull
+            : (dto.subcontextSettings as any),
+        categoryDefaults:
+          dto.categoryDefaults === null
+            ? Prisma.DbNull
+            : (dto.categoryDefaults as any),
         categoryBiasGroups: dto.categoryBiasGroups as any,
         settings: dto.settings,
         order: dto.order,
@@ -317,6 +331,7 @@ export class LoreBookService {
       id: entry.id,
       text: entry.text,
       displayName: entry.displayName,
+      generationType: entry.generationType,
       keys: entry.keys as string[],
       searchRange: entry.searchRange,
       enabled: entry.enabled,
@@ -325,7 +340,7 @@ export class LoreBookService {
       nonStoryActivatable: entry.nonStoryActivatable,
       hidden: entry.hidden,
       categoryId: entry.categoryId,
-      contextConfig: entry.contextConfig as any,
+      contextConfig: entry.contextConfig,
       loreBiasGroups: entry.loreBiasGroups as any[],
       advancedConditions: entry.advancedConditions as any[],
       lastUpdatedAt: Number(entry.lastUpdatedAt),
@@ -342,8 +357,8 @@ export class LoreBookService {
       createSubcontext: category.createSubcontext,
       useCategoryDefaults: category.useCategoryDefaults,
       open: category.open,
-      subcontextSettings: category.subcontextSettings as any,
-      categoryDefaults: category.categoryDefaults as any,
+      subcontextSettings: category.subcontextSettings,
+      categoryDefaults: category.categoryDefaults,
       categoryBiasGroups: category.categoryBiasGroups as any[],
       settings: category.settings as Record<string, any>,
       order: category.order as string[],
@@ -352,4 +367,3 @@ export class LoreBookService {
     };
   }
 }
-

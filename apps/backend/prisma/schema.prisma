@@ -366,6 +366,7 @@ model LoreBookEntry {
   id                  String   @id @default(uuid())
   text                String   @db.Text
   displayName         String
+  generationType      String?  // General, Person, Place, Thing, Life, Faction, Role, Concept, History
   keys                Json     // 字符串数组
   searchRange         Int      @default(1000)
   enabled             Boolean  @default(true)
