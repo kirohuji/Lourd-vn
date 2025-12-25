@@ -34,6 +34,8 @@ export function PromptVariantManager({
     const [newVariantDescription, setNewVariantDescription] = useState('');
     const [variantTagIds, setVariantTagIds] = useState<VariantTagItem[]>([]);
     const [mergedPreview, setMergedPreview] = useState<string>('');
+    const [editingVariantId, setEditingVariantId] = useState<number | null>(null);
+    const [editingVariantName, setEditingVariantName] = useState<string>('');
 
     const { toast } = useToast();
     const { data: variants = [], isLoading, refetch } = usePromptVariants(basePromptId, characterPromptId);
@@ -175,6 +177,37 @@ export function PromptVariantManager({
         }
     };
 
+    const handleSaveVariantName = async (variantId: number) => {
+        if (!editingVariantName.trim()) {
+            toast({
+                title: '错误',
+                description: '变体名称不能为空',
+                variant: 'destructive',
+            });
+            setEditingVariantId(null);
+            return;
+        }
+
+        try {
+            await updateMutation.mutateAsync({
+                id: variantId,
+                dto: { name: editingVariantName.trim() },
+            });
+            setEditingVariantId(null);
+            refetch();
+            toast({
+                title: '成功',
+                description: '变体名称已更新',
+            });
+        } catch (error: any) {
+            toast({
+                title: '更新失败',
+                description: error.message || '更新变体名称失败',
+                variant: 'destructive',
+            });
+        }
+    };
+
     if (isLoading) {
         return (
             <div className='flex items-center justify-center py-8'>
@@ -210,10 +243,43 @@ export function PromptVariantManager({
                             className={`flex items-center gap-1 px-3 py-1.5 border rounded-lg cursor-pointer transition-colors ${
                                 selectedVariantId === variant.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'
                             }`}
-                            onClick={() => setSelectedVariantId(variant.id)}
+                            onClick={() => {
+                                if (editingVariantId !== variant.id) {
+                                    setSelectedVariantId(variant.id);
+                                }
+                            }}
                         >
                             {variant.isDefault && <Star className='h-3 w-3 fill-yellow-400 text-yellow-400' />}
-                            <span className='text-sm font-medium'>{variant.name}</span>
+                            {editingVariantId === variant.id ? (
+                                <Input
+                                    value={editingVariantName}
+                                    onChange={e => setEditingVariantName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            handleSaveVariantName(variant.id);
+                                        }
+                                        if (e.key === 'Escape') {
+                                            setEditingVariantId(null);
+                                            setEditingVariantName('');
+                                        }
+                                    }}
+                                    onBlur={() => handleSaveVariantName(variant.id)}
+                                    onClick={e => e.stopPropagation()}
+                                    className='h-6 text-sm'
+                                    autoFocus
+                                />
+                            ) : (
+                                <span
+                                    className='text-sm font-medium cursor-pointer hover:text-primary'
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        setEditingVariantId(variant.id);
+                                        setEditingVariantName(variant.name);
+                                    }}
+                                >
+                                    {variant.name}
+                                </span>
+                            )}
                             <Button
                                 variant='ghost'
                                 size='icon'
@@ -224,7 +290,7 @@ export function PromptVariantManager({
                                         handleSetDefault(variant);
                                     }
                                 }}
-                                disabled={disabled || variant.isDefault}
+                                disabled={disabled || variant.isDefault || editingVariantId === variant.id}
                                 title={variant.isDefault ? '默认变体' : '设为默认'}
                             >
                                 <Star className='h-3 w-3' />
@@ -237,7 +303,7 @@ export function PromptVariantManager({
                                     e.stopPropagation();
                                     handleDeleteVariant(variant);
                                 }}
-                                disabled={disabled || variant.isDefault || deleteMutation.isPending}
+                                disabled={disabled || variant.isDefault || deleteMutation.isPending || editingVariantId === variant.id}
                             >
                                 <Trash2 className='h-3 w-3' />
                             </Button>

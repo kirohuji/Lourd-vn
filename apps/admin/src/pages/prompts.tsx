@@ -50,7 +50,7 @@ export function PromptsPage() {
     const [imageUploadOpen, setImageUploadOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteType, setDeleteType] = useState<'base' | 'character' | 'image' | null>(null);
-    const [itemToDelete, setItemToDelete] = useState<{ id: number; name?: string } | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ id: number; name?: string; count?: number } | null>(null);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [moveImageDialogOpen, setMoveImageDialogOpen] = useState(false);
@@ -140,6 +140,13 @@ export function PromptsPage() {
     const handleDeleteImage = (image: PromptImageResponseDto) => {
         setDeleteType('image');
         setItemToDelete({ id: image.id });
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleBatchDelete = () => {
+        if (selectedImages.size === 0) return;
+        setDeleteType('image');
+        setItemToDelete({ id: Array.from(selectedImages)[0], count: selectedImages.size });
         setDeleteConfirmOpen(true);
     };
 
@@ -236,8 +243,19 @@ export function PromptsPage() {
                     setSelectedCharacterPromptId(null);
                 }
             } else if (deleteType === 'image') {
-                await deleteImage.mutateAsync(itemToDelete.id);
-                toast({ title: '成功', description: '图片已删除' });
+                if (itemToDelete.count && itemToDelete.count > 1) {
+                    // 批量删除
+                    const imageIds = Array.from(selectedImages);
+                    await Promise.all(imageIds.map(id => deleteImage.mutateAsync(id)));
+                    setSelectedImages(new Set());
+                    setIsSelectionMode(false);
+                    toast({ title: '成功', description: `已删除 ${itemToDelete.count} 张图片` });
+                } else {
+                    // 单个删除
+                    await deleteImage.mutateAsync(itemToDelete.id);
+                    toast({ title: '成功', description: '图片已删除' });
+                }
+                refetchImages();
             }
             setDeleteConfirmOpen(false);
             setItemToDelete(null);
@@ -445,9 +463,14 @@ export function PromptsPage() {
                                         退出选择
                                     </Button>
                                     {selectedImages.size > 0 && (
-                                        <Button size='sm' onClick={handleBatchMove}>
-                                            移动到变体 ({selectedImages.size})
-                                        </Button>
+                                        <>
+                                            <Button size='sm' onClick={handleBatchMove}>
+                                                移动到变体 ({selectedImages.size})
+                                            </Button>
+                                            <Button size='sm' variant='destructive' onClick={handleBatchDelete}>
+                                                删除选中 ({selectedImages.size})
+                                            </Button>
+                                        </>
                                     )}
                                 </>
                             ) : (
@@ -607,6 +630,8 @@ export function PromptsPage() {
                                 ? 'Base Prompt'
                                 : deleteType === 'character'
                                 ? 'Character Prompt'
+                                : deleteType === 'image' && itemToDelete?.count && itemToDelete.count > 1
+                                ? `${itemToDelete.count} 张图片`
                                 : '图片'}{' '}
                             {itemToDelete?.name ? `"${itemToDelete.name}"` : ''} 吗？此操作无法撤销。
                         </AlertDialogDescription>

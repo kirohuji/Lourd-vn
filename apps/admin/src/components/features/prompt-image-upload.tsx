@@ -42,9 +42,10 @@ export function PromptImageUpload({
     const uploadBaseMutation = useUploadBasePromptImages();
 
     // 获取变体列表
+    // 当 characterPromptId 存在且不为 0 时，使用 characterPromptId；否则使用 basePromptId
     const { data: variants = [] } = usePromptVariants(
-        basePromptId,
-        characterPromptId || undefined,
+        characterPromptId && characterPromptId > 0 ? undefined : basePromptId,
+        characterPromptId && characterPromptId > 0 ? characterPromptId : undefined,
     );
 
     // 根据是否有 characterPromptId 决定使用哪个 mutation
