@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -39,8 +40,8 @@ import {
     LoreBookCategoryResponseDto,
     LoreBookEntryResponseDto,
 } from '@lourd-game/shared';
-import { ChevronDown, ChevronRight, Edit, Loader2, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ChevronDown, ChevronRight, Download, Edit, Loader2, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 export function LoreBookPage() {
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export function LoreBookPage() {
     const [createEntryDialogOpen, setCreateEntryDialogOpen] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newEntryCategoryId, setNewEntryCategoryId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const { toast } = useToast();
     const { data: categories = [], isLoading: isLoadingCategories } = useLoreBookCategories();
@@ -235,20 +237,48 @@ export function LoreBookPage() {
     const selectedCategory = categories.find(c => c.id === selectedCategoryId);
     const selectedEntry = entries.find(e => e.id === selectedEntryId);
 
+    // 搜索过滤
+    const filteredCategories = useMemo(() => {
+        if (!searchQuery.trim()) return categories;
+        const query = searchQuery.toLowerCase();
+        return categories.filter(cat => {
+            if (cat.name.toLowerCase().includes(query)) return true;
+            const categoryEntries = entries.filter(e => e.categoryId === cat.id);
+            return categoryEntries.some(e => e.displayName.toLowerCase().includes(query));
+        });
+    }, [categories, entries, searchQuery]);
+
+    const filteredEntries = useMemo(() => {
+        if (!searchQuery.trim()) return entries;
+        const query = searchQuery.toLowerCase();
+        return entries.filter(e => e.displayName.toLowerCase().includes(query) || e.text.toLowerCase().includes(query));
+    }, [entries, searchQuery]);
+
     return (
         <div className='flex flex-col h-full space-y-4'>
-            <div className='flex items-center justify-between'>
+            {/* 顶部工具栏 */}
+            <div className='flex items-center justify-between border-b pb-4'>
                 <div>
-                    <h1 className='text-3xl font-bold'>LoreBook 管理</h1>
-                    <p className='text-sm text-muted-foreground'>管理知识库条目和分类</p>
+                    <h1 className='text-3xl font-bold'>LoreBook</h1>
+                    <p className='text-sm text-muted-foreground mt-1'>管理知识库条目和分类</p>
+                </div>
+                <div className='flex gap-2'>
+                    <Button variant='outline' size='sm'>
+                        <Upload className='mr-2 h-4 w-4' />
+                        导入
+                    </Button>
+                    <Button variant='outline' size='sm'>
+                        <Download className='mr-2 h-4 w-4' />
+                        导出
+                    </Button>
                 </div>
             </div>
 
             <div className='grid grid-cols-12 gap-4 flex-1 min-h-0'>
                 {/* 左侧：分类和条目菜单 */}
-                <div className='col-span-4 border rounded-lg p-4 flex flex-col min-h-0'>
+                <div className='col-span-4 border rounded-lg p-4 flex flex-col min-h-0 bg-card'>
                     <div className='flex items-center justify-between mb-3'>
-                        <div className='font-semibold'>分类和条目</div>
+                        <div className='font-semibold text-lg'>条目列表</div>
                         <div className='flex gap-2'>
                             <Button size='sm' variant='outline' onClick={handleCreateCategory}>
                                 <Plus className='mr-2 h-4 w-4' />
@@ -258,16 +288,19 @@ export function LoreBookPage() {
                                 <Plus className='mr-2 h-4 w-4' />
                                 条目
                             </Button>
-                            {selectedCategoryId && (
-                                <Button
-                                    size='sm'
-                                    variant='secondary'
-                                    onClick={() => handleCreateEntry(selectedCategoryId)}
-                                >
-                                    <Plus className='mr-2 h-4 w-4' />
-                                    在此分类下创建
-                                </Button>
-                            )}
+                        </div>
+                    </div>
+
+                    {/* 搜索框 */}
+                    <div className='mb-3'>
+                        <div className='relative'>
+                            <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+                            <Input
+                                placeholder='搜索条目...'
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className='pl-8'
+                            />
                         </div>
                     </div>
 
@@ -275,24 +308,28 @@ export function LoreBookPage() {
                         <div className='flex items-center justify-center flex-1'>
                             <Loader2 className='h-6 w-6 animate-spin' />
                         </div>
-                    ) : categories.length === 0 ? (
+                    ) : filteredCategories.length === 0 ? (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
-                            暂无分类
+                            {searchQuery ? '未找到匹配的条目' : '暂无分类'}
                         </div>
                     ) : (
-                        <div className='space-y-1 overflow-auto flex-1'>
-                            {categories.map(category => {
+                        <div className='space-y-2 overflow-auto flex-1'>
+                            {filteredCategories.map(category => {
                                 const isExpanded = expandedCategories.has(category.id);
-                                const categoryEntries = sortedEntries(category.id);
+                                const categoryEntries = searchQuery
+                                    ? filteredEntries.filter(e => e.categoryId === category.id)
+                                    : sortedEntries(category.id);
                                 const isSelected = selectedCategoryId === category.id;
 
                                 return (
-                                    <div key={category.id} className='border rounded-lg'>
+                                    <div key={category.id} className='border rounded-md overflow-hidden bg-card'>
                                         {/* Category Header */}
                                         <div
-                                            className={`p-2 flex items-center justify-between cursor-pointer transition-colors ${
-                                                isSelected ? 'bg-primary/10' : 'hover:bg-muted'
-                                            }`}
+                                            className={`group px-3 py-2.5 flex items-center justify-between cursor-pointer transition-colors border-b ${
+                                                isSelected
+                                                    ? 'bg-primary/5 border-l-2 border-l-primary'
+                                                    : 'hover:bg-muted/50'
+                                            } ${isExpanded ? 'border-b-border' : 'border-b-transparent'}`}
                                             onClick={() => {
                                                 setSelectedCategoryId(category.id);
                                                 setSelectedEntryId(null);
@@ -304,20 +341,29 @@ export function LoreBookPage() {
                                                         e.stopPropagation();
                                                         handleToggleCategory(category.id);
                                                     }}
-                                                    className='p-0.5 hover:bg-accent rounded'
+                                                    className='p-0.5 hover:bg-accent rounded transition-colors'
                                                 >
                                                     {isExpanded ? (
-                                                        <ChevronDown className='h-4 w-4' />
+                                                        <ChevronDown className='h-4 w-4 text-muted-foreground' />
                                                     ) : (
-                                                        <ChevronRight className='h-4 w-4' />
+                                                        <ChevronRight className='h-4 w-4 text-muted-foreground' />
                                                     )}
                                                 </button>
-                                                <span className='font-medium truncate'>{category.name}</span>
-                                                <span className='text-xs text-muted-foreground'>
-                                                    ({categoryEntries.length})
+                                                <span
+                                                    className={`font-medium truncate text-sm ${
+                                                        isSelected ? 'text-primary' : ''
+                                                    }`}
+                                                >
+                                                    {category.name}
+                                                </span>
+                                                <span className='text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded'>
+                                                    {categoryEntries.length}
                                                 </span>
                                             </div>
-                                            <div className='flex gap-1' onClick={e => e.stopPropagation()}>
+                                            <div
+                                                className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'
+                                                onClick={e => e.stopPropagation()}
+                                            >
                                                 <Button
                                                     variant='ghost'
                                                     size='icon'
@@ -327,63 +373,95 @@ export function LoreBookPage() {
                                                         setSelectedEntryId(null);
                                                     }}
                                                 >
-                                                    <Edit className='h-3 w-3' />
+                                                    <Edit className='h-3.5 w-3.5' />
                                                 </Button>
                                                 <Button
                                                     variant='ghost'
                                                     size='icon'
-                                                    className='h-6 w-6 text-destructive'
+                                                    className='h-6 w-6 text-destructive hover:text-destructive'
                                                     onClick={() => handleDeleteCategory(category)}
                                                 >
-                                                    <Trash2 className='h-3 w-3' />
+                                                    <Trash2 className='h-3.5 w-3.5' />
                                                 </Button>
                                             </div>
                                         </div>
 
                                         {/* Category Entries */}
-                                        {isExpanded && (
-                                            <div className='pl-6 space-y-1 pb-2'>
+                                        {isExpanded && categoryEntries.length > 0 && (
+                                            <div className='border-t bg-muted/30'>
                                                 {categoryEntries.map(entry => {
                                                     const isEntrySelected = selectedEntryId === entry.id;
                                                     return (
                                                         <div
                                                             key={entry.id}
-                                                            className={`p-2 rounded cursor-pointer transition-colors flex items-center justify-between ${
+                                                            className={`group relative px-3 py-2.5 cursor-pointer transition-colors border-b border-border/50 last:border-b-0 ${
                                                                 isEntrySelected
-                                                                    ? 'bg-primary/10 border border-primary'
-                                                                    : 'hover:bg-muted'
+                                                                    ? 'bg-primary/5 border-l-2 border-l-primary'
+                                                                    : 'hover:bg-muted/50'
                                                             }`}
                                                             onClick={() => {
                                                                 setSelectedEntryId(entry.id);
                                                                 setSelectedCategoryId(category.id);
                                                             }}
                                                         >
-                                                            <span className='text-sm truncate flex-1'>
-                                                                {entry.displayName}
-                                                            </span>
-                                                            <div
-                                                                className='flex gap-1'
-                                                                onClick={e => e.stopPropagation()}
-                                                            >
-                                                                <Button
-                                                                    variant='ghost'
-                                                                    size='icon'
-                                                                    className='h-5 w-5'
-                                                                    onClick={() => {
-                                                                        setSelectedEntryId(entry.id);
-                                                                        setSelectedCategoryId(category.id);
-                                                                    }}
+                                                            <div className='flex items-start justify-between gap-2'>
+                                                                <div className='flex-1 min-w-0'>
+                                                                    <div className='flex items-center gap-2 mb-1'>
+                                                                        <span
+                                                                            className={`text-sm font-medium truncate ${
+                                                                                isEntrySelected ? 'text-primary' : ''
+                                                                            }`}
+                                                                        >
+                                                                            {entry.displayName}
+                                                                        </span>
+                                                                        {!entry.enabled && (
+                                                                            <span className='text-xs text-muted-foreground/60 px-1.5 py-0.5 bg-muted rounded'>
+                                                                                禁用
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {entry.keys && entry.keys.length > 0 && (
+                                                                        <div className='flex flex-wrap gap-1 mt-1'>
+                                                                            {entry.keys.slice(0, 3).map((key, i) => (
+                                                                                <span
+                                                                                    key={i}
+                                                                                    className='text-xs px-1.5 py-0.5 bg-background border border-border rounded text-muted-foreground'
+                                                                                >
+                                                                                    {key}
+                                                                                </span>
+                                                                            ))}
+                                                                            {entry.keys.length > 3 && (
+                                                                                <span className='text-xs text-muted-foreground'>
+                                                                                    +{entry.keys.length - 3}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div
+                                                                    className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'
+                                                                    onClick={e => e.stopPropagation()}
                                                                 >
-                                                                    <Edit className='h-3 w-3' />
-                                                                </Button>
-                                                                <Button
-                                                                    variant='ghost'
-                                                                    size='icon'
-                                                                    className='h-5 w-5 text-destructive'
-                                                                    onClick={() => handleDeleteEntry(entry)}
-                                                                >
-                                                                    <Trash2 className='h-3 w-3' />
-                                                                </Button>
+                                                                    <Button
+                                                                        variant='ghost'
+                                                                        size='icon'
+                                                                        className='h-6 w-6'
+                                                                        onClick={() => {
+                                                                            setSelectedEntryId(entry.id);
+                                                                            setSelectedCategoryId(category.id);
+                                                                        }}
+                                                                    >
+                                                                        <Edit className='h-3.5 w-3.5' />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant='ghost'
+                                                                        size='icon'
+                                                                        className='h-6 w-6 text-destructive hover:text-destructive'
+                                                                        onClick={() => handleDeleteEntry(entry)}
+                                                                    >
+                                                                        <Trash2 className='h-3.5 w-3.5' />
+                                                                    </Button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     );
@@ -398,7 +476,7 @@ export function LoreBookPage() {
                 </div>
 
                 {/* 右侧：编辑面板 */}
-                <div className='col-span-8 border rounded-lg p-4 flex flex-col min-h-0 overflow-auto'>
+                <div className='col-span-8 border rounded-lg p-6 flex flex-col min-h-0 overflow-auto bg-card'>
                     {selectedEntry ? (
                         <EntryEditor
                             entry={selectedEntry}
@@ -412,7 +490,10 @@ export function LoreBookPage() {
                         />
                     ) : (
                         <div className='text-sm text-muted-foreground text-center flex-1 flex items-center justify-center'>
-                            请选择一个分类或条目进行编辑
+                            <div className='text-center'>
+                                <p className='text-lg font-medium mb-2'>选择一个条目或分类开始编辑</p>
+                                <p className='text-sm'>从左侧列表中选择一个条目或分类来查看和编辑其详细信息</p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -562,10 +643,10 @@ function EntryEditor({
     };
 
     return (
-        <div className='space-y-6'>
-            <div className='flex items-center justify-between border-b pb-4'>
+        <div className='flex flex-col h-full'>
+            <div className='flex items-center justify-between border-b pb-4 mb-6'>
                 <div>
-                    <h2 className='text-2xl font-bold'>编辑条目</h2>
+                    <h2 className='text-2xl font-bold'>{displayName || '编辑条目'}</h2>
                     <p className='text-sm text-muted-foreground mt-1'>修改条目的详细信息</p>
                 </div>
                 <Button onClick={handleSave} size='lg'>
@@ -573,8 +654,14 @@ function EntryEditor({
                 </Button>
             </div>
 
-            <div className='space-y-6'>
-                <div className='grid grid-cols-2 gap-6'>
+            <Tabs defaultValue='basic' className='flex-1 overflow-auto'>
+                <TabsList className='grid w-full grid-cols-3'>
+                    <TabsTrigger value='basic'>基础信息</TabsTrigger>
+                    <TabsTrigger value='activation'>激活设置</TabsTrigger>
+                    <TabsTrigger value='advanced'>高级选项</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value='basic' className='mt-6 space-y-6'>
                     <div className='space-y-2'>
                         <Label htmlFor='entry-display-name'>显示名称 *</Label>
                         <Input
@@ -586,101 +673,132 @@ function EntryEditor({
                     </div>
 
                     <div className='space-y-2'>
-                        <Label htmlFor='entry-search-range'>搜索范围</Label>
-                        <Input
-                            id='entry-search-range'
-                            type='number'
-                            value={searchRange}
-                            onChange={e => setSearchRange(Number(e.target.value))}
-                            placeholder='1000'
+                        <Label htmlFor='entry-content'>内容 *</Label>
+                        <Textarea
+                            id='entry-content'
+                            value={text}
+                            onChange={e => setText(e.target.value)}
+                            rows={12}
+                            className='font-mono text-sm'
+                            placeholder='输入条目的详细内容...'
                         />
                     </div>
-                </div>
 
-                <div className='space-y-2'>
-                    <Label htmlFor='entry-content'>内容 *</Label>
-                    <Textarea
-                        id='entry-content'
-                        value={text}
-                        onChange={e => setText(e.target.value)}
-                        rows={8}
-                        className='font-mono text-sm'
-                        placeholder='输入条目的详细内容...'
-                    />
-                </div>
-
-                <div className='space-y-2'>
-                    <Label htmlFor='entry-keys'>激活关键字（用逗号分隔）</Label>
-                    <Input
-                        id='entry-keys'
-                        value={keys}
-                        onChange={e => setKeys(e.target.value)}
-                        placeholder='关键字1, 关键字2, 关键字3'
-                    />
-                    <p className='text-xs text-muted-foreground'>多个关键字用逗号分隔，用于触发此条目的激活</p>
-                </div>
-
-                <div className='space-y-2'>
-                    <Label htmlFor='entry-category'>分类</Label>
-                    <Select value={categoryId} onValueChange={value => setCategoryId(value)}>
-                        <SelectTrigger id='entry-category'>
-                            <SelectValue placeholder='选择分类' />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value='none'>无分类</SelectItem>
-                            {categories.map(cat => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className='border rounded-lg p-4 space-y-4'>
-                    <h3 className='font-semibold text-sm'>高级选项</h3>
-                    <div className='grid grid-cols-2 gap-4'>
-                        <div className='flex items-center justify-between'>
-                            <Label htmlFor='entry-enabled' className='cursor-pointer'>
-                                启用
-                            </Label>
-                            <Switch id='entry-enabled' checked={enabled} onCheckedChange={setEnabled} />
+                    <div className='grid grid-cols-2 gap-6'>
+                        <div className='space-y-2'>
+                            <Label htmlFor='entry-category'>分类</Label>
+                            <Select value={categoryId} onValueChange={value => setCategoryId(value)}>
+                                <SelectTrigger id='entry-category'>
+                                    <SelectValue placeholder='选择分类' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value='none'>无分类</SelectItem>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                        <div className='flex items-center justify-between'>
-                            <Label htmlFor='entry-force-activation' className='cursor-pointer'>
-                                强制激活
-                            </Label>
-                            <Switch
-                                id='entry-force-activation'
-                                checked={forceActivation}
-                                onCheckedChange={setForceActivation}
+
+                        <div className='space-y-2'>
+                            <Label htmlFor='entry-search-range'>搜索范围</Label>
+                            <Input
+                                id='entry-search-range'
+                                type='number'
+                                value={searchRange}
+                                onChange={e => setSearchRange(Number(e.target.value))}
+                                placeholder='1000'
                             />
                         </div>
-                        <div className='flex items-center justify-between'>
-                            <Label htmlFor='entry-key-relative' className='cursor-pointer'>
-                                关键字相对
-                            </Label>
-                            <Switch id='entry-key-relative' checked={keyRelative} onCheckedChange={setKeyRelative} />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value='activation' className='mt-6 space-y-6'>
+                    <div className='space-y-2'>
+                        <Label htmlFor='entry-keys'>激活关键字</Label>
+                        <Input
+                            id='entry-keys'
+                            value={keys}
+                            onChange={e => setKeys(e.target.value)}
+                            placeholder='关键字1, 关键字2, 关键字3'
+                        />
+                        <p className='text-xs text-muted-foreground'>
+                            多个关键字用逗号分隔，用于触发此条目的激活。当文本中包含这些关键字时，条目将被激活。
+                        </p>
+                    </div>
+
+                    <div className='border rounded-lg p-4 space-y-4'>
+                        <h3 className='font-semibold text-sm mb-4'>激活选项</h3>
+                        <div className='space-y-3'>
+                            <div className='flex items-center justify-between'>
+                                <div className='space-y-0.5'>
+                                    <Label htmlFor='entry-enabled' className='cursor-pointer'>
+                                        启用
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>是否启用此条目</p>
+                                </div>
+                                <Switch id='entry-enabled' checked={enabled} onCheckedChange={setEnabled} />
+                            </div>
+                            <div className='flex items-center justify-between'>
+                                <div className='space-y-0.5'>
+                                    <Label htmlFor='entry-force-activation' className='cursor-pointer'>
+                                        强制激活
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>无论是否匹配关键字都激活</p>
+                                </div>
+                                <Switch
+                                    id='entry-force-activation'
+                                    checked={forceActivation}
+                                    onCheckedChange={setForceActivation}
+                                />
+                            </div>
+                            <div className='flex items-center justify-between'>
+                                <div className='space-y-0.5'>
+                                    <Label htmlFor='entry-key-relative' className='cursor-pointer'>
+                                        关键字相对
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>关键字相对于当前位置</p>
+                                </div>
+                                <Switch
+                                    id='entry-key-relative'
+                                    checked={keyRelative}
+                                    onCheckedChange={setKeyRelative}
+                                />
+                            </div>
+                            <div className='flex items-center justify-between'>
+                                <div className='space-y-0.5'>
+                                    <Label htmlFor='entry-non-story' className='cursor-pointer'>
+                                        非故事可激活
+                                    </Label>
+                                    <p className='text-xs text-muted-foreground'>允许在非故事内容中激活</p>
+                                </div>
+                                <Switch
+                                    id='entry-non-story'
+                                    checked={nonStoryActivatable}
+                                    onCheckedChange={setNonStoryActivatable}
+                                />
+                            </div>
                         </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value='advanced' className='mt-6 space-y-6'>
+                    <div className='border rounded-lg p-4 space-y-4'>
+                        <h3 className='font-semibold text-sm mb-4'>显示选项</h3>
                         <div className='flex items-center justify-between'>
-                            <Label htmlFor='entry-non-story' className='cursor-pointer'>
-                                非故事可激活
-                            </Label>
-                            <Switch
-                                id='entry-non-story'
-                                checked={nonStoryActivatable}
-                                onCheckedChange={setNonStoryActivatable}
-                            />
-                        </div>
-                        <div className='flex items-center justify-between'>
-                            <Label htmlFor='entry-hidden' className='cursor-pointer'>
-                                隐藏
-                            </Label>
+                            <div className='space-y-0.5'>
+                                <Label htmlFor='entry-hidden' className='cursor-pointer'>
+                                    隐藏
+                                </Label>
+                                <p className='text-xs text-muted-foreground'>在列表中隐藏此条目</p>
+                            </div>
                             <Switch id='entry-hidden' checked={hidden} onCheckedChange={setHidden} />
                         </div>
                     </div>
-                </div>
-            </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
