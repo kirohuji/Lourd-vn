@@ -20,6 +20,7 @@ const ProjectChaptersPage = lazy(() =>
     import('@/pages/project-chapters').then(m => ({ default: m.ProjectChaptersPage })),
 );
 const ChapterDetailPage = lazy(() => import('@/pages/chapter-detail').then(m => ({ default: m.ChapterDetailPage })));
+const PromptsPage = lazy(() => import('@/pages/prompts').then(m => ({ default: m.PromptsPage })));
 const UsersPage = lazy(() => import('@/pages/users').then(m => ({ default: m.UsersPage })));
 
 // 路由配置类型
@@ -74,6 +75,10 @@ export const routeConfig: RouteConfigItem[] = [
             {
                 path: 'characters',
                 component: CharactersPage,
+            },
+            {
+                path: 'prompts',
+                component: PromptsPage,
             },
             // 项目管理
             {

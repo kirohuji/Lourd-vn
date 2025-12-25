@@ -1,11 +1,15 @@
 import {
+    BasePromptResponseDto,
     BundleZipInfo,
     ChapterQueryDto,
     ChapterResponseDto,
     CharacterConfig,
+    CharacterPromptResponseDto,
     CompileInkResponse,
+    CreateBasePromptDto,
     CreateChapterDto,
     CreateCharacterDto,
+    CreateCharacterPromptDto,
     CreateInkFileDto,
     CreateLocationDto,
     CreateMapDto,
@@ -20,11 +24,14 @@ import {
     PaginatedResponse,
     ProjectQueryDto,
     ProjectResponseDto,
+    PromptImageResponseDto,
     ResourceQueryDto,
     ResourceResponseDto,
     RoomConfig,
+    UpdateBasePromptDto,
     UpdateChapterDto,
     UpdateCharacterDto,
+    UpdateCharacterPromptDto,
     UpdateInkFileDto,
     UpdateLocationDto,
     UpdateMapDto,
@@ -700,6 +707,99 @@ class ApiClient {
     async compileInkFile(chapterId: number, inkId: number): Promise<CompileInkResponse> {
         return this.request<CompileInkResponse>(endpoints.chapters.inkFiles.compile(chapterId, inkId), {
             method: 'POST',
+        });
+    }
+
+    // Prompt APIs
+    async getBasePrompts(): Promise<BasePromptResponseDto[]> {
+        return this.request<BasePromptResponseDto[]>('/prompts/base', {
+            method: 'GET',
+        });
+    }
+
+    async getBasePrompt(id: number): Promise<BasePromptResponseDto> {
+        return this.request<BasePromptResponseDto>(`/prompts/base/${id}`, {
+            method: 'GET',
+        });
+    }
+
+    async createBasePrompt(dto: CreateBasePromptDto): Promise<BasePromptResponseDto> {
+        return this.request<BasePromptResponseDto>('/prompts/base', {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updateBasePrompt(id: number, dto: UpdateBasePromptDto): Promise<BasePromptResponseDto> {
+        return this.request<BasePromptResponseDto>(`/prompts/base/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteBasePrompt(id: number): Promise<void> {
+        return this.request<void>(`/prompts/base/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getCharacterPrompts(basePromptId: number): Promise<CharacterPromptResponseDto[]> {
+        return this.request<CharacterPromptResponseDto[]>(`/prompts/base/${basePromptId}/characters`, {
+            method: 'GET',
+        });
+    }
+
+    async createCharacterPrompt(
+        basePromptId: number,
+        dto: CreateCharacterPromptDto,
+    ): Promise<CharacterPromptResponseDto> {
+        return this.request<CharacterPromptResponseDto>(`/prompts/base/${basePromptId}/characters`, {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async getCharacterPrompt(id: number): Promise<CharacterPromptResponseDto> {
+        return this.request<CharacterPromptResponseDto>(`/prompts/characters/${id}`, {
+            method: 'GET',
+        });
+    }
+
+    async updateCharacterPrompt(id: number, dto: UpdateCharacterPromptDto): Promise<CharacterPromptResponseDto> {
+        return this.request<CharacterPromptResponseDto>(`/prompts/characters/${id}`, {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteCharacterPrompt(id: number): Promise<void> {
+        return this.request<void>(`/prompts/characters/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getPromptImages(characterPromptId: number): Promise<PromptImageResponseDto[]> {
+        return this.request<PromptImageResponseDto[]>(`/prompts/characters/${characterPromptId}/images`, {
+            method: 'GET',
+        });
+    }
+
+    async uploadPromptImages(characterPromptId: number, files: File[]): Promise<PromptImageResponseDto[]> {
+        const formData = new FormData();
+        files.forEach(file => {
+            formData.append('files', file);
+        });
+
+        return this.request<PromptImageResponseDto[]>(`/prompts/characters/${characterPromptId}/images`, {
+            method: 'POST',
+            body: formData,
+            headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
+    async deletePromptImage(id: number): Promise<void> {
+        return this.request<void>(`/prompts/images/${id}`, {
+            method: 'DELETE',
         });
     }
 }

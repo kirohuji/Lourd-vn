@@ -8,6 +8,7 @@ import { ChaptersModule } from './modules/chapters/chapters.module';
 import { GameConfigModule } from './modules/game-config/game-config.module';
 import { ManifestModule } from './modules/manifest/manifest.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { PromptsModule } from './modules/prompts/prompts.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { UsersModule } from './modules/users/users.module';
     GameConfigModule,
     ProjectsModule,
     ChaptersModule,
+    PromptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

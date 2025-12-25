@@ -264,3 +264,53 @@ model ChapterResourceUsage {
   @@index([resourceId])
   @@map("chapter_resource_usage")
 }
+
+// Base Prompt 模型
+model BasePrompt {
+  id              Int      @id @default(autoincrement())
+  name            String
+  prompt          String   @db.Text
+  undesiredContent String? @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  characterPrompts CharacterPrompt[]
+
+  @@index([name])
+  @@map("base_prompts")
+}
+
+// Character Prompt 模型
+model CharacterPrompt {
+  id              Int      @id @default(autoincrement())
+  basePromptId   Int
+  name           String
+  prompt         String   @db.Text
+  undesiredContent String? @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  basePrompt BasePrompt  @relation(fields: [basePromptId], references: [id], onDelete: Cascade)
+  images     PromptImage[]
+
+  @@index([basePromptId])
+  @@index([name])
+  @@map("character_prompts")
+}
+
+// Prompt Image 模型
+model PromptImage {
+  id              Int      @id @default(autoincrement())
+  characterPromptId Int
+  imageUrl        String
+  generatedPrompt String   @db.Text
+  status          String   @default("uploaded") // "uploaded" | "generated"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  characterPrompt CharacterPrompt @relation(fields: [characterPromptId], references: [id], onDelete: Cascade)
+
+  @@index([characterPromptId])
+  @@index([status])
+  @@map("prompt_images")
+}

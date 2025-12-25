@@ -4,6 +4,7 @@ export * from './types/chapter.js';
 export * from './types/game-config.js';
 export * from './types/ink.js';
 export * from './types/project.js';
+export * from './types/prompt.js';
 export * from './types/resource.js';
 export * from './types/user.js';
 
@@ -63,3 +64,16 @@ export type {
     ProjectResponseDto,
     UpdateProjectDto,
 } from './types/project.js';
+
+export type {
+    BasePrompt,
+    BasePromptResponseDto,
+    CharacterPrompt,
+    CharacterPromptResponseDto,
+    CreateBasePromptDto,
+    CreateCharacterPromptDto,
+    PromptImage,
+    PromptImageResponseDto,
+    UpdateBasePromptDto,
+    UpdateCharacterPromptDto,
+} from './types/prompt.js';
