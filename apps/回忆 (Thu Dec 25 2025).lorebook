@@ -1,0 +1,682 @@
+{
+  "lorebookVersion": 6,
+  "entries": [
+    {
+      "text": "主人公的同班同学加死党(好友),是一个表面上看着非常孩子王的那种,其实非常稳重,喜欢偶尔调侃",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766378654350,
+      "displayName": "林杰",
+      "id": "08a61742-c201-42d3-b912-1d7945ac01ff",
+      "keys": [
+        "杰",
+        "林杰"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "hidden": false,
+      "advancedConditions": []
+    },
+    {
+      "text": "主人公的小学同桌,乌黑的长发，眼睛很亮,是那种看着比较高冷的类型,平时和主人公没什么交集,只有一次在主人公被其他人男生欺负的时候,挺身而出,转校生",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766374762453,
+      "displayName": "施芷若",
+      "id": "5510038e-a815-4eed-b166-f06be81573b7",
+      "keys": [
+        "小学同桌",
+        "施芷若",
+        "转校生"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "主人公的小学同桌同学的弟弟,上小学,对主人公有好感",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766373558754,
+      "displayName": "施彦辰",
+      "id": "c2c2e645-f3ca-486f-97e2-e8b7ca574e29",
+      "keys": [
+        "施彦辰",
+        "小学同桌的弟弟"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "主人公平时借书以及和林杰一起写作业喜欢去的地方,在这里邂逅了女二号",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766373653811,
+      "displayName": "图书馆",
+      "id": "fde0d947-9d37-4705-9617-5329ddb9d0ca",
+      "keys": [
+        "图书馆",
+        "邂逅地点"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "ff45173e-210e-43fb-a364-d5d07ceabd18",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "这是一叠散落的手稿纸，没有装订，边角微微卷起。纸上密密麻麻写着潦草的字迹，像是随手记下的草稿。内容描述了一个叫小棠的姑娘，她住在“无忆镇”，每天醒来可能会忘记昨天见过的人和事情，但会把重要的事情记录在一本小本子里。这些手稿从一本普通的书中滑出，似乎不属于书本本身，带有一种神秘、诡异的气息。",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766374415738,
+      "displayName": "小棠的手稿",
+      "id": "492f5bf7-2085-48af-8252-ce9f4f043787",
+      "keys": [
+        "手稿纸",
+        "小棠的手稿"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "c2d19fb9-3b59-40fe-8900-bf229febb033",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "沉浸在故事世界，常常发呆、自言自语，不在乎别人眼光。",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766374749552,
+      "displayName": "主人公",
+      "id": "443f27f6-1ea3-4237-9f23-58b2217e197f",
+      "keys": [
+        "主人公"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "女主,主人公的同班同学,平时没有什么交集,但是巫语棠经常暗中观察主人公,主人公没有察觉到她",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766374968612,
+      "displayName": "巫语棠",
+      "id": "917c12cd-92af-44c2-b130-20c77443205a",
+      "keys": [
+        "神秘女孩"
+      ],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    },
+    {
+      "text": "",
+      "contextConfig": {
+        "prefix": "",
+        "suffix": "\n",
+        "tokenBudget": 1,
+        "reservedTokens": 0,
+        "budgetPriority": 400,
+        "trimDirection": "trimBottom",
+        "insertionType": "newline",
+        "maximumTrimType": "sentence",
+        "insertionPosition": -1
+      },
+      "lastUpdatedAt": 1766382773344,
+      "displayName": "回忆镇",
+      "id": "2d4e0c35-012d-4c4c-9971-7bd99fee73fa",
+      "keys": [],
+      "searchRange": 1000,
+      "enabled": true,
+      "forceActivation": false,
+      "keyRelative": false,
+      "nonStoryActivatable": false,
+      "category": "",
+      "loreBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "advancedConditions": []
+    }
+  ],
+  "settings": {
+    "orderByKeyLocations": false
+  },
+  "categories": [
+    {
+      "name": "Characters",
+      "id": "116822fc-d309-4a17-8c65-f93c0a167cfb",
+      "enabled": true,
+      "createSubcontext": false,
+      "subcontextSettings": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766393771298,
+        "displayName": "New Lorebook Entry",
+        "id": "9c393b3f-ec05-4800-9ff2-36a4b45dcf67",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "useCategoryDefaults": false,
+      "categoryDefaults": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766366979257,
+        "displayName": "New Lorebook Entry",
+        "id": "29155189-4678-4162-acdb-c0df54051631",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "categoryBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "settings": {},
+      "order": [
+        "08a61742-c201-42d3-b912-1d7945ac01ff",
+        "5510038e-a815-4eed-b166-f06be81573b7",
+        "c2c2e645-f3ca-486f-97e2-e8b7ca574e29",
+        "443f27f6-1ea3-4237-9f23-58b2217e197f",
+        "917c12cd-92af-44c2-b130-20c77443205a"
+      ],
+      "open": true
+    },
+    {
+      "name": "Buildings",
+      "id": "ff45173e-210e-43fb-a364-d5d07ceabd18",
+      "enabled": true,
+      "createSubcontext": false,
+      "subcontextSettings": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766393771298,
+        "displayName": "New Lorebook Entry",
+        "id": "dd10a578-05d9-46cf-8b38-ddbc83c72ee8",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "useCategoryDefaults": false,
+      "categoryDefaults": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766368977974,
+        "displayName": "New Lorebook Entry",
+        "id": "267d736a-a0dd-4ade-b95f-f60a1700e9cf",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "categoryBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "settings": {},
+      "order": [
+        "fde0d947-9d37-4705-9617-5329ddb9d0ca"
+      ],
+      "open": false
+    },
+    {
+      "name": "Key Items",
+      "id": "c2d19fb9-3b59-40fe-8900-bf229febb033",
+      "enabled": true,
+      "createSubcontext": false,
+      "subcontextSettings": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766393771298,
+        "displayName": "New Lorebook Entry",
+        "id": "d7ce0eff-b133-4c17-8a61-49e478a58db5",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "useCategoryDefaults": false,
+      "categoryDefaults": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766374094502,
+        "displayName": "New Lorebook Entry",
+        "id": "e482620f-ad08-421f-89f0-a1845712b73e",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "categoryBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "settings": {},
+      "order": [
+        "492f5bf7-2085-48af-8252-ce9f4f043787"
+      ],
+      "open": false
+    },
+    {
+      "name": "Map",
+      "id": "ef7222fe-deed-45a8-8490-7543ebda1301",
+      "enabled": true,
+      "createSubcontext": false,
+      "subcontextSettings": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766393771299,
+        "displayName": "New Lorebook Entry",
+        "id": "75e41369-4eda-4c2b-8133-ae6a685b4c08",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "useCategoryDefaults": false,
+      "categoryDefaults": {
+        "text": "",
+        "contextConfig": {
+          "prefix": "",
+          "suffix": "\n",
+          "tokenBudget": 1,
+          "reservedTokens": 0,
+          "budgetPriority": 400,
+          "trimDirection": "trimBottom",
+          "insertionType": "newline",
+          "maximumTrimType": "sentence",
+          "insertionPosition": -1
+        },
+        "lastUpdatedAt": 1766382758396,
+        "displayName": "New Lorebook Entry",
+        "id": "6d0e2b09-af6f-4a02-8b91-e10a635fe7cc",
+        "keys": [],
+        "searchRange": 1000,
+        "enabled": true,
+        "forceActivation": false,
+        "keyRelative": false,
+        "nonStoryActivatable": false,
+        "category": "",
+        "loreBiasGroups": [
+          {
+            "phrases": [],
+            "ensureSequenceFinish": false,
+            "generateOnce": true,
+            "bias": 0,
+            "enabled": true,
+            "whenInactive": false
+          }
+        ],
+        "advancedConditions": []
+      },
+      "categoryBiasGroups": [
+        {
+          "phrases": [],
+          "ensureSequenceFinish": false,
+          "generateOnce": true,
+          "bias": 0,
+          "enabled": true,
+          "whenInactive": false
+        }
+      ],
+      "settings": {},
+      "order": [],
+      "open": false
+    }
+  ],
+  "order": []
+}

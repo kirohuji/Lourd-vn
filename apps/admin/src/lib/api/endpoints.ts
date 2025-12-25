@@ -86,4 +86,25 @@ export const endpoints = {
         update: (id: number) => `/users/${id}`,
         delete: (id: number) => `/users/${id}`,
     },
+    lorebook: {
+        entries: {
+            list: '/lorebook/entries',
+            detail: (id: string) => `/lorebook/entries/${id}`,
+            create: '/lorebook/entries',
+            update: (id: string) => `/lorebook/entries/${id}`,
+            delete: (id: string) => `/lorebook/entries/${id}`,
+        },
+        categories: {
+            list: '/lorebook/categories',
+            detail: (id: string) => `/lorebook/categories/${id}`,
+            create: '/lorebook/categories',
+            update: (id: string) => `/lorebook/categories/${id}`,
+            updateOrder: (id: string) => `/lorebook/categories/${id}/order`,
+            delete: (id: string) => `/lorebook/categories/${id}`,
+        },
+        settings: {
+            get: '/lorebook/settings',
+            update: '/lorebook/settings',
+        },
+    },
 } as const;

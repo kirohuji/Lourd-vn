@@ -12,6 +12,8 @@ import {
     CreateCharacterPromptDto,
     CreateInkFileDto,
     CreateLocationDto,
+    CreateLoreBookCategoryDto,
+    CreateLoreBookEntryDto,
     CreateMapDto,
     CreateProjectDto,
     CreateRoomDto,
@@ -19,6 +21,9 @@ import {
     InkFile,
     LocationConfig,
     LoginResponseDto,
+    LoreBookCategoryResponseDto,
+    LoreBookEntryResponseDto,
+    LoreBookSettingsResponseDto,
     ManifestResponse,
     MapConfig,
     PaginatedResponse,
@@ -34,6 +39,9 @@ import {
     UpdateCharacterPromptDto,
     UpdateInkFileDto,
     UpdateLocationDto,
+    UpdateLoreBookCategoryDto,
+    UpdateLoreBookEntryDto,
+    UpdateLoreBookSettingsDto,
     UpdateMapDto,
     UpdateProjectDto,
     UpdateResourceDto,
@@ -841,6 +849,94 @@ class ApiClient {
             method: 'POST',
             body: formData,
             headers: {}, // Let browser set Content-Type for FormData
+        });
+    }
+
+    // LoreBook APIs
+    async getLoreBookEntries(categoryId?: string): Promise<LoreBookEntryResponseDto[]> {
+        const url = categoryId
+            ? `${endpoints.lorebook.entries.list}?categoryId=${categoryId}`
+            : endpoints.lorebook.entries.list;
+        return this.request<LoreBookEntryResponseDto[]>(url, {
+            method: 'GET',
+        });
+    }
+
+    async getLoreBookEntry(id: string): Promise<LoreBookEntryResponseDto> {
+        return this.request<LoreBookEntryResponseDto>(endpoints.lorebook.entries.detail(id), {
+            method: 'GET',
+        });
+    }
+
+    async createLoreBookEntry(dto: CreateLoreBookEntryDto): Promise<LoreBookEntryResponseDto> {
+        return this.request<LoreBookEntryResponseDto>(endpoints.lorebook.entries.create, {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updateLoreBookEntry(id: string, dto: UpdateLoreBookEntryDto): Promise<LoreBookEntryResponseDto> {
+        return this.request<LoreBookEntryResponseDto>(endpoints.lorebook.entries.update(id), {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async deleteLoreBookEntry(id: string): Promise<void> {
+        return this.request<void>(endpoints.lorebook.entries.delete(id), {
+            method: 'DELETE',
+        });
+    }
+
+    async getLoreBookCategories(): Promise<LoreBookCategoryResponseDto[]> {
+        return this.request<LoreBookCategoryResponseDto[]>(endpoints.lorebook.categories.list, {
+            method: 'GET',
+        });
+    }
+
+    async getLoreBookCategory(id: string): Promise<LoreBookCategoryResponseDto> {
+        return this.request<LoreBookCategoryResponseDto>(endpoints.lorebook.categories.detail(id), {
+            method: 'GET',
+        });
+    }
+
+    async createLoreBookCategory(dto: CreateLoreBookCategoryDto): Promise<LoreBookCategoryResponseDto> {
+        return this.request<LoreBookCategoryResponseDto>(endpoints.lorebook.categories.create, {
+            method: 'POST',
+            body: dto,
+        });
+    }
+
+    async updateLoreBookCategory(id: string, dto: UpdateLoreBookCategoryDto): Promise<LoreBookCategoryResponseDto> {
+        return this.request<LoreBookCategoryResponseDto>(endpoints.lorebook.categories.update(id), {
+            method: 'PUT',
+            body: dto,
+        });
+    }
+
+    async updateLoreBookCategoryOrder(id: string, order: string[]): Promise<LoreBookCategoryResponseDto> {
+        return this.request<LoreBookCategoryResponseDto>(endpoints.lorebook.categories.updateOrder(id), {
+            method: 'PUT',
+            body: order,
+        });
+    }
+
+    async deleteLoreBookCategory(id: string): Promise<void> {
+        return this.request<void>(endpoints.lorebook.categories.delete(id), {
+            method: 'DELETE',
+        });
+    }
+
+    async getLoreBookSettings(): Promise<LoreBookSettingsResponseDto> {
+        return this.request<LoreBookSettingsResponseDto>(endpoints.lorebook.settings.get, {
+            method: 'GET',
+        });
+    }
+
+    async updateLoreBookSettings(dto: UpdateLoreBookSettingsDto): Promise<LoreBookSettingsResponseDto> {
+        return this.request<LoreBookSettingsResponseDto>(endpoints.lorebook.settings.update, {
+            method: 'PUT',
+            body: dto,
         });
     }
 }

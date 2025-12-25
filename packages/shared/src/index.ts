@@ -3,6 +3,7 @@ export * from './types/auth.js';
 export * from './types/chapter.js';
 export * from './types/game-config.js';
 export * from './types/ink.js';
+export * from './types/lorebook.js';
 export * from './types/project.js';
 export * from './types/prompt.js';
 export * from './types/resource.js';
@@ -77,3 +78,19 @@ export type {
     UpdateBasePromptDto,
     UpdateCharacterPromptDto,
 } from './types/prompt.js';
+
+export type {
+    ContextConfig,
+    CreateLoreBookCategoryDto,
+    CreateLoreBookEntryDto,
+    LoreBiasGroup,
+    LoreBookCategory,
+    LoreBookCategoryResponseDto,
+    LoreBookEntry,
+    LoreBookEntryResponseDto,
+    LoreBookSettings,
+    LoreBookSettingsResponseDto,
+    UpdateLoreBookCategoryDto,
+    UpdateLoreBookEntryDto,
+    UpdateLoreBookSettingsDto,
+} from './types/lorebook.js';

@@ -1,4 +1,4 @@
-import { Folder, HardDrive, Map, MessageSquare, User, Users } from 'lucide-react';
+import { BookOpen, Folder, HardDrive, Map, MessageSquare, User, Users } from 'lucide-react';
 
 export interface MenuItem {
     title: string;
@@ -17,6 +17,7 @@ export function getProjectListMenu(): MenuItem[] {
         { title: '地图编辑', href: '/admin/maps', icon: Map },
         { title: '角色编辑', href: '/admin/characters', icon: User },
         { title: 'Prompt 管理', href: '/admin/prompts', icon: MessageSquare },
+        { title: 'LoreBook', href: '/admin/lorebook', icon: BookOpen },
         { title: '用户管理', href: '/admin/users', icon: Users },
     ];
 }

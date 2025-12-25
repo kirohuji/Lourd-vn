@@ -328,3 +328,80 @@ model PromptImage {
   @@index([status])
   @@map("prompt_images")
 }
+
+// LoreBook Category 模型
+model LoreBookCategory {
+  id                  String   @id @default(uuid())
+  name                String
+  enabled             Boolean  @default(true)
+  createSubcontext    Boolean  @default(false)
+  useCategoryDefaults Boolean  @default(false)
+  open                Boolean  @default(false)
+  
+  // Subcontext Settings (JSON 对象，包含完整的 entry 结构)
+  subcontextSettings  Json?
+  
+  // Category Defaults (JSON 对象，包含完整的 entry 结构)
+  categoryDefaults    Json?
+  
+  // Category Bias Groups (JSON 数组)
+  categoryBiasGroups  Json     @default("[]")
+  
+  // Settings (JSON 对象)
+  settings            Json     @default("{}")
+  
+  // Order (JSON 数组，包含 entry IDs)
+  order               Json     @default("[]")
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  entries             LoreBookEntry[]
+
+  @@map("lorebook_categories")
+}
+
+// LoreBook Entry 模型
+model LoreBookEntry {
+  id                  String   @id @default(uuid())
+  text                String   @db.Text
+  displayName         String
+  keys                Json     // 字符串数组
+  searchRange         Int      @default(1000)
+  enabled             Boolean  @default(true)
+  forceActivation     Boolean  @default(false)
+  keyRelative         Boolean  @default(false)
+  nonStoryActivatable Boolean  @default(false)
+  hidden              Boolean  @default(false)
+  categoryId          String?
+  category            LoreBookCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  // Context Config (JSON 对象)
+  contextConfig       Json
+  
+  // Lore Bias Groups (JSON 数组)
+  loreBiasGroups      Json     @default("[]")
+  
+  // Advanced Conditions (JSON 数组)
+  advancedConditions  Json     @default("[]")
+  
+  lastUpdatedAt       BigInt   // 时间戳
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([categoryId])
+  @@map("lorebook_entries")
+}
+
+// LoreBook Settings 模型（全局设置）
+model LoreBookSettings {
+  id                  Int      @id @default(autoincrement())
+  lorebookVersion     Int      @default(6)
+  orderByKeyLocations Boolean  @default(false)
+  order               Json     @default("[]")
+  settings            Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("lorebook_settings")
+}
