@@ -340,12 +340,12 @@ export function PromptsPage() {
                                     快速预览
                                 </Button>
                             )}
-                            {(selectedCharacterPromptId || selectedBasePromptId) && (
-                                <Button size='sm' onClick={() => setImageUploadOpen(true)}>
-                                    <Upload className='mr-2 h-4 w-4' />
-                                    上传图片
-                                </Button>
-                            )}
+                        {(selectedCharacterPromptId || selectedBasePromptId) && (
+                            <Button size='sm' onClick={() => setImageUploadOpen(true)}>
+                                <Upload className='mr-2 h-4 w-4' />
+                                上传图片
+                            </Button>
+                        )}
                         </div>
                     </div>
                     {!selectedBasePromptId ? (
