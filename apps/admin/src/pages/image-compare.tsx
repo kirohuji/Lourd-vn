@@ -3,8 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { compareImages, imageDataToDataURL, loadImageFromFile } from '@/lib/utils/image-compare';
-import { Image, Upload, X } from 'lucide-react';
+import {
+    compareImages,
+    downloadImageData,
+    extractColorDiff,
+    imageDataToDataURL,
+    imageToImageData,
+    loadImageFromFile,
+} from '@/lib/utils/image-compare';
+import { Download, Image, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 export function ImageComparePage() {
@@ -12,7 +19,11 @@ export function ImageComparePage() {
     const [image2, setImage2] = useState<File | null>(null);
     const [image1Preview, setImage1Preview] = useState<string | null>(null);
     const [image2Preview, setImage2Preview] = useState<string | null>(null);
+    const [image2Data, setImage2Data] = useState<ImageData | null>(null);
     const [diffImageUrl, setDiffImageUrl] = useState<string | null>(null);
+    const [diffImageData, setDiffImageData] = useState<ImageData | null>(null);
+    const [greenDiffImageUrl, setGreenDiffImageUrl] = useState<string | null>(null);
+    const [greenDiffImageData, setGreenDiffImageData] = useState<ImageData | null>(null);
     const [comparing, setComparing] = useState(false);
     const [compareResult, setCompareResult] = useState<{
         numDiffPixels: number;
@@ -89,6 +100,9 @@ export function ImageComparePage() {
             if (ctx) {
                 ctx.drawImage(img, 0, 0);
                 setImage2Preview(canvas.toDataURL());
+                // 保存 ImageData（使用统一的尺寸，与比较结果一致）
+                const imageData = imageToImageData(img, img.width, img.height);
+                setImage2Data(imageData);
             }
         } catch (error) {
             toast({
@@ -120,6 +134,10 @@ export function ImageComparePage() {
             const result = await compareImages(image1, image2);
             const diffUrl = imageDataToDataURL(result.diffImageData);
             setDiffImageUrl(diffUrl);
+            setDiffImageData(result.diffImageData);
+            // 清除之前的绿色差异图
+            setGreenDiffImageUrl(null);
+            setGreenDiffImageData(null);
             setCompareResult({
                 numDiffPixels: result.numDiffPixels,
                 totalPixels: result.totalPixels,
@@ -138,11 +156,99 @@ export function ImageComparePage() {
         }
     };
 
+    // 提取绿色差异（从原图2中提取）
+    const handleExtractGreenDiff = () => {
+        if (!diffImageData || !image2Data) {
+            toast({
+                title: '错误',
+                description: '请先执行图片比较',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        try {
+            // 确保 image2Data 的尺寸与 diffImageData 一致
+            // 比较时使用的是较大的尺寸，所以需要调整 image2Data 的尺寸
+            let resizedImage2Data = image2Data;
+            if (
+                image2Data.width !== diffImageData.width ||
+                image2Data.height !== diffImageData.height
+            ) {
+                const canvas = document.createElement('canvas');
+                canvas.width = diffImageData.width;
+                canvas.height = diffImageData.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('Failed to get canvas context');
+                }
+
+                // 将 image2Data 绘制到目标尺寸的 canvas 上
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = image2Data.width;
+                tempCanvas.height = image2Data.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                if (!tempCtx) {
+                    throw new Error('Failed to get temp canvas context');
+                }
+                tempCtx.putImageData(image2Data, 0, 0);
+                ctx.drawImage(tempCanvas, 0, 0, diffImageData.width, diffImageData.height);
+                resizedImage2Data = ctx.getImageData(0, 0, diffImageData.width, diffImageData.height);
+            }
+
+            // 从调整后的原图2中提取绿色差异位置的像素
+            const greenDiff = extractColorDiff(diffImageData, resizedImage2Data, [0, 255, 0], 5);
+            const greenDiffUrl = imageDataToDataURL(greenDiff);
+            setGreenDiffImageUrl(greenDiffUrl);
+            setGreenDiffImageData(greenDiff);
+            toast({
+                title: '成功',
+                description: '绿色差异已提取',
+            });
+        } catch (error: any) {
+            toast({
+                title: '提取失败',
+                description: error.message || '提取绿色差异失败',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    // 下载绿色差异图
+    const handleDownloadGreenDiff = () => {
+        if (!greenDiffImageData) {
+            toast({
+                title: '错误',
+                description: '请先提取绿色差异',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        try {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            downloadImageData(greenDiffImageData, `green-diff-${timestamp}.png`);
+            toast({
+                title: '成功',
+                description: '绿色差异图已下载',
+            });
+        } catch (error: any) {
+            toast({
+                title: '下载失败',
+                description: error.message || '下载失败',
+                variant: 'destructive',
+            });
+        }
+    };
+
     // 清除图片1
     const clearImage1 = () => {
         setImage1(null);
         setImage1Preview(null);
         setDiffImageUrl(null);
+        setDiffImageData(null);
+        setGreenDiffImageUrl(null);
+        setGreenDiffImageData(null);
         setCompareResult(null);
         if (file1InputRef.current) {
             file1InputRef.current.value = '';
@@ -153,7 +259,11 @@ export function ImageComparePage() {
     const clearImage2 = () => {
         setImage2(null);
         setImage2Preview(null);
+        setImage2Data(null);
         setDiffImageUrl(null);
+        setDiffImageData(null);
+        setGreenDiffImageUrl(null);
+        setGreenDiffImageData(null);
         setCompareResult(null);
         if (file2InputRef.current) {
             file2InputRef.current.value = '';
@@ -313,7 +423,7 @@ export function ImageComparePage() {
 
             {/* 比较结果 */}
             {diffImageUrl && compareResult && (
-                <div className='grid grid-cols-4 gap-4'>
+                <div className='grid grid-cols-5 gap-4'>
                     {/* 原图1 */}
                     <Card>
                         <CardHeader>
@@ -345,7 +455,18 @@ export function ImageComparePage() {
                     {/* 差异图 */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className='text-sm'>差异图</CardTitle>
+                            <div className='flex items-center justify-between'>
+                                <CardTitle className='text-sm'>差异图</CardTitle>
+                                <Button
+                                    size='sm'
+                                    variant='outline'
+                                    onClick={handleExtractGreenDiff}
+                                    disabled={!diffImageData}
+                                >
+                                    <Image className='mr-2 h-3 w-3' />
+                                    提取绿色
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <img
@@ -353,6 +474,44 @@ export function ImageComparePage() {
                                 alt='Difference'
                                 className='w-full h-auto rounded-lg border'
                             />
+                        </CardContent>
+                    </Card>
+
+                    {/* 绿色差异图 */}
+                    <Card>
+                        <CardHeader>
+                            <div className='flex items-center justify-between'>
+                                <CardTitle className='text-sm'>绿色差异</CardTitle>
+                                {greenDiffImageData && (
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={handleDownloadGreenDiff}
+                                    >
+                                        <Download className='mr-2 h-3 w-3' />
+                                        下载
+                                    </Button>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {greenDiffImageUrl ? (
+                                <img
+                                    src={greenDiffImageUrl}
+                                    alt='Green Difference'
+                                    className='w-full h-auto rounded-lg border bg-[repeating-pattern]'
+                                    style={{
+                                        backgroundImage:
+                                            'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
+                                        backgroundSize: '20px 20px',
+                                        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                                    }}
+                                />
+                            ) : (
+                                <div className='flex items-center justify-center h-32 text-sm text-muted-foreground border rounded-lg'>
+                                    点击"提取绿色"按钮生成
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

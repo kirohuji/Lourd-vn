@@ -128,3 +128,81 @@ export async function compareImages(
     };
 }
 
+/**
+ * 从差异图中提取指定颜色的差异，并从原图中提取对应位置的像素
+ * @param diffImageData 差异图的 ImageData
+ * @param sourceImageData 原图的 ImageData（用于提取实际像素）
+ * @param targetColor RGB 颜色值，如 [0, 255, 0] 表示绿色
+ * @param tolerance 颜色容差，默认 5（允许 ±5 的颜色偏差）
+ * @returns 提取后的 ImageData，只包含匹配颜色的位置的原图像素，其他像素为透明
+ */
+export function extractColorDiff(
+    diffImageData: ImageData,
+    sourceImageData: ImageData,
+    targetColor: [number, number, number],
+    tolerance: number = 5,
+): ImageData {
+    const { width, height, data: diffData } = diffImageData;
+    const { data: sourceData } = sourceImageData;
+    const result = new Uint8ClampedArray(width * height * 4);
+
+    for (let i = 0; i < diffData.length; i += 4) {
+        const r = diffData[i];
+        const g = diffData[i + 1];
+        const b = diffData[i + 2];
+
+        // 检查是否匹配目标颜色（考虑容差）
+        const match =
+            Math.abs(r - targetColor[0]) <= tolerance &&
+            Math.abs(g - targetColor[1]) <= tolerance &&
+            Math.abs(b - targetColor[2]) <= tolerance;
+
+        if (match) {
+            // 从原图中提取对应位置的像素
+            result[i] = sourceData[i];
+            result[i + 1] = sourceData[i + 1];
+            result[i + 2] = sourceData[i + 2];
+            result[i + 3] = sourceData[i + 3];
+        } else {
+            // 设置为透明
+            result[i] = 0;
+            result[i + 1] = 0;
+            result[i + 2] = 0;
+            result[i + 3] = 0;
+        }
+    }
+
+    return new ImageData(result, width, height);
+}
+
+/**
+ * 下载 ImageData 为图片文件
+ * @param imageData 要下载的 ImageData
+ * @param filename 文件名，默认为 'image.png'
+ */
+export function downloadImageData(imageData: ImageData, filename: string = 'image.png'): void {
+    const canvas = document.createElement('canvas');
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('Failed to get canvas context');
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    canvas.toBlob(
+        blob => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        },
+        'image/png',
+    );
+}
+
