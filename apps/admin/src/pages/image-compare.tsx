@@ -405,6 +405,10 @@ export function ImageComparePage() {
             ctx.fillStyle = '#f0f0f0';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             setPreviewCanvas(canvas);
+            // 重置缩放
+            setTimeout(() => {
+                calculateInitialScale(canvas.width, canvas.height);
+            }, 0);
             return;
         }
 
@@ -434,11 +438,29 @@ export function ImageComparePage() {
                 });
 
                 setPreviewCanvas(canvas);
+                // 计算初始缩放比例以适应容器
+                setTimeout(() => {
+                    calculateInitialScale(maxWidth, maxHeight);
+                }, 0);
             })
             .catch(error => {
                 console.error('Failed to load images:', error);
             });
     }, [mergePreviewOpen, layers]);
+
+    // 计算初始缩放比例以适应容器
+    const calculateInitialScale = (imageWidth: number, imageHeight: number) => {
+        // 获取预览容器的尺寸（减去 padding）
+        const containerWidth = window.innerWidth * 0.95 - 320 - 32; // Dialog宽度 - 左侧宽度 - padding
+        const containerHeight = window.innerHeight * 0.95 - 200; // Dialog高度 - header/toolbar - padding
+
+        // 计算缩放比例，确保图片完全显示在容器内
+        const scaleX = containerWidth / imageWidth;
+        const scaleY = containerHeight / imageHeight;
+        const initialScale = Math.min(scaleX, scaleY, 1); // 不超过100%，不放大
+
+        setPreviewScale(initialScale);
+    };
 
     // 缩放预览
     const handleZoom = (type: 'in' | 'out' | 'reset') => {
@@ -447,7 +469,12 @@ export function ImageComparePage() {
         } else if (type === 'out') {
             setPreviewScale(prev => Math.max(prev - 0.1, 0.1));
         } else {
-            setPreviewScale(1);
+            // 还原时重新计算适应容器的缩放比例
+            if (previewCanvas) {
+                calculateInitialScale(previewCanvas.width, previewCanvas.height);
+            } else {
+                setPreviewScale(1);
+            }
         }
     };
 
@@ -1053,19 +1080,19 @@ export function ImageComparePage() {
                             {/* 预览区域 */}
                             <div className='flex-1 overflow-auto p-4 flex items-center justify-center bg-muted/30'>
                                 {previewCanvas ? (
-                                    <div
+                                    <img
+                                        src={previewCanvas.toDataURL()}
+                                        alt='Merged Preview'
                                         style={{
-                                            transform: `scale(${previewScale})`,
-                                            transformOrigin: 'center',
-                                            transition: 'transform 0.2s',
+                                            width: `${previewCanvas.width * previewScale}px`,
+                                            height: `${previewCanvas.height * previewScale}px`,
+                                            maxWidth: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain',
+                                            transition: 'width 0.2s, height 0.2s',
                                         }}
-                                    >
-                                        <img
-                                            src={previewCanvas.toDataURL()}
-                                            alt='Merged Preview'
-                                            className='max-w-full max-h-full object-contain rounded-lg border shadow-lg'
-                                        />
-                                    </div>
+                                        className='rounded-lg border shadow-lg'
+                                    />
                                 ) : (
                                     <div className='text-sm text-muted-foreground'>加载中...</div>
                                 )}
