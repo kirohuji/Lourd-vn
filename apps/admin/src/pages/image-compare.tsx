@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -11,8 +12,8 @@ import {
     imageToImageData,
     loadImageFromFile,
 } from '@/lib/utils/image-compare';
-import { Download, Image, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Download, HelpCircle, Image, Upload, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function ImageComparePage() {
     const [image1, setImage1] = useState<File | null>(null);
@@ -29,6 +30,12 @@ export function ImageComparePage() {
     const [threshold, setThreshold] = useState(0.3);
     const [includeAA, setIncludeAA] = useState(false);
     const [alpha, setAlpha] = useState(0.1);
+    // 预览 Dialog
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [previewTitle, setPreviewTitle] = useState('');
+    // 帮助 Dialog
+    const [helpOpen, setHelpOpen] = useState(false);
     const [compareResult, setCompareResult] = useState<{
         numDiffPixels: number;
         totalPixels: number;
@@ -40,6 +47,14 @@ export function ImageComparePage() {
     const file1InputRef = useRef<HTMLInputElement>(null);
     const file2InputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+
+    // 当两张图片都上传后，自动执行比较
+    useEffect(() => {
+        if (image1 && image2 && image1Preview && image2Preview && !comparing) {
+            handleCompare();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [image1, image2, image1Preview, image2Preview]);
 
     // 处理图片1上传
     const handleImage1Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,11 +129,6 @@ export function ImageComparePage() {
                 description: '加载图片失败',
                 variant: 'destructive',
             });
-        }
-
-        // 如果两张图片都已上传，自动比较
-        if (image1) {
-            handleCompare();
         }
     };
 
@@ -275,6 +285,13 @@ export function ImageComparePage() {
         }
     };
 
+    // 打开预览
+    const handlePreview = (imageUrl: string, title: string) => {
+        setPreviewImage(imageUrl);
+        setPreviewTitle(title);
+        setPreviewOpen(true);
+    };
+
     // 处理拖拽上传
     const handleDrop = (e: React.DragEvent, imageNumber: 1 | 2) => {
         e.preventDefault();
@@ -302,44 +319,47 @@ export function ImageComparePage() {
     };
 
     return (
-        <div className='container mx-auto p-6 space-y-6'>
-            <div className='flex items-center justify-between'>
-                <div>
-                    <h1 className='text-3xl font-bold'>图片比较</h1>
-                    <p className='text-sm text-muted-foreground mt-1'>上传两张图片，使用 pixelmatch 进行像素级比较</p>
-                </div>
+        <div className='container mx-auto p-4 h-[calc(100vh-4rem)] flex flex-col gap-3 overflow-hidden'>
+            {/* 标题 */}
+            <div className='shrink-0'>
+                <h1 className='text-2xl font-bold'>图片比较</h1>
+                <p className='text-xs text-muted-foreground'>使用 pixelmatch 进行像素级比较</p>
             </div>
 
             {/* 上传区域 */}
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-2 gap-3 shrink-0'>
                 {/* 图片1上传 */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>图片 1</CardTitle>
-                        <CardDescription>上传第一张图片</CardDescription>
+                    <CardHeader className='pb-2'>
+                        <CardTitle className='text-sm'>图片 1</CardTitle>
                     </CardHeader>
-                    <CardContent className='space-y-4'>
+                    <CardContent className='pt-0'>
                         {image1Preview ? (
                             <div className='relative'>
-                                <img src={image1Preview} alt='Image 1' className='w-full h-auto rounded-lg border' />
+                                <img
+                                    src={image1Preview}
+                                    alt='Image 1'
+                                    className='w-full h-auto rounded-lg border cursor-pointer max-h-48 object-contain'
+                                    onClick={() => handlePreview(image1Preview, '图片 1')}
+                                />
                                 <Button
                                     variant='destructive'
                                     size='icon'
-                                    className='absolute top-2 right-2'
+                                    className='absolute top-2 right-2 h-6 w-6'
                                     onClick={clearImage1}
                                 >
-                                    <X className='h-4 w-4' />
+                                    <X className='h-3 w-3' />
                                 </Button>
                             </div>
                         ) : (
                             <div
-                                className='border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted transition-colors'
+                                className='border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted transition-colors'
                                 onDrop={e => handleDrop(e, 1)}
                                 onDragOver={e => e.preventDefault()}
                                 onClick={() => file1InputRef.current?.click()}
                             >
-                                <Upload className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-                                <p className='text-sm text-muted-foreground'>点击或拖拽上传图片</p>
+                                <Upload className='h-8 w-8 mx-auto mb-2 text-muted-foreground' />
+                                <p className='text-xs text-muted-foreground'>点击或拖拽上传</p>
                             </div>
                         )}
                         <Input
@@ -354,32 +374,36 @@ export function ImageComparePage() {
 
                 {/* 图片2上传 */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>图片 2</CardTitle>
-                        <CardDescription>上传第二张图片</CardDescription>
+                    <CardHeader className='pb-2'>
+                        <CardTitle className='text-sm'>图片 2</CardTitle>
                     </CardHeader>
-                    <CardContent className='space-y-4'>
+                    <CardContent className='pt-0'>
                         {image2Preview ? (
                             <div className='relative'>
-                                <img src={image2Preview} alt='Image 2' className='w-full h-auto rounded-lg border' />
+                                <img
+                                    src={image2Preview}
+                                    alt='Image 2'
+                                    className='w-full h-auto rounded-lg border cursor-pointer max-h-48 object-contain'
+                                    onClick={() => handlePreview(image2Preview, '图片 2')}
+                                />
                                 <Button
                                     variant='destructive'
                                     size='icon'
-                                    className='absolute top-2 right-2'
+                                    className='absolute top-2 right-2 h-6 w-6'
                                     onClick={clearImage2}
                                 >
-                                    <X className='h-4 w-4' />
+                                    <X className='h-3 w-3' />
                                 </Button>
                             </div>
                         ) : (
                             <div
-                                className='border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted transition-colors'
+                                className='border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted transition-colors'
                                 onDrop={e => handleDrop(e, 2)}
                                 onDragOver={e => e.preventDefault()}
                                 onClick={() => file2InputRef.current?.click()}
                             >
-                                <Upload className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-                                <p className='text-sm text-muted-foreground'>点击或拖拽上传图片</p>
+                                <Upload className='h-8 w-8 mx-auto mb-2 text-muted-foreground' />
+                                <p className='text-xs text-muted-foreground'>点击或拖拽上传</p>
                             </div>
                         )}
                         <Input
@@ -393,89 +417,10 @@ export function ImageComparePage() {
                 </Card>
             </div>
 
-            {/* 参数面板 */}
-            {image1 && image2 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className='text-sm'>比较参数</CardTitle>
-                        <CardDescription>调整参数以优化比较结果</CardDescription>
-                    </CardHeader>
-                    <CardContent className='space-y-4'>
-                        <div className='space-y-2'>
-                            <div className='flex items-center justify-between'>
-                                <Label htmlFor='threshold'>敏感度阈值</Label>
-                                <Input
-                                    id='threshold'
-                                    type='number'
-                                    min='0.05'
-                                    max='1.0'
-                                    step='0.05'
-                                    value={threshold}
-                                    onChange={e => setThreshold(parseFloat(e.target.value) || 0.3)}
-                                    className='w-24'
-                                />
-                            </div>
-                            <input
-                                type='range'
-                                min='0.05'
-                                max='1.0'
-                                step='0.05'
-                                value={threshold}
-                                onChange={e => setThreshold(parseFloat(e.target.value))}
-                                className='w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer'
-                            />
-                            <p className='text-xs text-muted-foreground'>
-                                值越大，越不敏感（减少细小差异，如抗锯齿、压缩伪影等）。默认: 0.3
-                            </p>
-                        </div>
-
-                        <div className='space-y-2'>
-                            <div className='flex items-center justify-between'>
-                                <Label htmlFor='alpha'>Alpha 通道阈值</Label>
-                                <Input
-                                    id='alpha'
-                                    type='number'
-                                    min='0.0'
-                                    max='1.0'
-                                    step='0.05'
-                                    value={alpha}
-                                    onChange={e => setAlpha(parseFloat(e.target.value) || 0.1)}
-                                    className='w-24'
-                                />
-                            </div>
-                            <input
-                                type='range'
-                                min='0.0'
-                                max='1.0'
-                                step='0.05'
-                                value={alpha}
-                                onChange={e => setAlpha(parseFloat(e.target.value))}
-                                className='w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer'
-                            />
-                            <p className='text-xs text-muted-foreground'>控制透明度的比较敏感度。默认: 0.1</p>
-                        </div>
-
-                        <div className='flex items-center justify-between'>
-                            <div className='space-y-0.5'>
-                                <Label htmlFor='includeAA'>包含抗锯齿</Label>
-                                <p className='text-xs text-muted-foreground'>是否在比较时考虑抗锯齿边缘</p>
-                            </div>
-                            <input
-                                id='includeAA'
-                                type='checkbox'
-                                checked={includeAA}
-                                onChange={e => setIncludeAA(e.target.checked)}
-                                className='h-4 w-4 rounded border-gray-300'
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
             {/* 比较按钮 */}
             {image1 && image2 && (
-                <div className='flex justify-center'>
-                    <Button onClick={handleCompare} disabled={comparing} size='lg'>
+                <div className='flex justify-center shrink-0'>
+                    <Button onClick={handleCompare} disabled={comparing} size='sm'>
                         {comparing ? (
                             <>
                                 <Image className='mr-2 h-4 w-4 animate-spin' />
@@ -493,121 +438,313 @@ export function ImageComparePage() {
 
             {/* 比较结果 */}
             {diffImageUrl && compareResult && (
-                <div className='grid grid-cols-5 gap-4'>
-                    {/* 原图1 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className='text-sm'>原图 1</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <img
-                                src={image1Preview || ''}
-                                alt='Original Image 1'
-                                className='w-full h-auto rounded-lg border'
-                            />
-                        </CardContent>
-                    </Card>
-
-                    {/* 原图2 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className='text-sm'>原图 2</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <img
-                                src={image2Preview || ''}
-                                alt='Original Image 2'
-                                className='w-full h-auto rounded-lg border'
-                            />
-                        </CardContent>
-                    </Card>
-
-                    {/* 差异图 */}
-                    <Card>
-                        <CardHeader>
-                            <div className='flex items-center justify-between'>
-                                <CardTitle className='text-sm'>差异图</CardTitle>
-                                <Button
-                                    size='sm'
-                                    variant='outline'
-                                    onClick={handleExtractGreenDiff}
-                                    disabled={!diffImageData}
-                                >
-                                    <Image className='mr-2 h-3 w-3' />
-                                    提取绿色
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <img src={diffImageUrl} alt='Difference' className='w-full h-auto rounded-lg border' />
-                        </CardContent>
-                    </Card>
-
-                    {/* 绿色差异图 */}
-                    <Card>
-                        <CardHeader>
-                            <div className='flex items-center justify-between'>
-                                <CardTitle className='text-sm'>绿色差异</CardTitle>
-                                {greenDiffImageData && (
-                                    <Button size='sm' variant='outline' onClick={handleDownloadGreenDiff}>
-                                        <Download className='mr-2 h-3 w-3' />
-                                        下载
-                                    </Button>
-                                )}
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {greenDiffImageUrl ? (
+                <div className='flex gap-3 flex-1 overflow-hidden min-h-0'>
+                    {/* 左侧：图片结果 */}
+                    <div className='grid grid-cols-4 gap-2 flex-1 overflow-auto min-h-0'>
+                        {/* 原图1 */}
+                        <Card className='h-fit'>
+                            <CardHeader className='pb-2'>
+                                <CardTitle className='text-xs'>原图 1</CardTitle>
+                            </CardHeader>
+                            <CardContent className='pt-0 p-2'>
                                 <img
-                                    src={greenDiffImageUrl}
-                                    alt='Green Difference'
-                                    className='w-full h-auto rounded-lg border bg-[repeating-pattern]'
-                                    style={{
-                                        backgroundImage:
-                                            'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
-                                        backgroundSize: '20px 20px',
-                                        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-                                    }}
+                                    src={image1Preview || ''}
+                                    alt='Original Image 1'
+                                    className='w-full h-auto rounded-lg border cursor-pointer max-h-64 object-contain'
+                                    onClick={() => handlePreview(image1Preview || '', '原图 1')}
                                 />
-                            ) : (
-                                <div className='flex items-center justify-center h-32 text-sm text-muted-foreground border rounded-lg'>
-                                    点击"提取绿色"按钮生成
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    {/* 统计信息 */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className='text-sm'>统计信息</CardTitle>
-                        </CardHeader>
-                        <CardContent className='space-y-2'>
-                            <div>
-                                <Label className='text-xs text-muted-foreground'>差异百分比</Label>
-                                <p className='text-lg font-semibold'>{compareResult.diffPercentage.toFixed(2)}%</p>
-                            </div>
-                            <div>
-                                <Label className='text-xs text-muted-foreground'>不同像素数</Label>
-                                <p className='text-sm font-medium'>
-                                    {compareResult.numDiffPixels.toLocaleString()} /{' '}
-                                    {compareResult.totalPixels.toLocaleString()}
-                                </p>
-                            </div>
-                            <div>
-                                <Label className='text-xs text-muted-foreground'>图片尺寸</Label>
-                                <p className='text-sm font-medium'>
-                                    {compareResult.width} × {compareResult.height}
-                                </p>
-                            </div>
-                            <div>
-                                <Label className='text-xs text-muted-foreground'>总像素数</Label>
-                                <p className='text-sm font-medium'>{compareResult.totalPixels.toLocaleString()}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        {/* 原图2 */}
+                        <Card className='h-fit'>
+                            <CardHeader className='pb-2'>
+                                <CardTitle className='text-xs'>原图 2</CardTitle>
+                            </CardHeader>
+                            <CardContent className='pt-0 p-2'>
+                                <img
+                                    src={image2Preview || ''}
+                                    alt='Original Image 2'
+                                    className='w-full h-auto rounded-lg border cursor-pointer max-h-64 object-contain'
+                                    onClick={() => handlePreview(image2Preview || '', '原图 2')}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        {/* 差异图 */}
+                        <Card className='h-fit'>
+                            <CardHeader className='pb-2'>
+                                <div className='flex items-center justify-between'>
+                                    <CardTitle className='text-xs'>差异图</CardTitle>
+                                    <Button
+                                        size='sm'
+                                        variant='outline'
+                                        onClick={handleExtractGreenDiff}
+                                        disabled={!diffImageData}
+                                        className='h-6 text-xs px-2'
+                                    >
+                                        <Image className='mr-1 h-3 w-3' />
+                                        提取绿色
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className='pt-0 p-2'>
+                                <img
+                                    src={diffImageUrl}
+                                    alt='Difference'
+                                    className='w-full h-auto rounded-lg border cursor-pointer max-h-64 object-contain'
+                                    onClick={() => handlePreview(diffImageUrl, '差异图')}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        {/* 绿色差异图 */}
+                        <Card className='h-fit'>
+                            <CardHeader className='pb-2'>
+                                <div className='flex items-center justify-between'>
+                                    <CardTitle className='text-xs'>绿色差异</CardTitle>
+                                    {greenDiffImageData && (
+                                        <Button
+                                            size='sm'
+                                            variant='outline'
+                                            onClick={handleDownloadGreenDiff}
+                                            className='h-6 text-xs px-2'
+                                        >
+                                            <Download className='mr-1 h-3 w-3' />
+                                            下载
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardHeader>
+                            <CardContent className='pt-0 p-2'>
+                                {greenDiffImageUrl ? (
+                                    <img
+                                        src={greenDiffImageUrl}
+                                        alt='Green Difference'
+                                        className='w-full h-auto rounded-lg border cursor-pointer max-h-64 object-contain bg-[repeating-pattern]'
+                                        style={{
+                                            backgroundImage:
+                                                'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
+                                            backgroundSize: '20px 20px',
+                                            backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                                        }}
+                                        onClick={() => handlePreview(greenDiffImageUrl, '绿色差异')}
+                                    />
+                                ) : (
+                                    <div className='flex items-center justify-center h-24 text-xs text-muted-foreground border rounded-lg'>
+                                        点击提取
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* 右侧：参数面板和统计信息 */}
+                    <div className='w-80 shrink-0 flex flex-col gap-3 overflow-y-auto'>
+                        {/* 比较参数 */}
+                        <Card>
+                            <CardHeader className='pb-2'>
+                                <div className='flex items-center justify-between'>
+                                    <CardTitle className='text-sm'>比较参数</CardTitle>
+                                    <Button
+                                        variant='ghost'
+                                        size='icon'
+                                        className='h-6 w-6'
+                                        onClick={() => setHelpOpen(true)}
+                                        title='参数说明'
+                                    >
+                                        <HelpCircle className='h-4 w-4' />
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className='pt-0 space-y-3'>
+                                <div className='space-y-1.5'>
+                                    <div className='flex items-center justify-between'>
+                                        <Label htmlFor='threshold' className='text-xs'>
+                                            敏感度阈值
+                                        </Label>
+                                        <Input
+                                            id='threshold'
+                                            type='number'
+                                            min='0'
+                                            max='1.0'
+                                            step='0.05'
+                                            value={threshold}
+                                            onChange={e => setThreshold(parseFloat(e.target.value) || 0.3)}
+                                            className='w-20 h-7 text-xs'
+                                        />
+                                    </div>
+                                    <input
+                                        type='range'
+                                        min='0'
+                                        max='1.0'
+                                        step='0.05'
+                                        value={threshold}
+                                        onChange={e => setThreshold(parseFloat(e.target.value))}
+                                        className='w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer'
+                                    />
+                                </div>
+
+                                <div className='space-y-1.5'>
+                                    <div className='flex items-center justify-between'>
+                                        <Label htmlFor='alpha' className='text-xs'>
+                                            Alpha 阈值
+                                        </Label>
+                                        <Input
+                                            id='alpha'
+                                            type='number'
+                                            min='0.0'
+                                            max='1.0'
+                                            step='0.05'
+                                            value={alpha}
+                                            onChange={e => setAlpha(parseFloat(e.target.value) || 0.1)}
+                                            className='w-20 h-7 text-xs'
+                                        />
+                                    </div>
+                                    <input
+                                        type='range'
+                                        min='0.0'
+                                        max='1.0'
+                                        step='0.05'
+                                        value={alpha}
+                                        onChange={e => setAlpha(parseFloat(e.target.value))}
+                                        className='w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer'
+                                    />
+                                </div>
+
+                                <div className='flex items-center justify-between pt-1'>
+                                    <Label htmlFor='includeAA' className='text-xs'>
+                                        包含抗锯齿
+                                    </Label>
+                                    <input
+                                        id='includeAA'
+                                        type='checkbox'
+                                        checked={includeAA}
+                                        onChange={e => setIncludeAA(e.target.checked)}
+                                        className='h-4 w-4 rounded border-gray-300'
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* 统计信息 */}
+                        <Card>
+                            <CardHeader className='pb-2'>
+                                <CardTitle className='text-sm'>统计信息</CardTitle>
+                            </CardHeader>
+                            <CardContent className='pt-0 space-y-2'>
+                                <div>
+                                    <Label className='text-xs text-muted-foreground'>差异百分比</Label>
+                                    <p className='text-lg font-semibold'>{compareResult.diffPercentage.toFixed(2)}%</p>
+                                </div>
+                                <div>
+                                    <Label className='text-xs text-muted-foreground'>不同像素数</Label>
+                                    <p className='text-sm font-medium'>
+                                        {compareResult.numDiffPixels.toLocaleString()} /{' '}
+                                        {compareResult.totalPixels.toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label className='text-xs text-muted-foreground'>图片尺寸</Label>
+                                    <p className='text-sm font-medium'>
+                                        {compareResult.width} × {compareResult.height}
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label className='text-xs text-muted-foreground'>总像素数</Label>
+                                    <p className='text-sm font-medium'>{compareResult.totalPixels.toLocaleString()}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             )}
+
+            {/* 预览 Dialog */}
+            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                <DialogContent className='max-w-[90vw] max-h-[90vh] p-0'>
+                    <DialogHeader className='px-6 pt-6 pb-2'>
+                        <DialogTitle>{previewTitle}</DialogTitle>
+                    </DialogHeader>
+                    <div className='p-6 overflow-auto max-h-[calc(90vh-80px)] flex items-center justify-center'>
+                        {previewImage && (
+                            <img
+                                src={previewImage}
+                                alt={previewTitle}
+                                className='max-w-full max-h-full object-contain rounded-lg'
+                            />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 帮助 Dialog */}
+            <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+                <DialogContent className='max-w-2xl'>
+                    <DialogHeader>
+                        <DialogTitle>比较参数说明</DialogTitle>
+                    </DialogHeader>
+                    <div className='space-y-4'>
+                        <div className='space-y-2'>
+                            <h3 className='font-semibold text-sm'>敏感度阈值 (Threshold)</h3>
+                            <p className='text-sm text-muted-foreground'>
+                                控制像素差异的敏感度。值越大，越不敏感，会忽略更多细微差异。
+                            </p>
+                            <ul className='text-xs text-muted-foreground space-y-1 ml-4 list-disc'>
+                                <li>
+                                    <strong>0.0 - 0.2</strong>：非常敏感，能检测到极小的差异（如抗锯齿、压缩伪影）
+                                </li>
+                                <li>
+                                    <strong>0.3 - 0.5</strong>：中等敏感度，适合大多数场景（推荐）
+                                </li>
+                                <li>
+                                    <strong>0.6 - 1.0</strong>：不敏感，只检测明显的差异
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className='space-y-2'>
+                            <h3 className='font-semibold text-sm'>Alpha 通道阈值 (Alpha)</h3>
+                            <p className='text-sm text-muted-foreground'>
+                                控制透明度通道的比较敏感度。用于处理带透明度的图片。
+                            </p>
+                            <ul className='text-xs text-muted-foreground space-y-1 ml-4 list-disc'>
+                                <li>
+                                    <strong>0.0</strong>：完全忽略透明度差异
+                                </li>
+                                <li>
+                                    <strong>0.1 - 0.3</strong>：轻微考虑透明度（推荐）
+                                </li>
+                                <li>
+                                    <strong>0.4 - 1.0</strong>：严格比较透明度
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className='space-y-2'>
+                            <h3 className='font-semibold text-sm'>包含抗锯齿 (Include Anti-Aliasing)</h3>
+                            <p className='text-sm text-muted-foreground'>
+                                是否在比较时考虑抗锯齿边缘。启用后，会忽略因抗锯齿导致的细微差异。
+                            </p>
+                            <ul className='text-xs text-muted-foreground space-y-1 ml-4 list-disc'>
+                                <li>
+                                    <strong>关闭</strong>：严格比较所有像素，包括抗锯齿边缘
+                                </li>
+                                <li>
+                                    <strong>开启</strong>：忽略抗锯齿边缘的差异，减少误报
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className='pt-2 border-t'>
+                            <p className='text-xs text-muted-foreground'>
+                                <strong>提示</strong>
+                                ：如果发现很多细小的差异（如毛线、抗锯齿等），可以尝试提高敏感度阈值或开启"包含抗锯齿"选项。
+                            </p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
