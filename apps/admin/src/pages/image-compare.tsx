@@ -12,7 +12,21 @@ import {
     imageToImageData,
     loadImageFromFile,
 } from '@/lib/utils/image-compare';
-import { Download, HelpCircle, Image, Upload, X } from 'lucide-react';
+import {
+    Download,
+    Eye,
+    EyeOff,
+    HelpCircle,
+    Image,
+    Layers,
+    MoveDown,
+    MoveUp,
+    RotateCcw,
+    Upload,
+    X,
+    ZoomIn,
+    ZoomOut,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 export function ImageComparePage() {
@@ -36,6 +50,19 @@ export function ImageComparePage() {
     const [previewTitle, setPreviewTitle] = useState('');
     // 帮助 Dialog
     const [helpOpen, setHelpOpen] = useState(false);
+    // 合并预览 Dialog
+    const [mergePreviewOpen, setMergePreviewOpen] = useState(false);
+    const [layers, setLayers] = useState<
+        Array<{
+            id: string;
+            name: string;
+            imageUrl: string;
+            visible: boolean;
+            order: number;
+        }>
+    >([]);
+    const [previewScale, setPreviewScale] = useState(1);
+    const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
     const [compareResult, setCompareResult] = useState<{
         numDiffPixels: number;
         totalPixels: number;
@@ -292,6 +319,138 @@ export function ImageComparePage() {
         setPreviewOpen(true);
     };
 
+    // 打开合并预览
+    const handleOpenMergePreview = () => {
+        if (!image1Preview || !image2Preview) {
+            toast({
+                title: '错误',
+                description: '请先上传两张图片',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const initialLayers = [
+            {
+                id: 'image1',
+                name: '原图 1',
+                imageUrl: image1Preview,
+                visible: true,
+                order: 0,
+            },
+            {
+                id: 'image2',
+                name: '原图 2',
+                imageUrl: image2Preview,
+                visible: true,
+                order: 1,
+            },
+        ];
+
+        if (greenDiffImageUrl) {
+            initialLayers.push({
+                id: 'greenDiff',
+                name: '绿色差异',
+                imageUrl: greenDiffImageUrl,
+                visible: true,
+                order: 2,
+            });
+        }
+
+        setLayers(initialLayers);
+        setPreviewScale(1);
+        setMergePreviewOpen(true);
+    };
+
+    // 切换图层可见性
+    const toggleLayerVisibility = (layerId: string) => {
+        setLayers(prev => prev.map(layer => (layer.id === layerId ? { ...layer, visible: !layer.visible } : layer)));
+    };
+
+    // 移动图层顺序
+    const moveLayer = (layerId: string, direction: 'up' | 'down') => {
+        setLayers(prev => {
+            const sorted = [...prev].sort((a, b) => a.order - b.order);
+            const index = sorted.findIndex(l => l.id === layerId);
+            if (index === -1) return prev;
+
+            if (direction === 'up' && index > 0) {
+                [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
+                sorted[index].order = index;
+                sorted[index - 1].order = index - 1;
+            } else if (direction === 'down' && index < sorted.length - 1) {
+                [sorted[index], sorted[index + 1]] = [sorted[index + 1], sorted[index]];
+                sorted[index].order = index;
+                sorted[index + 1].order = index + 1;
+            }
+
+            return sorted;
+        });
+    };
+
+    // 渲染合并预览
+    useEffect(() => {
+        if (!mergePreviewOpen || layers.length === 0) return;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 加载所有可见的图层
+        const visibleLayers = [...layers].filter(l => l.visible).sort((a, b) => a.order - b.order);
+
+        if (visibleLayers.length === 0) {
+            canvas.width = 800;
+            canvas.height = 600;
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            setPreviewCanvas(canvas);
+            return;
+        }
+
+        // 加载所有图片
+        const imagePromises = visibleLayers.map(
+            layer =>
+                new Promise<HTMLImageElement>((resolve, reject) => {
+                    const img = document.createElement('img');
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = layer.imageUrl;
+                }),
+        );
+
+        Promise.all(imagePromises)
+            .then(images => {
+                // 找到最大尺寸
+                const maxWidth = Math.max(...images.map(img => img.width));
+                const maxHeight = Math.max(...images.map(img => img.height));
+
+                canvas.width = maxWidth;
+                canvas.height = maxHeight;
+
+                // 按顺序绘制图层
+                images.forEach(img => {
+                    ctx.drawImage(img, 0, 0, maxWidth, maxHeight);
+                });
+
+                setPreviewCanvas(canvas);
+            })
+            .catch(error => {
+                console.error('Failed to load images:', error);
+            });
+    }, [mergePreviewOpen, layers]);
+
+    // 缩放预览
+    const handleZoom = (type: 'in' | 'out' | 'reset') => {
+        if (type === 'in') {
+            setPreviewScale(prev => Math.min(prev + 0.1, 3));
+        } else if (type === 'out') {
+            setPreviewScale(prev => Math.max(prev - 0.1, 0.1));
+        } else {
+            setPreviewScale(1);
+        }
+    };
+
     // 处理拖拽上传
     const handleDrop = (e: React.DragEvent, imageNumber: 1 | 2) => {
         e.preventDefault();
@@ -503,17 +662,30 @@ export function ImageComparePage() {
                             <CardHeader className='pb-2'>
                                 <div className='flex items-center justify-between'>
                                     <CardTitle className='text-xs'>绿色差异</CardTitle>
-                                    {greenDiffImageData && (
-                                        <Button
-                                            size='sm'
-                                            variant='outline'
-                                            onClick={handleDownloadGreenDiff}
-                                            className='h-6 text-xs px-2'
-                                        >
-                                            <Download className='mr-1 h-3 w-3' />
-                                            下载
-                                        </Button>
-                                    )}
+                                    <div className='flex gap-1'>
+                                        {greenDiffImageData && (
+                                            <>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={handleOpenMergePreview}
+                                                    className='h-6 text-xs px-2'
+                                                    title='合并预览'
+                                                >
+                                                    <Layers className='mr-1 h-3 w-3' />
+                                                </Button>
+                                                <Button
+                                                    size='sm'
+                                                    variant='outline'
+                                                    onClick={handleDownloadGreenDiff}
+                                                    className='h-6 text-xs px-2'
+                                                >
+                                                    <Download className='mr-1 h-3 w-3' />
+                                                    下载
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className='pt-0 p-2'>
@@ -741,6 +913,163 @@ export function ImageComparePage() {
                                 <strong>提示</strong>
                                 ：如果发现很多细小的差异（如毛线、抗锯齿等），可以尝试提高敏感度阈值或开启"包含抗锯齿"选项。
                             </p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 合并预览 Dialog */}
+            <Dialog open={mergePreviewOpen} onOpenChange={setMergePreviewOpen}>
+                <DialogContent className='max-w-[95vw] max-h-[95vh] p-0 flex flex-col'>
+                    <DialogHeader className='px-6 pt-6 pb-4'>
+                        <DialogTitle>合并预览</DialogTitle>
+                    </DialogHeader>
+                    <div className='flex flex-1 overflow-hidden min-h-0'>
+                        {/* 左侧：图片列表和图层管理 */}
+                        <div className='w-80 border-r flex flex-col shrink-0'>
+                            {/* 图片列表 */}
+                            <div className='p-4 border-b space-y-2 max-h-[40%] overflow-y-auto'>
+                                <h3 className='text-sm font-semibold mb-2'>所有图片</h3>
+                                <div className='space-y-2'>
+                                    {image1Preview && (
+                                        <div className='border rounded-lg p-2'>
+                                            <p className='text-xs font-medium mb-1'>原图 1</p>
+                                            <img
+                                                src={image1Preview}
+                                                alt='Image 1'
+                                                className='w-full h-auto rounded border max-h-32 object-contain'
+                                            />
+                                        </div>
+                                    )}
+                                    {image2Preview && (
+                                        <div className='border rounded-lg p-2'>
+                                            <p className='text-xs font-medium mb-1'>原图 2</p>
+                                            <img
+                                                src={image2Preview}
+                                                alt='Image 2'
+                                                className='w-full h-auto rounded border max-h-32 object-contain'
+                                            />
+                                        </div>
+                                    )}
+                                    {greenDiffImageUrl && (
+                                        <div className='border rounded-lg p-2'>
+                                            <p className='text-xs font-medium mb-1'>绿色差异</p>
+                                            <img
+                                                src={greenDiffImageUrl}
+                                                alt='Green Diff'
+                                                className='w-full h-auto rounded border max-h-32 object-contain bg-[repeating-pattern]'
+                                                style={{
+                                                    backgroundImage:
+                                                        'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
+                                                    backgroundSize: '20px 20px',
+                                                    backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 图层管理 */}
+                            <div className='flex-1 p-4 overflow-y-auto'>
+                                <h3 className='text-sm font-semibold mb-3'>图层管理</h3>
+                                <div className='space-y-2'>
+                                    {[...layers]
+                                        .sort((a, b) => a.order - b.order)
+                                        .map((layer, index) => (
+                                            <div
+                                                key={layer.id}
+                                                className='border rounded-lg p-2 flex items-center justify-between'
+                                            >
+                                                <div className='flex items-center gap-2 flex-1'>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        className='h-6 w-6'
+                                                        onClick={() => toggleLayerVisibility(layer.id)}
+                                                        title={layer.visible ? '隐藏' : '显示'}
+                                                    >
+                                                        {layer.visible ? (
+                                                            <Eye className='h-4 w-4' />
+                                                        ) : (
+                                                            <EyeOff className='h-4 w-4' />
+                                                        )}
+                                                    </Button>
+                                                    <span className='text-xs flex-1'>{layer.name}</span>
+                                                </div>
+                                                <div className='flex items-center gap-1'>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        className='h-6 w-6'
+                                                        onClick={() => moveLayer(layer.id, 'up')}
+                                                        disabled={index === 0}
+                                                        title='上移'
+                                                    >
+                                                        <MoveUp className='h-3 w-3' />
+                                                    </Button>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        className='h-6 w-6'
+                                                        onClick={() => moveLayer(layer.id, 'down')}
+                                                        disabled={index === layers.length - 1}
+                                                        title='下移'
+                                                    >
+                                                        <MoveDown className='h-3 w-3' />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 右侧：合并预览 */}
+                        <div className='flex-1 flex flex-col overflow-hidden'>
+                            {/* 工具栏 */}
+                            <div className='p-4 border-b flex items-center justify-between'>
+                                <div className='flex items-center gap-2'>
+                                    <Button variant='outline' size='sm' onClick={() => handleZoom('in')} title='放大'>
+                                        <ZoomIn className='h-4 w-4' />
+                                    </Button>
+                                    <Button variant='outline' size='sm' onClick={() => handleZoom('out')} title='缩小'>
+                                        <ZoomOut className='h-4 w-4' />
+                                    </Button>
+                                    <Button
+                                        variant='outline'
+                                        size='sm'
+                                        onClick={() => handleZoom('reset')}
+                                        title='还原'
+                                    >
+                                        <RotateCcw className='h-4 w-4' />
+                                    </Button>
+                                    <span className='text-xs text-muted-foreground ml-2'>
+                                        {Math.round(previewScale * 100)}%
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 预览区域 */}
+                            <div className='flex-1 overflow-auto p-4 flex items-center justify-center bg-muted/30'>
+                                {previewCanvas ? (
+                                    <div
+                                        style={{
+                                            transform: `scale(${previewScale})`,
+                                            transformOrigin: 'center',
+                                            transition: 'transform 0.2s',
+                                        }}
+                                    >
+                                        <img
+                                            src={previewCanvas.toDataURL()}
+                                            alt='Merged Preview'
+                                            className='max-w-full max-h-full object-contain rounded-lg border shadow-lg'
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className='text-sm text-muted-foreground'>加载中...</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </DialogContent>
