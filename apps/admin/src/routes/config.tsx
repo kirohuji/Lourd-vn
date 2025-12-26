@@ -24,6 +24,7 @@ const PromptsPage = lazy(() => import('@/pages/prompts').then(m => ({ default: m
 const PromptTagsPage = lazy(() => import('@/pages/prompt-tags').then(m => ({ default: m.PromptTagsPage })));
 const LoreBookPage = lazy(() => import('@/pages/lorebook').then(m => ({ default: m.LoreBookPage })));
 const UsersPage = lazy(() => import('@/pages/users').then(m => ({ default: m.UsersPage })));
+const ImageComparePage = lazy(() => import('@/pages/image-compare').then(m => ({ default: m.ImageComparePage })));
 
 // 路由配置类型
 type RouteConfigItem =
@@ -89,6 +90,10 @@ export const routeConfig: RouteConfigItem[] = [
             {
                 path: 'lorebook',
                 component: LoreBookPage,
+            },
+            {
+                path: 'image-compare',
+                component: ImageComparePage,
             },
             // 项目管理
             {
