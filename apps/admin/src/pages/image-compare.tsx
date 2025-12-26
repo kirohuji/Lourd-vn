@@ -25,6 +25,10 @@ export function ImageComparePage() {
     const [greenDiffImageUrl, setGreenDiffImageUrl] = useState<string | null>(null);
     const [greenDiffImageData, setGreenDiffImageData] = useState<ImageData | null>(null);
     const [comparing, setComparing] = useState(false);
+    // 比较参数
+    const [threshold, setThreshold] = useState(0.3);
+    const [includeAA, setIncludeAA] = useState(false);
+    const [alpha, setAlpha] = useState(0.1);
     const [compareResult, setCompareResult] = useState<{
         numDiffPixels: number;
         totalPixels: number;
@@ -131,7 +135,11 @@ export function ImageComparePage() {
 
         setComparing(true);
         try {
-            const result = await compareImages(image1, image2);
+            const result = await compareImages(image1, image2, {
+                threshold,
+                includeAA,
+                alpha,
+            });
             const diffUrl = imageDataToDataURL(result.diffImageData);
             setDiffImageUrl(diffUrl);
             setDiffImageData(result.diffImageData);
@@ -171,10 +179,7 @@ export function ImageComparePage() {
             // 确保 image2Data 的尺寸与 diffImageData 一致
             // 比较时使用的是较大的尺寸，所以需要调整 image2Data 的尺寸
             let resizedImage2Data = image2Data;
-            if (
-                image2Data.width !== diffImageData.width ||
-                image2Data.height !== diffImageData.height
-            ) {
+            if (image2Data.width !== diffImageData.width || image2Data.height !== diffImageData.height) {
                 const canvas = document.createElement('canvas');
                 canvas.width = diffImageData.width;
                 canvas.height = diffImageData.height;
@@ -301,9 +306,7 @@ export function ImageComparePage() {
             <div className='flex items-center justify-between'>
                 <div>
                     <h1 className='text-3xl font-bold'>图片比较</h1>
-                    <p className='text-sm text-muted-foreground mt-1'>
-                        上传两张图片，使用 pixelmatch 进行像素级比较
-                    </p>
+                    <p className='text-sm text-muted-foreground mt-1'>上传两张图片，使用 pixelmatch 进行像素级比较</p>
                 </div>
             </div>
 
@@ -318,11 +321,7 @@ export function ImageComparePage() {
                     <CardContent className='space-y-4'>
                         {image1Preview ? (
                             <div className='relative'>
-                                <img
-                                    src={image1Preview}
-                                    alt='Image 1'
-                                    className='w-full h-auto rounded-lg border'
-                                />
+                                <img src={image1Preview} alt='Image 1' className='w-full h-auto rounded-lg border' />
                                 <Button
                                     variant='destructive'
                                     size='icon'
@@ -340,9 +339,7 @@ export function ImageComparePage() {
                                 onClick={() => file1InputRef.current?.click()}
                             >
                                 <Upload className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-                                <p className='text-sm text-muted-foreground'>
-                                    点击或拖拽上传图片
-                                </p>
+                                <p className='text-sm text-muted-foreground'>点击或拖拽上传图片</p>
                             </div>
                         )}
                         <Input
@@ -364,11 +361,7 @@ export function ImageComparePage() {
                     <CardContent className='space-y-4'>
                         {image2Preview ? (
                             <div className='relative'>
-                                <img
-                                    src={image2Preview}
-                                    alt='Image 2'
-                                    className='w-full h-auto rounded-lg border'
-                                />
+                                <img src={image2Preview} alt='Image 2' className='w-full h-auto rounded-lg border' />
                                 <Button
                                     variant='destructive'
                                     size='icon'
@@ -386,9 +379,7 @@ export function ImageComparePage() {
                                 onClick={() => file2InputRef.current?.click()}
                             >
                                 <Upload className='h-12 w-12 mx-auto mb-4 text-muted-foreground' />
-                                <p className='text-sm text-muted-foreground'>
-                                    点击或拖拽上传图片
-                                </p>
+                                <p className='text-sm text-muted-foreground'>点击或拖拽上传图片</p>
                             </div>
                         )}
                         <Input
@@ -401,6 +392,85 @@ export function ImageComparePage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* 参数面板 */}
+            {image1 && image2 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className='text-sm'>比较参数</CardTitle>
+                        <CardDescription>调整参数以优化比较结果</CardDescription>
+                    </CardHeader>
+                    <CardContent className='space-y-4'>
+                        <div className='space-y-2'>
+                            <div className='flex items-center justify-between'>
+                                <Label htmlFor='threshold'>敏感度阈值</Label>
+                                <Input
+                                    id='threshold'
+                                    type='number'
+                                    min='0.05'
+                                    max='1.0'
+                                    step='0.05'
+                                    value={threshold}
+                                    onChange={e => setThreshold(parseFloat(e.target.value) || 0.3)}
+                                    className='w-24'
+                                />
+                            </div>
+                            <input
+                                type='range'
+                                min='0.05'
+                                max='1.0'
+                                step='0.05'
+                                value={threshold}
+                                onChange={e => setThreshold(parseFloat(e.target.value))}
+                                className='w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer'
+                            />
+                            <p className='text-xs text-muted-foreground'>
+                                值越大，越不敏感（减少细小差异，如抗锯齿、压缩伪影等）。默认: 0.3
+                            </p>
+                        </div>
+
+                        <div className='space-y-2'>
+                            <div className='flex items-center justify-between'>
+                                <Label htmlFor='alpha'>Alpha 通道阈值</Label>
+                                <Input
+                                    id='alpha'
+                                    type='number'
+                                    min='0.0'
+                                    max='1.0'
+                                    step='0.05'
+                                    value={alpha}
+                                    onChange={e => setAlpha(parseFloat(e.target.value) || 0.1)}
+                                    className='w-24'
+                                />
+                            </div>
+                            <input
+                                type='range'
+                                min='0.0'
+                                max='1.0'
+                                step='0.05'
+                                value={alpha}
+                                onChange={e => setAlpha(parseFloat(e.target.value))}
+                                className='w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer'
+                            />
+                            <p className='text-xs text-muted-foreground'>控制透明度的比较敏感度。默认: 0.1</p>
+                        </div>
+
+                        <div className='flex items-center justify-between'>
+                            <div className='space-y-0.5'>
+                                <Label htmlFor='includeAA'>包含抗锯齿</Label>
+                                <p className='text-xs text-muted-foreground'>是否在比较时考虑抗锯齿边缘</p>
+                            </div>
+                            <input
+                                id='includeAA'
+                                type='checkbox'
+                                checked={includeAA}
+                                onChange={e => setIncludeAA(e.target.checked)}
+                                className='h-4 w-4 rounded border-gray-300'
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* 比较按钮 */}
             {image1 && image2 && (
@@ -469,11 +539,7 @@ export function ImageComparePage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <img
-                                src={diffImageUrl}
-                                alt='Difference'
-                                className='w-full h-auto rounded-lg border'
-                            />
+                            <img src={diffImageUrl} alt='Difference' className='w-full h-auto rounded-lg border' />
                         </CardContent>
                     </Card>
 
@@ -483,11 +549,7 @@ export function ImageComparePage() {
                             <div className='flex items-center justify-between'>
                                 <CardTitle className='text-sm'>绿色差异</CardTitle>
                                 {greenDiffImageData && (
-                                    <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={handleDownloadGreenDiff}
-                                    >
+                                    <Button size='sm' variant='outline' onClick={handleDownloadGreenDiff}>
                                         <Download className='mr-2 h-3 w-3' />
                                         下载
                                     </Button>
@@ -523,9 +585,7 @@ export function ImageComparePage() {
                         <CardContent className='space-y-2'>
                             <div>
                                 <Label className='text-xs text-muted-foreground'>差异百分比</Label>
-                                <p className='text-lg font-semibold'>
-                                    {compareResult.diffPercentage.toFixed(2)}%
-                                </p>
+                                <p className='text-lg font-semibold'>{compareResult.diffPercentage.toFixed(2)}%</p>
                             </div>
                             <div>
                                 <Label className='text-xs text-muted-foreground'>不同像素数</Label>
@@ -542,9 +602,7 @@ export function ImageComparePage() {
                             </div>
                             <div>
                                 <Label className='text-xs text-muted-foreground'>总像素数</Label>
-                                <p className='text-sm font-medium'>
-                                    {compareResult.totalPixels.toLocaleString()}
-                                </p>
+                                <p className='text-sm font-medium'>{compareResult.totalPixels.toLocaleString()}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -553,4 +611,3 @@ export function ImageComparePage() {
         </div>
     );
 }
-

@@ -17,7 +17,7 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
         const img = new Image();
         const reader = new FileReader();
 
-        reader.onload = (e) => {
+        reader.onload = e => {
             if (e.target?.result) {
                 img.onload = () => resolve(img);
                 img.onerror = reject;
@@ -35,11 +35,7 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
 /**
  * 将 Image 对象转换为 ImageData
  */
-export function imageToImageData(
-    img: HTMLImageElement,
-    width: number,
-    height: number,
-): ImageData {
+export function imageToImageData(img: HTMLImageElement, width: number, height: number): ImageData {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -96,20 +92,13 @@ export async function compareImages(
     const diff = new Uint8ClampedArray(width * height * 4);
 
     // 执行比较
-    const numDiffPixels = pixelmatch(
-        img1Data.data,
-        img2Data.data,
-        diff,
-        width,
-        height,
-        {
-            threshold: options?.threshold ?? 0.1,
-            includeAA: options?.includeAA ?? false,
-            alpha: options?.alpha ?? 0.1,
-            diffColor: options?.diffColor ?? [255, 0, 0],
-            diffColorAlt: options?.diffColorAlt ?? [0, 255, 0],
-        },
-    );
+    const numDiffPixels = pixelmatch(img1Data.data, img2Data.data, diff, width, height, {
+        threshold: options?.threshold ?? 0.1,
+        includeAA: options?.includeAA ?? false,
+        alpha: options?.alpha ?? 0.1,
+        diffColor: options?.diffColor ?? [255, 0, 0],
+        diffColorAlt: options?.diffColorAlt ?? [0, 255, 0],
+    });
 
     // 创建差异图的 ImageData
     const diffImageData = new ImageData(diff, width, height);
@@ -190,19 +179,15 @@ export function downloadImageData(imageData: ImageData, filename: string = 'imag
     }
     ctx.putImageData(imageData, 0, 0);
 
-    canvas.toBlob(
-        blob => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        },
-        'image/png',
-    );
+    canvas.toBlob(blob => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 'image/png');
 }
-
