@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
     useCreateLoreBookCategory,
@@ -40,6 +39,8 @@ import {
     LoreBookCategoryResponseDto,
     LoreBookEntryResponseDto,
 } from '@lourd-game/shared';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
 import { ChevronDown, ChevronRight, Download, Edit, Loader2, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -58,7 +59,8 @@ export function LoreBookPage() {
 
     const { toast } = useToast();
     const { data: categories = [], isLoading: isLoadingCategories } = useLoreBookCategories();
-    const { data: entries = [] } = useLoreBookEntries(selectedCategoryId || undefined);
+    // 始终获取所有条目，以便按分类分组显示
+    const { data: entries = [] } = useLoreBookEntries();
 
     const createCategory = useCreateLoreBookCategory();
     const updateCategory = useUpdateLoreBookCategory();
@@ -86,12 +88,21 @@ export function LoreBookPage() {
 
     // 根据 category order 排序 entries
     const sortedEntries = (categoryId: string | null) => {
-        if (!categoryId) return entries;
+        if (!categoryId) {
+            // 如果没有分类，返回所有没有分类的条目
+            return entries.filter(e => !e.categoryId);
+        }
+
+        // 先过滤出属于该分类的条目
+        const categoryEntries = entries.filter(e => e.categoryId === categoryId);
+
         const category = categories.find(c => c.id === categoryId);
-        if (!category || !category.order || category.order.length === 0) return entries;
+        if (!category || !category.order || category.order.length === 0) {
+            return categoryEntries;
+        }
 
         const orderedEntries: LoreBookEntryResponseDto[] = [];
-        const entryMap = new Map(entries.map(e => [e.id, e]));
+        const entryMap = new Map(categoryEntries.map(e => [e.id, e]));
 
         // 先添加 order 中的 entries
         category.order.forEach((id: string) => {
@@ -112,10 +123,8 @@ export function LoreBookPage() {
         const newExpanded = new Set(expandedCategories);
         if (newExpanded.has(categoryId)) {
             newExpanded.delete(categoryId);
-            updateCategory.mutate({ id: categoryId, dto: { open: false } });
         } else {
             newExpanded.add(categoryId);
-            updateCategory.mutate({ id: categoryId, dto: { open: true } });
         }
         setExpandedCategories(newExpanded);
     };
@@ -174,11 +183,10 @@ export function LoreBookPage() {
                 setSelectedEntryId(data.id);
                 if (data.categoryId) {
                     setSelectedCategoryId(data.categoryId);
-                    // 确保分类展开
+                    // 确保分类展开（仅前端状态）
                     const catId = data.categoryId;
                     if (catId && !expandedCategories.has(catId)) {
                         setExpandedCategories(prev => new Set(prev).add(catId));
-                        updateCategory.mutate({ id: catId, dto: { open: true } });
                     }
                 }
             },
@@ -320,9 +328,9 @@ export function LoreBookPage() {
 
             <div className='grid grid-cols-12 gap-4 flex-1 min-h-0'>
                 {/* 左侧：分类和条目菜单 */}
-                <div className='col-span-4 border rounded-lg p-4 flex flex-col min-h-0 bg-card'>
+                <div className='col-span-3 border rounded-lg p-4 flex flex-col min-h-0 bg-card'>
                     <div className='flex items-center justify-between mb-3'>
-                        <div className='font-semibold text-lg'>条目列表</div>
+                        <div className='font-semibold text-lg'>Categories</div>
                         <Button size='sm' variant='outline' onClick={handleCreateCategory}>
                             <Plus className='mr-2 h-4 w-4' />
                             分类
@@ -334,7 +342,7 @@ export function LoreBookPage() {
                         <div className='relative'>
                             <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                             <Input
-                                placeholder='搜索条目...'
+                                placeholder='Search entries...'
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 className='pl-8'
@@ -352,6 +360,7 @@ export function LoreBookPage() {
                         </div>
                     ) : (
                         <div className='space-y-3 overflow-auto flex-1 pr-1'>
+                            {/* 显示所有分类及其条目 */}
                             {categories.map(category => {
                                 const isExpanded = expandedCategories.has(category.id);
                                 const categoryEntries = searchQuery
@@ -371,6 +380,8 @@ export function LoreBookPage() {
                                                     onClick={() => {
                                                         setSelectedCategoryId(category.id);
                                                         setSelectedEntryId(null);
+                                                        // 展开当前分类，关闭其他分类
+                                                        setExpandedCategories(new Set([category.id]));
                                                     }}
                                                 >
                                                     {category.name}
@@ -491,12 +502,142 @@ export function LoreBookPage() {
                                     </div>
                                 );
                             })}
+
+                            {/* 显示未分类的条目 */}
+                            {(() => {
+                                const uncategorizedEntries = searchQuery
+                                    ? filteredEntries.filter(e => !e.categoryId)
+                                    : entries.filter(e => !e.categoryId);
+
+                                if (uncategorizedEntries.length === 0) return null;
+
+                                const isExpanded = expandedCategories.has('__uncategorized__');
+                                const isSelected = selectedCategoryId === null;
+
+                                return (
+                                    <div className='pb-4 border-b border-border mb-4'>
+                                        {/* 未分类 Header */}
+                                        <div className='flex items-center justify-between mb-2 px-1'>
+                                            <div className='flex items-center gap-2 flex-1 min-w-0'>
+                                                <h3
+                                                    className={`font-semibold text-base truncate cursor-pointer ${
+                                                        isSelected ? 'text-primary' : ''
+                                                    }`}
+                                                    onClick={() => {
+                                                        setSelectedCategoryId(null);
+                                                        setSelectedEntryId(null);
+                                                        // 展开未分类，关闭其他分类
+                                                        setExpandedCategories(new Set(['__uncategorized__']));
+                                                    }}
+                                                >
+                                                    未分类
+                                                </h3>
+                                                <span className='text-xs text-muted-foreground'>
+                                                    {uncategorizedEntries.length} entries
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center gap-1'>
+                                                <Button
+                                                    variant='ghost'
+                                                    size='icon'
+                                                    className='h-6 w-6 text-muted-foreground'
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleCreateEntry();
+                                                    }}
+                                                >
+                                                    <Plus className='h-3.5 w-3.5' />
+                                                </Button>
+                                                <button
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        const newExpanded = new Set(expandedCategories);
+                                                        if (newExpanded.has('__uncategorized__')) {
+                                                            newExpanded.delete('__uncategorized__');
+                                                        } else {
+                                                            newExpanded.add('__uncategorized__');
+                                                        }
+                                                        setExpandedCategories(newExpanded);
+                                                    }}
+                                                    className='p-1 hover:bg-accent rounded transition-colors shrink-0'
+                                                >
+                                                    {isExpanded ? (
+                                                        <ChevronDown className='h-4 w-4 text-muted-foreground' />
+                                                    ) : (
+                                                        <ChevronRight className='h-4 w-4 text-muted-foreground' />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 未分类条目 */}
+                                        {isExpanded && uncategorizedEntries.length > 0 && (
+                                            <div className='space-y-1 pl-6'>
+                                                {uncategorizedEntries.map(entry => {
+                                                    const isEntrySelected = selectedEntryId === entry.id;
+                                                    const description =
+                                                        entry.keys && entry.keys.length > 0
+                                                            ? entry.keys.join(', ')
+                                                            : '';
+                                                    return (
+                                                        <div
+                                                            key={entry.id}
+                                                            className={`group/entry relative px-3 py-2 rounded cursor-pointer transition-colors ${
+                                                                isEntrySelected
+                                                                    ? 'bg-primary/10 text-primary'
+                                                                    : 'hover:bg-muted/50'
+                                                            }`}
+                                                            onClick={() => {
+                                                                setSelectedEntryId(entry.id);
+                                                                setSelectedCategoryId(null);
+                                                            }}
+                                                        >
+                                                            <div className='flex flex-col gap-0.5'>
+                                                                <div className='flex items-center justify-between'>
+                                                                    <span
+                                                                        className={`text-sm font-medium ${
+                                                                            isEntrySelected ? 'text-primary' : ''
+                                                                        }`}
+                                                                    >
+                                                                        {entry.displayName}
+                                                                    </span>
+                                                                    <Button
+                                                                        variant='ghost'
+                                                                        size='icon'
+                                                                        className='h-5 w-5 opacity-0 group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:text-destructive'
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            setDeleteType('entry');
+                                                                            setItemToDelete({
+                                                                                id: entry.id,
+                                                                                name: entry.displayName,
+                                                                            });
+                                                                            setDeleteConfirmOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className='h-3 w-3' />
+                                                                    </Button>
+                                                                </div>
+                                                                {description && (
+                                                                    <span className='text-xs text-muted-foreground'>
+                                                                        {description}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
 
                 {/* 右侧：编辑面板 */}
-                <div className='col-span-8 border rounded-lg p-6 flex flex-col min-h-0 overflow-auto bg-card'>
+                <div className='col-span-9 border rounded-lg p-6 flex flex-col min-h-0 overflow-auto bg-card'>
                     {selectedEntry ? (
                         <EntryEditor
                             entry={selectedEntry}
@@ -821,14 +962,20 @@ function EntryEditor({
                             <p className='text-xs text-muted-foreground'>
                                 The following text will be referenced when the Keys are activated.
                             </p>
-                            <Textarea
-                                id='entry-content'
-                                value={text}
-                                onChange={e => setText(e.target.value)}
-                                rows={15}
-                                className='font-mono text-sm w-full max-w-full resize-none'
-                                placeholder='输入条目的详细内容...'
-                            />
+                            <div data-color-mode='light' className='w-full'>
+                                <MDEditor
+                                    value={text}
+                                    onChange={(value?: string) => setText(value || '')}
+                                    preview='edit'
+                                    hideToolbar={false}
+                                    visibleDragbar={false}
+                                    height={400}
+                                    textareaProps={{
+                                        placeholder: '输入条目的详细内容...',
+                                        style: { fontSize: 14 },
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         <div className='space-y-2 ml-1'>
