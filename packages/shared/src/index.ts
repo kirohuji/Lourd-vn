@@ -60,10 +60,13 @@ export type { CompileInkResponse, CreateInkFileDto, InkFile, UpdateInkFileDto } 
 
 export type {
     CreateProjectDto,
+    CreateProjectPlanningDto,
     Project,
+    ProjectPlanningDto,
     ProjectQueryDto,
     ProjectResponseDto,
     UpdateProjectDto,
+    UpdateProjectPlanningDto,
 } from './types/project.js';
 
 export type {

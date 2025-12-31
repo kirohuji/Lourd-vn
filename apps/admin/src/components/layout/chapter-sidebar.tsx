@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useChapters, useCreateChapter } from '@/lib/hooks/use-chapters';
 import { cn } from '@/lib/utils';
-import { BookOpen, HardDrive, Plus } from 'lucide-react';
+import { BookOpen, FileText, HardDrive, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -92,7 +92,7 @@ export function ChapterSidebar({ projectId }: ChapterSidebarProps) {
             </div>
 
             {/* 项目资源管理入口 */}
-            <div className='border-b p-2'>
+            <div className='border-b p-2 space-y-1'>
                 <button
                     onClick={() => navigate(`/admin/projects/${projectId}/resources`)}
                     className={cn(
@@ -104,6 +104,18 @@ export function ChapterSidebar({ projectId }: ChapterSidebarProps) {
                 >
                     <HardDrive className='h-4 w-4 shrink-0' />
                     <span className='font-medium'>项目资源管理</span>
+                </button>
+                <button
+                    onClick={() => navigate(`/admin/projects/${projectId}/planning`)}
+                    className={cn(
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                        location.pathname === `/admin/projects/${projectId}/planning`
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    )}
+                >
+                    <FileText className='h-4 w-4 shrink-0' />
+                    <span className='font-medium'>项目策划</span>
                 </button>
             </div>
 

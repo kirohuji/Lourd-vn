@@ -1,9 +1,11 @@
 import {
   CreateProjectDto,
   PaginatedResponse,
+  ProjectPlanningDto,
   ProjectQueryDto,
   ProjectResponseDto,
   UpdateProjectDto,
+  UpdateProjectPlanningDto,
 } from '@lourd-game/shared';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -151,6 +153,92 @@ export class ProjectsService {
     await this.prisma.project.delete({
       where: { id },
     });
+  }
+
+  async getPlanning(projectId: number): Promise<ProjectPlanningDto | null> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 获取策划信息
+    const planning = await this.prisma.projectPlanning.findUnique({
+      where: { projectId },
+    });
+
+    if (!planning) {
+      return null;
+    }
+
+    return {
+      id: planning.id,
+      projectId: planning.projectId,
+      theme: planning.theme ?? undefined,
+      concept: planning.concept ?? undefined,
+      type: planning.type ?? undefined,
+      style: planning.style ?? undefined,
+      targetAudience: planning.targetAudience ?? undefined,
+      storyOutline: planning.storyOutline ?? undefined,
+      createdAt: planning.createdAt,
+      updatedAt: planning.updatedAt,
+    };
+  }
+
+  async updatePlanning(
+    projectId: number,
+    dto: UpdateProjectPlanningDto,
+  ): Promise<ProjectPlanningDto> {
+    // 检查项目是否存在
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    // 使用 upsert 来创建或更新策划信息
+    const planning = await this.prisma.projectPlanning.upsert({
+      where: { projectId },
+      create: {
+        projectId,
+        theme: dto.theme,
+        concept: dto.concept,
+        type: dto.type,
+        style: dto.style,
+        targetAudience: dto.targetAudience,
+        storyOutline: dto.storyOutline,
+      },
+      update: {
+        ...(dto.theme !== undefined && { theme: dto.theme }),
+        ...(dto.concept !== undefined && { concept: dto.concept }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.style !== undefined && { style: dto.style }),
+        ...(dto.targetAudience !== undefined && {
+          targetAudience: dto.targetAudience,
+        }),
+        ...(dto.storyOutline !== undefined && {
+          storyOutline: dto.storyOutline,
+        }),
+      },
+    });
+
+    return {
+      id: planning.id,
+      projectId: planning.projectId,
+      theme: planning.theme ?? undefined,
+      concept: planning.concept ?? undefined,
+      type: planning.type ?? undefined,
+      style: planning.style ?? undefined,
+      targetAudience: planning.targetAudience ?? undefined,
+      storyOutline: planning.storyOutline ?? undefined,
+      createdAt: planning.createdAt,
+      updatedAt: planning.updatedAt,
+    };
   }
 
   private toResponseDto(project: any): ProjectResponseDto {

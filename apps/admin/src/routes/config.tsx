@@ -19,6 +19,9 @@ const ProjectCharactersPage = lazy(() =>
 const ProjectChaptersPage = lazy(() =>
     import('@/pages/project-chapters').then(m => ({ default: m.ProjectChaptersPage })),
 );
+const ProjectPlanningPage = lazy(() =>
+    import('@/pages/project-planning').then(m => ({ default: m.ProjectPlanningPage })),
+);
 const ChapterDetailPage = lazy(() => import('@/pages/chapter-detail').then(m => ({ default: m.ChapterDetailPage })));
 const PromptsPage = lazy(() => import('@/pages/prompts').then(m => ({ default: m.PromptsPage })));
 const PromptTagsPage = lazy(() => import('@/pages/prompt-tags').then(m => ({ default: m.PromptTagsPage })));
@@ -112,6 +115,10 @@ export const routeConfig: RouteConfigItem[] = [
             {
                 path: 'projects/:projectId/characters',
                 component: ProjectCharactersPage,
+            },
+            {
+                path: 'projects/:projectId/planning',
+                component: ProjectPlanningPage,
             },
             // 项目章节管理（保留兼容性）
             {

@@ -1,4 +1,4 @@
-import { CreateProjectDto, ProjectQueryDto, UpdateProjectDto } from '@lourd-game/shared';
+import { CreateProjectDto, ProjectQueryDto, UpdateProjectDto, UpdateProjectPlanningDto } from '@lourd-game/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 
@@ -59,6 +59,28 @@ export function useGenerateProjectBundle() {
         onSuccess: (_, id) => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             queryClient.invalidateQueries({ queryKey: ['projects', id] });
+        },
+    });
+}
+
+export function useProjectPlanning(projectId: number) {
+    return useQuery({
+        queryKey: ['projects', projectId, 'planning'],
+        queryFn: () => apiClient.getProjectPlanning(projectId),
+        enabled: !!projectId,
+    });
+}
+
+export function useUpdateProjectPlanning() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ projectId, dto }: { projectId: number; dto: UpdateProjectPlanningDto }) =>
+            apiClient.updateProjectPlanning(projectId, dto),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ['projects', variables.projectId, 'planning'],
+            });
         },
     });
 }

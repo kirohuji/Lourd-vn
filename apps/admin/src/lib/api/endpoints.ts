@@ -28,6 +28,11 @@ export const endpoints = {
             common: (projectId: number) => `/projects/${projectId}/manifest/common`,
             full: (projectId: number) => `/projects/${projectId}/manifest/full`,
         },
+        // 项目策划
+        planning: {
+            get: (projectId: number) => `/projects/${projectId}/planning`,
+            update: (projectId: number) => `/projects/${projectId}/planning`,
+        },
     },
     chapters: {
         list: (projectId: number) => `/projects/${projectId}/chapters`,

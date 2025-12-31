@@ -29,6 +29,7 @@ import {
     ManifestResponse,
     MapConfig,
     PaginatedResponse,
+    ProjectPlanningDto,
     ProjectQueryDto,
     ProjectResponseDto,
     PromptImageResponseDto,
@@ -49,6 +50,7 @@ import {
     UpdateLoreBookSettingsDto,
     UpdateMapDto,
     UpdateProjectDto,
+    UpdateProjectPlanningDto,
     UpdatePromptTagDto,
     UpdatePromptVariantDto,
     UpdateResourceDto,
@@ -506,6 +508,23 @@ class ApiClient {
     async generateProjectBundle(id: number): Promise<BundleZipInfo> {
         return this.request<BundleZipInfo>(`/projects/${id}/generate-bundle`, {
             method: 'POST',
+        });
+    }
+
+    // Project Planning Management
+    async getProjectPlanning(projectId: number): Promise<ProjectPlanningDto | null> {
+        return this.request<ProjectPlanningDto | null>(endpoints.projects.planning.get(projectId), {
+            method: 'GET',
+        });
+    }
+
+    async updateProjectPlanning(
+        projectId: number,
+        dto: UpdateProjectPlanningDto,
+    ): Promise<ProjectPlanningDto> {
+        return this.request<ProjectPlanningDto>(endpoints.projects.planning.update(projectId), {
+            method: 'PUT',
+            body: dto,
         });
     }
 

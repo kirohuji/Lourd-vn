@@ -1,7 +1,9 @@
 import type {
   CreateProjectDto,
+  ProjectPlanningDto,
   ProjectQueryDto,
   UpdateProjectDto,
+  UpdateProjectPlanningDto,
 } from '@lourd-game/shared';
 import {
   PaginatedResponse,
@@ -83,5 +85,24 @@ export class ProjectsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<BundleZipInfo> {
     return this.bundleGeneratorService.generateCommonBundle(id);
+  }
+
+  @Get(':id/planning')
+  @ApiOperation({ summary: '获取项目策划' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getPlanning(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ProjectPlanningDto | null> {
+    return this.projectsService.getPlanning(id);
+  }
+
+  @Put(':id/planning')
+  @ApiOperation({ summary: '更新项目策划' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  async updatePlanning(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProjectPlanningDto,
+  ): Promise<ProjectPlanningDto> {
+    return this.projectsService.updatePlanning(id, dto);
   }
 }

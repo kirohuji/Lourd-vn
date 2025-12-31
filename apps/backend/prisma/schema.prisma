@@ -34,6 +34,9 @@ model Project {
   usedMaps       ProjectMapUsage[]
   usedCharacters ProjectCharacterUsage[]
 
+  // 项目策划
+  planning ProjectPlanning?
+
   @@map("projects")
 }
 
@@ -471,4 +474,22 @@ model LoreBookSettings {
   updatedAt           DateTime @updatedAt
 
   @@map("lorebook_settings")
+}
+
+// 项目策划模型
+model ProjectPlanning {
+  id             Int      @id @default(autoincrement())
+  projectId      Int      @unique
+  theme          String?  @db.Text // 主题
+  concept        String?  @db.Text // 立意
+  type           String?  // 类型：校园、悬疑、恋爱等
+  style          String?  // 风格：日漫风、写实风等
+  targetAudience String?  @db.Text // 受众设定
+  storyOutline   String?  @db.Text // 故事大纲（Markdown）
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_planning")
 }

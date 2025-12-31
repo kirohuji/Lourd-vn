@@ -74,3 +74,43 @@ export interface ProjectQueryDto {
     search?: string;
     enabled?: boolean;
 }
+
+/**
+ * 项目策划 DTO
+ */
+export interface ProjectPlanningDto {
+    id: number;
+    projectId: number;
+    theme?: string;
+    concept?: string;
+    type?: string;
+    style?: string;
+    targetAudience?: string;
+    storyOutline?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
+ * 创建项目策划 DTO
+ */
+export interface CreateProjectPlanningDto {
+    theme?: string;
+    concept?: string;
+    type?: string;
+    style?: string;
+    targetAudience?: string;
+    storyOutline?: string;
+}
+
+/**
+ * 更新项目策划 DTO
+ */
+export interface UpdateProjectPlanningDto {
+    theme?: string;
+    concept?: string;
+    type?: string;
+    style?: string;
+    targetAudience?: string;
+    storyOutline?: string;
+}
